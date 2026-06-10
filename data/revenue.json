@@ -1,0 +1,5908 @@
+{
+  "updated": "2026-06-10",
+  "fleet_size": 1180,
+  "total_revenue": 260952139,
+  "avg_revenue": 221145,
+  "devices": [
+    {
+      "qr": 149,
+      "company": 116,
+      "revenue": 821430
+    },
+    {
+      "qr": 237,
+      "company": 45,
+      "revenue": 806950
+    },
+    {
+      "qr": 90,
+      "company": 48,
+      "revenue": 803887
+    },
+    {
+      "qr": 91,
+      "company": 48,
+      "revenue": 802630
+    },
+    {
+      "qr": 74,
+      "company": 48,
+      "revenue": 797903
+    },
+    {
+      "qr": 111,
+      "company": 116,
+      "revenue": 779671
+    },
+    {
+      "qr": 153,
+      "company": 116,
+      "revenue": 733400
+    },
+    {
+      "qr": 98,
+      "company": 228,
+      "revenue": 727902
+    },
+    {
+      "qr": 27,
+      "company": 118,
+      "revenue": 694852
+    },
+    {
+      "qr": 72,
+      "company": 17,
+      "revenue": 674552
+    },
+    {
+      "qr": 148,
+      "company": 84,
+      "revenue": 668790
+    },
+    {
+      "qr": 68,
+      "company": 48,
+      "revenue": 648411
+    },
+    {
+      "qr": 55,
+      "company": 17,
+      "revenue": 646761
+    },
+    {
+      "qr": 211,
+      "company": 84,
+      "revenue": 640910
+    },
+    {
+      "qr": 347,
+      "company": 52,
+      "revenue": 640030
+    },
+    {
+      "qr": 1569,
+      "company": 108,
+      "revenue": 634460
+    },
+    {
+      "qr": 1526,
+      "company": 108,
+      "revenue": 623760
+    },
+    {
+      "qr": 1552,
+      "company": 108,
+      "revenue": 619190
+    },
+    {
+      "qr": 264,
+      "company": 81,
+      "revenue": 615410
+    },
+    {
+      "qr": 40,
+      "company": 107,
+      "revenue": 605072
+    },
+    {
+      "qr": 1040,
+      "company": 106,
+      "revenue": 600070
+    },
+    {
+      "qr": 1524,
+      "company": 106,
+      "revenue": 595540
+    },
+    {
+      "qr": 1473,
+      "company": 106,
+      "revenue": 590540
+    },
+    {
+      "qr": 28,
+      "company": 118,
+      "revenue": 589795
+    },
+    {
+      "qr": 1032,
+      "company": 106,
+      "revenue": 588860
+    },
+    {
+      "qr": 96,
+      "company": 228,
+      "revenue": 587561
+    },
+    {
+      "qr": 126,
+      "company": 63,
+      "revenue": 583540
+    },
+    {
+      "qr": 60,
+      "company": 17,
+      "revenue": 569261
+    },
+    {
+      "qr": 75,
+      "company": 48,
+      "revenue": 565572
+    },
+    {
+      "qr": 1074,
+      "company": 140,
+      "revenue": 564660
+    },
+    {
+      "qr": 65,
+      "company": 48,
+      "revenue": 563616
+    },
+    {
+      "qr": 223,
+      "company": 84,
+      "revenue": 560496
+    },
+    {
+      "qr": 129,
+      "company": 63,
+      "revenue": 557080
+    },
+    {
+      "qr": 1444,
+      "company": 106,
+      "revenue": 541920
+    },
+    {
+      "qr": 146,
+      "company": 107,
+      "revenue": 540822
+    },
+    {
+      "qr": 1031,
+      "company": 106,
+      "revenue": 540160
+    },
+    {
+      "qr": 1559,
+      "company": 145,
+      "revenue": 529530
+    },
+    {
+      "qr": 56,
+      "company": 34,
+      "revenue": 523653
+    },
+    {
+      "qr": 1499,
+      "company": 48,
+      "revenue": 522570
+    },
+    {
+      "qr": 30,
+      "company": 118,
+      "revenue": 521593
+    },
+    {
+      "qr": 1538,
+      "company": 145,
+      "revenue": 520800
+    },
+    {
+      "qr": 1427,
+      "company": 106,
+      "revenue": 519310
+    },
+    {
+      "qr": 10,
+      "company": 118,
+      "revenue": 514752
+    },
+    {
+      "qr": 178,
+      "company": 116,
+      "revenue": 514370
+    },
+    {
+      "qr": 176,
+      "company": 8,
+      "revenue": 514230
+    },
+    {
+      "qr": 250,
+      "company": 63,
+      "revenue": 513791
+    },
+    {
+      "qr": 298,
+      "company": 81,
+      "revenue": 512640
+    },
+    {
+      "qr": 124,
+      "company": 48,
+      "revenue": 508821
+    },
+    {
+      "qr": 39,
+      "company": 107,
+      "revenue": 504040
+    },
+    {
+      "qr": 336,
+      "company": 50,
+      "revenue": 497390
+    },
+    {
+      "qr": 1503,
+      "company": 106,
+      "revenue": 495900
+    },
+    {
+      "qr": 1564,
+      "company": 145,
+      "revenue": 495130
+    },
+    {
+      "qr": 1598,
+      "company": 108,
+      "revenue": 492070
+    },
+    {
+      "qr": 1423,
+      "company": 140,
+      "revenue": 491750
+    },
+    {
+      "qr": 81,
+      "company": 107,
+      "revenue": 489955
+    },
+    {
+      "qr": 227,
+      "company": 77,
+      "revenue": 489704
+    },
+    {
+      "qr": 41,
+      "company": 211,
+      "revenue": 486625
+    },
+    {
+      "qr": 147,
+      "company": 107,
+      "revenue": 484650
+    },
+    {
+      "qr": 318,
+      "company": 50,
+      "revenue": 478810
+    },
+    {
+      "qr": 143,
+      "company": 107,
+      "revenue": 477520
+    },
+    {
+      "qr": 1014,
+      "company": 109,
+      "revenue": 472440
+    },
+    {
+      "qr": 36,
+      "company": 82,
+      "revenue": 469331
+    },
+    {
+      "qr": 54,
+      "company": 107,
+      "revenue": 468411
+    },
+    {
+      "qr": 389,
+      "company": 87,
+      "revenue": 468290
+    },
+    {
+      "qr": 16,
+      "company": 38,
+      "revenue": 464911
+    },
+    {
+      "qr": 1356,
+      "company": 205,
+      "revenue": 464100
+    },
+    {
+      "qr": 1957,
+      "company": 157,
+      "revenue": 464010
+    },
+    {
+      "qr": 73,
+      "company": 84,
+      "revenue": 463344
+    },
+    {
+      "qr": 1745,
+      "company": 94,
+      "revenue": 462270
+    },
+    {
+      "qr": 233,
+      "company": 81,
+      "revenue": 461730
+    },
+    {
+      "qr": 183,
+      "company": 107,
+      "revenue": 461720
+    },
+    {
+      "qr": 1481,
+      "company": 106,
+      "revenue": 457890
+    },
+    {
+      "qr": 351,
+      "company": 57,
+      "revenue": 456403
+    },
+    {
+      "qr": 106,
+      "company": 116,
+      "revenue": 456140
+    },
+    {
+      "qr": 263,
+      "company": 32,
+      "revenue": 454840
+    },
+    {
+      "qr": 1173,
+      "company": 241,
+      "revenue": 454610
+    },
+    {
+      "qr": 1836,
+      "company": 147,
+      "revenue": 450730
+    },
+    {
+      "qr": 1483,
+      "company": 108,
+      "revenue": 448780
+    },
+    {
+      "qr": 1912,
+      "company": 94,
+      "revenue": 447990
+    },
+    {
+      "qr": 1913,
+      "company": 157,
+      "revenue": 447880
+    },
+    {
+      "qr": 1492,
+      "company": 101,
+      "revenue": 446540
+    },
+    {
+      "qr": 52,
+      "company": 82,
+      "revenue": 446183
+    },
+    {
+      "qr": 182,
+      "company": 212,
+      "revenue": 443480
+    },
+    {
+      "qr": 1359,
+      "company": 202,
+      "revenue": 439520
+    },
+    {
+      "qr": 257,
+      "company": 81,
+      "revenue": 438680
+    },
+    {
+      "qr": 357,
+      "company": 45,
+      "revenue": 438060
+    },
+    {
+      "qr": 1628,
+      "company": 108,
+      "revenue": 436420
+    },
+    {
+      "qr": 1113,
+      "company": 140,
+      "revenue": 432740
+    },
+    {
+      "qr": 249,
+      "company": 81,
+      "revenue": 432720
+    },
+    {
+      "qr": 390,
+      "company": 87,
+      "revenue": 432210
+    },
+    {
+      "qr": 272,
+      "company": 57,
+      "revenue": 431730
+    },
+    {
+      "qr": 1851,
+      "company": 147,
+      "revenue": 430810
+    },
+    {
+      "qr": 286,
+      "company": 93,
+      "revenue": 430606
+    },
+    {
+      "qr": 1866,
+      "company": 168,
+      "revenue": 430090
+    },
+    {
+      "qr": 64,
+      "company": 167,
+      "revenue": 429560
+    },
+    {
+      "qr": 1571,
+      "company": 109,
+      "revenue": 429450
+    },
+    {
+      "qr": 49,
+      "company": 216,
+      "revenue": 429295
+    },
+    {
+      "qr": 1490,
+      "company": 97,
+      "revenue": 428010
+    },
+    {
+      "qr": 1366,
+      "company": 205,
+      "revenue": 427400
+    },
+    {
+      "qr": 1514,
+      "company": 97,
+      "revenue": 426030
+    },
+    {
+      "qr": 145,
+      "company": 38,
+      "revenue": 425250
+    },
+    {
+      "qr": 234,
+      "company": 87,
+      "revenue": 424900
+    },
+    {
+      "qr": 1099,
+      "company": 147,
+      "revenue": 423410
+    },
+    {
+      "qr": 1346,
+      "company": 205,
+      "revenue": 423400
+    },
+    {
+      "qr": 47,
+      "company": 20,
+      "revenue": 422274
+    },
+    {
+      "qr": 1015,
+      "company": 109,
+      "revenue": 421880
+    },
+    {
+      "qr": 19,
+      "company": 55,
+      "revenue": 420945
+    },
+    {
+      "qr": 367,
+      "company": 57,
+      "revenue": 420161
+    },
+    {
+      "qr": 1579,
+      "company": 101,
+      "revenue": 419510
+    },
+    {
+      "qr": 1949,
+      "company": 157,
+      "revenue": 418700
+    },
+    {
+      "qr": 259,
+      "company": 32,
+      "revenue": 418590
+    },
+    {
+      "qr": 105,
+      "company": 82,
+      "revenue": 417530
+    },
+    {
+      "qr": 1541,
+      "company": 145,
+      "revenue": 417510
+    },
+    {
+      "qr": 296,
+      "company": 116,
+      "revenue": 417181
+    },
+    {
+      "qr": 50,
+      "company": 102,
+      "revenue": 416949
+    },
+    {
+      "qr": 184,
+      "company": 215,
+      "revenue": 416310
+    },
+    {
+      "qr": 1530,
+      "company": 97,
+      "revenue": 415540
+    },
+    {
+      "qr": 123,
+      "company": 216,
+      "revenue": 413343
+    },
+    {
+      "qr": 1936,
+      "company": 183,
+      "revenue": 413190
+    },
+    {
+      "qr": 1051,
+      "company": 106,
+      "revenue": 412930
+    },
+    {
+      "qr": 213,
+      "company": 107,
+      "revenue": 412803
+    },
+    {
+      "qr": 6,
+      "company": 84,
+      "revenue": 411335
+    },
+    {
+      "qr": 310,
+      "company": 40,
+      "revenue": 408250
+    },
+    {
+      "qr": 180,
+      "company": 20,
+      "revenue": 406210
+    },
+    {
+      "qr": 514,
+      "company": 93,
+      "revenue": 404400
+    },
+    {
+      "qr": 38,
+      "company": 55,
+      "revenue": 404222
+    },
+    {
+      "qr": 1510,
+      "company": 145,
+      "revenue": 403160
+    },
+    {
+      "qr": 304,
+      "company": 81,
+      "revenue": 402880
+    },
+    {
+      "qr": 1864,
+      "company": 157,
+      "revenue": 402540
+    },
+    {
+      "qr": 43,
+      "company": 216,
+      "revenue": 402400
+    },
+    {
+      "qr": 1944,
+      "company": 168,
+      "revenue": 402160
+    },
+    {
+      "qr": 1442,
+      "company": 97,
+      "revenue": 402070
+    },
+    {
+      "qr": 338,
+      "company": 57,
+      "revenue": 401270
+    },
+    {
+      "qr": 114,
+      "company": 116,
+      "revenue": 400830
+    },
+    {
+      "qr": 1440,
+      "company": 202,
+      "revenue": 400190
+    },
+    {
+      "qr": 216,
+      "company": 82,
+      "revenue": 399172
+    },
+    {
+      "qr": 1891,
+      "company": 168,
+      "revenue": 398610
+    },
+    {
+      "qr": 265,
+      "company": 32,
+      "revenue": 398260
+    },
+    {
+      "qr": 1648,
+      "company": 134,
+      "revenue": 398220
+    },
+    {
+      "qr": 280,
+      "company": 102,
+      "revenue": 397470
+    },
+    {
+      "qr": 24,
+      "company": 38,
+      "revenue": 396602
+    },
+    {
+      "qr": 1201,
+      "company": 94,
+      "revenue": 396420
+    },
+    {
+      "qr": 150,
+      "company": 38,
+      "revenue": 396340
+    },
+    {
+      "qr": 32,
+      "company": 118,
+      "revenue": 396262
+    },
+    {
+      "qr": 372,
+      "company": 87,
+      "revenue": 396211
+    },
+    {
+      "qr": 297,
+      "company": 40,
+      "revenue": 395910
+    },
+    {
+      "qr": 120,
+      "company": 24,
+      "revenue": 394510
+    },
+    {
+      "qr": 243,
+      "company": 81,
+      "revenue": 394190
+    },
+    {
+      "qr": 1104,
+      "company": 122,
+      "revenue": 392840
+    },
+    {
+      "qr": 1684,
+      "company": 134,
+      "revenue": 390940
+    },
+    {
+      "qr": 95,
+      "company": 216,
+      "revenue": 389340
+    },
+    {
+      "qr": 167,
+      "company": 20,
+      "revenue": 389070
+    },
+    {
+      "qr": 185,
+      "company": 215,
+      "revenue": 388970
+    },
+    {
+      "qr": 1873,
+      "company": 94,
+      "revenue": 388820
+    },
+    {
+      "qr": 21,
+      "company": 31,
+      "revenue": 386900
+    },
+    {
+      "qr": 271,
+      "company": 32,
+      "revenue": 386670
+    },
+    {
+      "qr": 510,
+      "company": 87,
+      "revenue": 384580
+    },
+    {
+      "qr": 215,
+      "company": 70,
+      "revenue": 383640
+    },
+    {
+      "qr": 1650,
+      "company": 134,
+      "revenue": 383560
+    },
+    {
+      "qr": 169,
+      "company": 20,
+      "revenue": 382410
+    },
+    {
+      "qr": 116,
+      "company": 60,
+      "revenue": 382380
+    },
+    {
+      "qr": 1521,
+      "company": 185,
+      "revenue": 382340
+    },
+    {
+      "qr": 170,
+      "company": 20,
+      "revenue": 382320
+    },
+    {
+      "qr": 231,
+      "company": 87,
+      "revenue": 382265
+    },
+    {
+      "qr": 228,
+      "company": 57,
+      "revenue": 381971
+    },
+    {
+      "qr": 1575,
+      "company": 110,
+      "revenue": 381520
+    },
+    {
+      "qr": 1416,
+      "company": 134,
+      "revenue": 380950
+    },
+    {
+      "qr": 71,
+      "company": 215,
+      "revenue": 380872
+    },
+    {
+      "qr": 1385,
+      "company": 202,
+      "revenue": 379640
+    },
+    {
+      "qr": 127,
+      "company": 48,
+      "revenue": 379069
+    },
+    {
+      "qr": 1935,
+      "company": 168,
+      "revenue": 379050
+    },
+    {
+      "qr": 1616,
+      "company": 140,
+      "revenue": 378000
+    },
+    {
+      "qr": 273,
+      "company": 102,
+      "revenue": 377980
+    },
+    {
+      "qr": 1480,
+      "company": 202,
+      "revenue": 377670
+    },
+    {
+      "qr": 1419,
+      "company": 140,
+      "revenue": 377290
+    },
+    {
+      "qr": 1672,
+      "company": 205,
+      "revenue": 375900
+    },
+    {
+      "qr": 77,
+      "company": 60,
+      "revenue": 375633
+    },
+    {
+      "qr": 246,
+      "company": 32,
+      "revenue": 375590
+    },
+    {
+      "qr": 313,
+      "company": 40,
+      "revenue": 375110
+    },
+    {
+      "qr": 360,
+      "company": 45,
+      "revenue": 374250
+    },
+    {
+      "qr": 1160,
+      "company": 183,
+      "revenue": 373840
+    },
+    {
+      "qr": 343,
+      "company": 188,
+      "revenue": 372090
+    },
+    {
+      "qr": 1942,
+      "company": 157,
+      "revenue": 372060
+    },
+    {
+      "qr": 160,
+      "company": 50,
+      "revenue": 371520
+    },
+    {
+      "qr": 1903,
+      "company": 157,
+      "revenue": 371460
+    },
+    {
+      "qr": 321,
+      "company": 34,
+      "revenue": 370690
+    },
+    {
+      "qr": 241,
+      "company": 81,
+      "revenue": 370120
+    },
+    {
+      "qr": 1447,
+      "company": 97,
+      "revenue": 368200
+    },
+    {
+      "qr": 291,
+      "company": 87,
+      "revenue": 366301
+    },
+    {
+      "qr": 1946,
+      "company": 157,
+      "revenue": 365460
+    },
+    {
+      "qr": 202,
+      "company": 17,
+      "revenue": 365380
+    },
+    {
+      "qr": 1980,
+      "company": 94,
+      "revenue": 365370
+    },
+    {
+      "qr": 107,
+      "company": 116,
+      "revenue": 364880
+    },
+    {
+      "qr": 1825,
+      "company": 122,
+      "revenue": 364310
+    },
+    {
+      "qr": 1195,
+      "company": 205,
+      "revenue": 364150
+    },
+    {
+      "qr": 1422,
+      "company": 147,
+      "revenue": 363670
+    },
+    {
+      "qr": 311,
+      "company": 50,
+      "revenue": 362330
+    },
+    {
+      "qr": 340,
+      "company": 102,
+      "revenue": 361840
+    },
+    {
+      "qr": 1630,
+      "company": 134,
+      "revenue": 360950
+    },
+    {
+      "qr": 1843,
+      "company": 147,
+      "revenue": 360800
+    },
+    {
+      "qr": 1560,
+      "company": 136,
+      "revenue": 360620
+    },
+    {
+      "qr": 205,
+      "company": 17,
+      "revenue": 358800
+    },
+    {
+      "qr": 247,
+      "company": 32,
+      "revenue": 358580
+    },
+    {
+      "qr": 309,
+      "company": 102,
+      "revenue": 358190
+    },
+    {
+      "qr": 1819,
+      "company": 147,
+      "revenue": 358160
+    },
+    {
+      "qr": 204,
+      "company": 12,
+      "revenue": 358090
+    },
+    {
+      "qr": 18,
+      "company": 20,
+      "revenue": 357510
+    },
+    {
+      "qr": 99,
+      "company": 216,
+      "revenue": 355540
+    },
+    {
+      "qr": 327,
+      "company": 17,
+      "revenue": 355390
+    },
+    {
+      "qr": 212,
+      "company": 24,
+      "revenue": 355292
+    },
+    {
+      "qr": 198,
+      "company": 87,
+      "revenue": 355221
+    },
+    {
+      "qr": 179,
+      "company": 60,
+      "revenue": 354230
+    },
+    {
+      "qr": 1491,
+      "company": 101,
+      "revenue": 354000
+    },
+    {
+      "qr": 131,
+      "company": 216,
+      "revenue": 352885
+    },
+    {
+      "qr": 5,
+      "company": 8,
+      "revenue": 351583
+    },
+    {
+      "qr": 20,
+      "company": 55,
+      "revenue": 351400
+    },
+    {
+      "qr": 103,
+      "company": 43,
+      "revenue": 350882
+    },
+    {
+      "qr": 29,
+      "company": 20,
+      "revenue": 350860
+    },
+    {
+      "qr": 209,
+      "company": 17,
+      "revenue": 349800
+    },
+    {
+      "qr": 1816,
+      "company": 122,
+      "revenue": 349740
+    },
+    {
+      "qr": 1902,
+      "company": 157,
+      "revenue": 349480
+    },
+    {
+      "qr": 1848,
+      "company": 149,
+      "revenue": 348890
+    },
+    {
+      "qr": 1732,
+      "company": 94,
+      "revenue": 348401
+    },
+    {
+      "qr": 1475,
+      "company": 202,
+      "revenue": 348040
+    },
+    {
+      "qr": 300,
+      "company": 216,
+      "revenue": 347971
+    },
+    {
+      "qr": 1080,
+      "company": 111,
+      "revenue": 347860
+    },
+    {
+      "qr": 1888,
+      "company": 157,
+      "revenue": 346840
+    },
+    {
+      "qr": 1488,
+      "company": 97,
+      "revenue": 346540
+    },
+    {
+      "qr": 25,
+      "company": 31,
+      "revenue": 346370
+    },
+    {
+      "qr": 281,
+      "company": 87,
+      "revenue": 344480
+    },
+    {
+      "qr": 277,
+      "company": 70,
+      "revenue": 344210
+    },
+    {
+      "qr": 1156,
+      "company": 183,
+      "revenue": 343970
+    },
+    {
+      "qr": 238,
+      "company": 81,
+      "revenue": 343810
+    },
+    {
+      "qr": 302,
+      "company": 40,
+      "revenue": 343740
+    },
+    {
+      "qr": 1923,
+      "company": 229,
+      "revenue": 342580
+    },
+    {
+      "qr": 110,
+      "company": 8,
+      "revenue": 341940
+    },
+    {
+      "qr": 1934,
+      "company": 229,
+      "revenue": 341760
+    },
+    {
+      "qr": 194,
+      "company": 89,
+      "revenue": 341659
+    },
+    {
+      "qr": 1410,
+      "company": 149,
+      "revenue": 339180
+    },
+    {
+      "qr": 1381,
+      "company": 241,
+      "revenue": 339150
+    },
+    {
+      "qr": 1511,
+      "company": 97,
+      "revenue": 338600
+    },
+    {
+      "qr": 245,
+      "company": 32,
+      "revenue": 336900
+    },
+    {
+      "qr": 181,
+      "company": 24,
+      "revenue": 335260
+    },
+    {
+      "qr": 1017,
+      "company": 109,
+      "revenue": 335080
+    },
+    {
+      "qr": 314,
+      "company": 102,
+      "revenue": 334740
+    },
+    {
+      "qr": 197,
+      "company": 104,
+      "revenue": 333330
+    },
+    {
+      "qr": 1024,
+      "company": 101,
+      "revenue": 332900
+    },
+    {
+      "qr": 66,
+      "company": 84,
+      "revenue": 332080
+    },
+    {
+      "qr": 1558,
+      "company": 97,
+      "revenue": 331130
+    },
+    {
+      "qr": 1464,
+      "company": 127,
+      "revenue": 330760
+    },
+    {
+      "qr": 34,
+      "company": 38,
+      "revenue": 329160
+    },
+    {
+      "qr": 1566,
+      "company": 110,
+      "revenue": 327660
+    },
+    {
+      "qr": 1807,
+      "company": 229,
+      "revenue": 327440
+    },
+    {
+      "qr": 1947,
+      "company": 229,
+      "revenue": 325860
+    },
+    {
+      "qr": 258,
+      "company": 70,
+      "revenue": 325050
+    },
+    {
+      "qr": 79,
+      "company": 89,
+      "revenue": 324651
+    },
+    {
+      "qr": 1009,
+      "company": 140,
+      "revenue": 324490
+    },
+    {
+      "qr": 1659,
+      "company": 136,
+      "revenue": 324120
+    },
+    {
+      "qr": 239,
+      "company": 36,
+      "revenue": 323702
+    },
+    {
+      "qr": 1904,
+      "company": 165,
+      "revenue": 323360
+    },
+    {
+      "qr": 388,
+      "company": 215,
+      "revenue": 323100
+    },
+    {
+      "qr": 1804,
+      "company": 183,
+      "revenue": 322640
+    },
+    {
+      "qr": 328,
+      "company": 17,
+      "revenue": 321920
+    },
+    {
+      "qr": 1950,
+      "company": 169,
+      "revenue": 321630
+    },
+    {
+      "qr": 1938,
+      "company": 162,
+      "revenue": 321190
+    },
+    {
+      "qr": 134,
+      "company": 179,
+      "revenue": 320414
+    },
+    {
+      "qr": 308,
+      "company": 46,
+      "revenue": 319650
+    },
+    {
+      "qr": 1546,
+      "company": 185,
+      "revenue": 319460
+    },
+    {
+      "qr": 51,
+      "company": 31,
+      "revenue": 319030
+    },
+    {
+      "qr": 1520,
+      "company": 127,
+      "revenue": 318480
+    },
+    {
+      "qr": 299,
+      "company": 81,
+      "revenue": 317850
+    },
+    {
+      "qr": 1951,
+      "company": 162,
+      "revenue": 316580
+    },
+    {
+      "qr": 1994,
+      "company": 189,
+      "revenue": 316460
+    },
+    {
+      "qr": 290,
+      "company": 70,
+      "revenue": 315711
+    },
+    {
+      "qr": 256,
+      "company": 50,
+      "revenue": 314790
+    },
+    {
+      "qr": 283,
+      "company": 102,
+      "revenue": 313650
+    },
+    {
+      "qr": 251,
+      "company": 40,
+      "revenue": 313510
+    },
+    {
+      "qr": 1997,
+      "company": 189,
+      "revenue": 313210
+    },
+    {
+      "qr": 335,
+      "company": 78,
+      "revenue": 312393
+    },
+    {
+      "qr": 1062,
+      "company": 111,
+      "revenue": 311980
+    },
+    {
+      "qr": 84,
+      "company": 216,
+      "revenue": 309200
+    },
+    {
+      "qr": 382,
+      "company": 93,
+      "revenue": 309046
+    },
+    {
+      "qr": 1518,
+      "company": 185,
+      "revenue": 308550
+    },
+    {
+      "qr": 220,
+      "company": 24,
+      "revenue": 308350
+    },
+    {
+      "qr": 1802,
+      "company": 183,
+      "revenue": 308290
+    },
+    {
+      "qr": 293,
+      "company": 40,
+      "revenue": 307790
+    },
+    {
+      "qr": 92,
+      "company": 8,
+      "revenue": 306630
+    },
+    {
+      "qr": 219,
+      "company": 63,
+      "revenue": 305110
+    },
+    {
+      "qr": 515,
+      "company": 87,
+      "revenue": 304974
+    },
+    {
+      "qr": 255,
+      "company": 116,
+      "revenue": 304910
+    },
+    {
+      "qr": 330,
+      "company": 34,
+      "revenue": 304410
+    },
+    {
+      "qr": 217,
+      "company": 212,
+      "revenue": 304281
+    },
+    {
+      "qr": 1067,
+      "company": 111,
+      "revenue": 303160
+    },
+    {
+      "qr": 174,
+      "company": 20,
+      "revenue": 301910
+    },
+    {
+      "qr": 11,
+      "company": 31,
+      "revenue": 301750
+    },
+    {
+      "qr": 1441,
+      "company": 185,
+      "revenue": 301590
+    },
+    {
+      "qr": 22,
+      "company": 80,
+      "revenue": 300611
+    },
+    {
+      "qr": 1984,
+      "company": 183,
+      "revenue": 300470
+    },
+    {
+      "qr": 1152,
+      "company": 111,
+      "revenue": 300060
+    },
+    {
+      "qr": 1428,
+      "company": 127,
+      "revenue": 299120
+    },
+    {
+      "qr": 266,
+      "company": 70,
+      "revenue": 298970
+    },
+    {
+      "qr": 236,
+      "company": 57,
+      "revenue": 298561
+    },
+    {
+      "qr": 1467,
+      "company": 185,
+      "revenue": 297570
+    },
+    {
+      "qr": 1846,
+      "company": 147,
+      "revenue": 296900
+    },
+    {
+      "qr": 377,
+      "company": 104,
+      "revenue": 296210
+    },
+    {
+      "qr": 1573,
+      "company": 140,
+      "revenue": 295530
+    },
+    {
+      "qr": 312,
+      "company": 57,
+      "revenue": 295510
+    },
+    {
+      "qr": 118,
+      "company": 60,
+      "revenue": 295370
+    },
+    {
+      "qr": 253,
+      "company": 57,
+      "revenue": 294760
+    },
+    {
+      "qr": 1110,
+      "company": 111,
+      "revenue": 293830
+    },
+    {
+      "qr": 1012,
+      "company": 140,
+      "revenue": 293100
+    },
+    {
+      "qr": 1052,
+      "company": 140,
+      "revenue": 292960
+    },
+    {
+      "qr": 1789,
+      "company": 179,
+      "revenue": 291590
+    },
+    {
+      "qr": 1581,
+      "company": 112,
+      "revenue": 291280
+    },
+    {
+      "qr": 288,
+      "company": 36,
+      "revenue": 290384
+    },
+    {
+      "qr": 1556,
+      "company": 97,
+      "revenue": 289850
+    },
+    {
+      "qr": 1404,
+      "company": 111,
+      "revenue": 289770
+    },
+    {
+      "qr": 1657,
+      "company": 202,
+      "revenue": 289570
+    },
+    {
+      "qr": 57,
+      "company": 199,
+      "revenue": 289181
+    },
+    {
+      "qr": 1190,
+      "company": 175,
+      "revenue": 289130
+    },
+    {
+      "qr": 1603,
+      "company": 131,
+      "revenue": 288650
+    },
+    {
+      "qr": 370,
+      "company": 215,
+      "revenue": 287730
+    },
+    {
+      "qr": 1808,
+      "company": 147,
+      "revenue": 287730
+    },
+    {
+      "qr": 1979,
+      "company": 183,
+      "revenue": 287230
+    },
+    {
+      "qr": 269,
+      "company": 70,
+      "revenue": 287180
+    },
+    {
+      "qr": 1734,
+      "company": 155,
+      "revenue": 286500
+    },
+    {
+      "qr": 289,
+      "company": 102,
+      "revenue": 286340
+    },
+    {
+      "qr": 1988,
+      "company": 189,
+      "revenue": 285960
+    },
+    {
+      "qr": 393,
+      "company": 93,
+      "revenue": 285568
+    },
+    {
+      "qr": 1549,
+      "company": 97,
+      "revenue": 285440
+    },
+    {
+      "qr": 218,
+      "company": 60,
+      "revenue": 284910
+    },
+    {
+      "qr": 1519,
+      "company": 112,
+      "revenue": 284700
+    },
+    {
+      "qr": 1477,
+      "company": 112,
+      "revenue": 284510
+    },
+    {
+      "qr": 1358,
+      "company": 241,
+      "revenue": 284270
+    },
+    {
+      "qr": 282,
+      "company": 36,
+      "revenue": 283644
+    },
+    {
+      "qr": 1810,
+      "company": 147,
+      "revenue": 282340
+    },
+    {
+      "qr": 1996,
+      "company": 187,
+      "revenue": 282040
+    },
+    {
+      "qr": 1532,
+      "company": 131,
+      "revenue": 281670
+    },
+    {
+      "qr": 1513,
+      "company": 127,
+      "revenue": 281670
+    },
+    {
+      "qr": 1042,
+      "company": 140,
+      "revenue": 281610
+    },
+    {
+      "qr": 337,
+      "company": 46,
+      "revenue": 281210
+    },
+    {
+      "qr": 1880,
+      "company": 165,
+      "revenue": 280340
+    },
+    {
+      "qr": 1512,
+      "company": 112,
+      "revenue": 279830
+    },
+    {
+      "qr": 172,
+      "company": 22,
+      "revenue": 279626
+    },
+    {
+      "qr": 1856,
+      "company": 159,
+      "revenue": 279560
+    },
+    {
+      "qr": 316,
+      "company": 46,
+      "revenue": 278930
+    },
+    {
+      "qr": 1809,
+      "company": 122,
+      "revenue": 278600
+    },
+    {
+      "qr": 1952,
+      "company": 200,
+      "revenue": 278260
+    },
+    {
+      "qr": 1894,
+      "company": 165,
+      "revenue": 277890
+    },
+    {
+      "qr": 1056,
+      "company": 128,
+      "revenue": 277550
+    },
+    {
+      "qr": 175,
+      "company": 22,
+      "revenue": 277450
+    },
+    {
+      "qr": 384,
+      "company": 93,
+      "revenue": 277062
+    },
+    {
+      "qr": 1955,
+      "company": 169,
+      "revenue": 277000
+    },
+    {
+      "qr": 226,
+      "company": 24,
+      "revenue": 276540
+    },
+    {
+      "qr": 1991,
+      "company": 189,
+      "revenue": 276350
+    },
+    {
+      "qr": 155,
+      "company": 8,
+      "revenue": 276200
+    },
+    {
+      "qr": 1772,
+      "company": 147,
+      "revenue": 276180
+    },
+    {
+      "qr": 361,
+      "company": 216,
+      "revenue": 274125
+    },
+    {
+      "qr": 1966,
+      "company": 200,
+      "revenue": 274080
+    },
+    {
+      "qr": 1651,
+      "company": 240,
+      "revenue": 273660
+    },
+    {
+      "qr": 1350,
+      "company": 241,
+      "revenue": 273630
+    },
+    {
+      "qr": 1445,
+      "company": 131,
+      "revenue": 273490
+    },
+    {
+      "qr": 1870,
+      "company": 157,
+      "revenue": 273180
+    },
+    {
+      "qr": 1992,
+      "company": 189,
+      "revenue": 272410
+    },
+    {
+      "qr": 1462,
+      "company": 128,
+      "revenue": 272300
+    },
+    {
+      "qr": 268,
+      "company": 70,
+      "revenue": 272190
+    },
+    {
+      "qr": 1177,
+      "company": 175,
+      "revenue": 271950
+    },
+    {
+      "qr": 1458,
+      "company": 112,
+      "revenue": 271530
+    },
+    {
+      "qr": 1479,
+      "company": 112,
+      "revenue": 270780
+    },
+    {
+      "qr": 1973,
+      "company": 187,
+      "revenue": 270490
+    },
+    {
+      "qr": 208,
+      "company": 12,
+      "revenue": 270370
+    },
+    {
+      "qr": 144,
+      "company": 51,
+      "revenue": 270150
+    },
+    {
+      "qr": 42,
+      "company": 216,
+      "revenue": 269817
+    },
+    {
+      "qr": 85,
+      "company": 73,
+      "revenue": 268515
+    },
+    {
+      "qr": 378,
+      "company": 215,
+      "revenue": 268250
+    },
+    {
+      "qr": 1038,
+      "company": 110,
+      "revenue": 268020
+    },
+    {
+      "qr": 1964,
+      "company": 200,
+      "revenue": 268010
+    },
+    {
+      "qr": 305,
+      "company": 81,
+      "revenue": 267880
+    },
+    {
+      "qr": 1459,
+      "company": 136,
+      "revenue": 267200
+    },
+    {
+      "qr": 1658,
+      "company": 130,
+      "revenue": 266890
+    },
+    {
+      "qr": 171,
+      "company": 8,
+      "revenue": 266650
+    },
+    {
+      "qr": 1414,
+      "company": 136,
+      "revenue": 266580
+    },
+    {
+      "qr": 1985,
+      "company": 175,
+      "revenue": 266480
+    },
+    {
+      "qr": 349,
+      "company": 47,
+      "revenue": 266340
+    },
+    {
+      "qr": 1882,
+      "company": 241,
+      "revenue": 266130
+    },
+    {
+      "qr": 1119,
+      "company": 241,
+      "revenue": 265990
+    },
+    {
+      "qr": 17,
+      "company": 38,
+      "revenue": 265481
+    },
+    {
+      "qr": 1820,
+      "company": 122,
+      "revenue": 265200
+    },
+    {
+      "qr": 1965,
+      "company": 179,
+      "revenue": 265160
+    },
+    {
+      "qr": 1930,
+      "company": 170,
+      "revenue": 264850
+    },
+    {
+      "qr": 303,
+      "company": 216,
+      "revenue": 264690
+    },
+    {
+      "qr": 1064,
+      "company": 86,
+      "revenue": 264340
+    },
+    {
+      "qr": 365,
+      "company": 116,
+      "revenue": 264050
+    },
+    {
+      "qr": 379,
+      "company": 104,
+      "revenue": 263980
+    },
+    {
+      "qr": 214,
+      "company": 216,
+      "revenue": 263850
+    },
+    {
+      "qr": 70,
+      "company": 167,
+      "revenue": 263371
+    },
+    {
+      "qr": 279,
+      "company": 79,
+      "revenue": 262921
+    },
+    {
+      "qr": 1989,
+      "company": 189,
+      "revenue": 262790
+    },
+    {
+      "qr": 1069,
+      "company": 141,
+      "revenue": 262370
+    },
+    {
+      "qr": 1451,
+      "company": 131,
+      "revenue": 261720
+    },
+    {
+      "qr": 133,
+      "company": 8,
+      "revenue": 261320
+    },
+    {
+      "qr": 1796,
+      "company": 17,
+      "revenue": 261220
+    },
+    {
+      "qr": 137,
+      "company": 62,
+      "revenue": 261000
+    },
+    {
+      "qr": 274,
+      "company": 102,
+      "revenue": 260910
+    },
+    {
+      "qr": 1028,
+      "company": 140,
+      "revenue": 260760
+    },
+    {
+      "qr": 1811,
+      "company": 159,
+      "revenue": 260480
+    },
+    {
+      "qr": 159,
+      "company": 22,
+      "revenue": 260119
+    },
+    {
+      "qr": 270,
+      "company": 43,
+      "revenue": 259620
+    },
+    {
+      "qr": 1390,
+      "company": 202,
+      "revenue": 259020
+    },
+    {
+      "qr": 1812,
+      "company": 122,
+      "revenue": 258950
+    },
+    {
+      "qr": 358,
+      "company": 73,
+      "revenue": 258500
+    },
+    {
+      "qr": 1301,
+      "company": 206,
+      "revenue": 258470
+    },
+    {
+      "qr": 1597,
+      "company": 131,
+      "revenue": 257800
+    },
+    {
+      "qr": 1792,
+      "company": 182,
+      "revenue": 256860
+    },
+    {
+      "qr": 368,
+      "company": 57,
+      "revenue": 256416
+    },
+    {
+      "qr": 1163,
+      "company": 184,
+      "revenue": 254620
+    },
+    {
+      "qr": 252,
+      "company": 57,
+      "revenue": 254610
+    },
+    {
+      "qr": 1189,
+      "company": 175,
+      "revenue": 254460
+    },
+    {
+      "qr": 371,
+      "company": 215,
+      "revenue": 254270
+    },
+    {
+      "qr": 275,
+      "company": 116,
+      "revenue": 254081
+    },
+    {
+      "qr": 1334,
+      "company": 206,
+      "revenue": 253970
+    },
+    {
+      "qr": 1614,
+      "company": 130,
+      "revenue": 253700
+    },
+    {
+      "qr": 1661,
+      "company": 204,
+      "revenue": 253550
+    },
+    {
+      "qr": 1158,
+      "company": 184,
+      "revenue": 252310
+    },
+    {
+      "qr": 339,
+      "company": 70,
+      "revenue": 251960
+    },
+    {
+      "qr": 1777,
+      "company": 156,
+      "revenue": 251480
+    },
+    {
+      "qr": 26,
+      "company": 31,
+      "revenue": 251280
+    },
+    {
+      "qr": 369,
+      "company": 137,
+      "revenue": 251260
+    },
+    {
+      "qr": 1956,
+      "company": 170,
+      "revenue": 251060
+    },
+    {
+      "qr": 1319,
+      "company": 202,
+      "revenue": 250320
+    },
+    {
+      "qr": 1941,
+      "company": 168,
+      "revenue": 250290
+    },
+    {
+      "qr": 1967,
+      "company": 200,
+      "revenue": 250240
+    },
+    {
+      "qr": 1487,
+      "company": 130,
+      "revenue": 250180
+    },
+    {
+      "qr": 113,
+      "company": 89,
+      "revenue": 250010
+    },
+    {
+      "qr": 374,
+      "company": 211,
+      "revenue": 249720
+    },
+    {
+      "qr": 1900,
+      "company": 165,
+      "revenue": 249580
+    },
+    {
+      "qr": 189,
+      "company": 104,
+      "revenue": 249390
+    },
+    {
+      "qr": 1872,
+      "company": 169,
+      "revenue": 249260
+    },
+    {
+      "qr": 1493,
+      "company": 101,
+      "revenue": 249200
+    },
+    {
+      "qr": 240,
+      "company": 36,
+      "revenue": 247609
+    },
+    {
+      "qr": 1993,
+      "company": 187,
+      "revenue": 247250
+    },
+    {
+      "qr": 135,
+      "company": 22,
+      "revenue": 246950
+    },
+    {
+      "qr": 380,
+      "company": 93,
+      "revenue": 246746
+    },
+    {
+      "qr": 1718,
+      "company": 141,
+      "revenue": 246680
+    },
+    {
+      "qr": 1927,
+      "company": 170,
+      "revenue": 246670
+    },
+    {
+      "qr": 326,
+      "company": 162,
+      "revenue": 245870
+    },
+    {
+      "qr": 1494,
+      "company": 101,
+      "revenue": 245710
+    },
+    {
+      "qr": 48,
+      "company": 31,
+      "revenue": 245581
+    },
+    {
+      "qr": 112,
+      "company": 89,
+      "revenue": 245580
+    },
+    {
+      "qr": 1140,
+      "company": 141,
+      "revenue": 245570
+    },
+    {
+      "qr": 1353,
+      "company": 203,
+      "revenue": 244970
+    },
+    {
+      "qr": 1337,
+      "company": 204,
+      "revenue": 244840
+    },
+    {
+      "qr": 1629,
+      "company": 131,
+      "revenue": 244300
+    },
+    {
+      "qr": 1805,
+      "company": 34,
+      "revenue": 243980
+    },
+    {
+      "qr": 1590,
+      "company": 101,
+      "revenue": 243470
+    },
+    {
+      "qr": 1806,
+      "company": 122,
+      "revenue": 243270
+    },
+    {
+      "qr": 1164,
+      "company": 182,
+      "revenue": 243010
+    },
+    {
+      "qr": 23,
+      "company": 31,
+      "revenue": 242650
+    },
+    {
+      "qr": 1787,
+      "company": 184,
+      "revenue": 242330
+    },
+    {
+      "qr": 13,
+      "company": 89,
+      "revenue": 242294
+    },
+    {
+      "qr": 196,
+      "company": 100,
+      "revenue": 241340
+    },
+    {
+      "qr": 292,
+      "company": 43,
+      "revenue": 241250
+    },
+    {
+      "qr": 1961,
+      "company": 182,
+      "revenue": 240610
+    },
+    {
+      "qr": 1010,
+      "company": 128,
+      "revenue": 240010
+    },
+    {
+      "qr": 1554,
+      "company": 172,
+      "revenue": 239420
+    },
+    {
+      "qr": 1931,
+      "company": 170,
+      "revenue": 239380
+    },
+    {
+      "qr": 1495,
+      "company": 185,
+      "revenue": 239290
+    },
+    {
+      "qr": 1562,
+      "company": 112,
+      "revenue": 239070
+    },
+    {
+      "qr": 1760,
+      "company": 155,
+      "revenue": 237800
+    },
+    {
+      "qr": 1515,
+      "company": 130,
+      "revenue": 237320
+    },
+    {
+      "qr": 1778,
+      "company": 141,
+      "revenue": 237320
+    },
+    {
+      "qr": 78,
+      "company": 78,
+      "revenue": 237177
+    },
+    {
+      "qr": 1470,
+      "company": 185,
+      "revenue": 237160
+    },
+    {
+      "qr": 1959,
+      "company": 170,
+      "revenue": 236480
+    },
+    {
+      "qr": 1793,
+      "company": 182,
+      "revenue": 236380
+    },
+    {
+      "qr": 1528,
+      "company": 185,
+      "revenue": 236290
+    },
+    {
+      "qr": 1919,
+      "company": 170,
+      "revenue": 236200
+    },
+    {
+      "qr": 1539,
+      "company": 130,
+      "revenue": 235550
+    },
+    {
+      "qr": 1871,
+      "company": 166,
+      "revenue": 235390
+    },
+    {
+      "qr": 352,
+      "company": 70,
+      "revenue": 234020
+    },
+    {
+      "qr": 397,
+      "company": 100,
+      "revenue": 234000
+    },
+    {
+      "qr": 1797,
+      "company": 221,
+      "revenue": 233810
+    },
+    {
+      "qr": 1976,
+      "company": 159,
+      "revenue": 233510
+    },
+    {
+      "qr": 165,
+      "company": 51,
+      "revenue": 233500
+    },
+    {
+      "qr": 195,
+      "company": 98,
+      "revenue": 233230
+    },
+    {
+      "qr": 207,
+      "company": 199,
+      "revenue": 232830
+    },
+    {
+      "qr": 395,
+      "company": 98,
+      "revenue": 232580
+    },
+    {
+      "qr": 1646,
+      "company": 172,
+      "revenue": 232410
+    },
+    {
+      "qr": 1786,
+      "company": 176,
+      "revenue": 232110
+    },
+    {
+      "qr": 1534,
+      "company": 130,
+      "revenue": 230890
+    },
+    {
+      "qr": 1148,
+      "company": 86,
+      "revenue": 230870
+    },
+    {
+      "qr": 317,
+      "company": 104,
+      "revenue": 230530
+    },
+    {
+      "qr": 142,
+      "company": 22,
+      "revenue": 230023
+    },
+    {
+      "qr": 1945,
+      "company": 200,
+      "revenue": 230010
+    },
+    {
+      "qr": 1625,
+      "company": 172,
+      "revenue": 229950
+    },
+    {
+      "qr": 1165,
+      "company": 184,
+      "revenue": 229580
+    },
+    {
+      "qr": 203,
+      "company": 162,
+      "revenue": 229170
+    },
+    {
+      "qr": 1604,
+      "company": 172,
+      "revenue": 229010
+    },
+    {
+      "qr": 191,
+      "company": 100,
+      "revenue": 228960
+    },
+    {
+      "qr": 1982,
+      "company": 175,
+      "revenue": 228890
+    },
+    {
+      "qr": 1508,
+      "company": 127,
+      "revenue": 228850
+    },
+    {
+      "qr": 1022,
+      "company": 106,
+      "revenue": 228500
+    },
+    {
+      "qr": 1455,
+      "company": 83,
+      "revenue": 228480
+    },
+    {
+      "qr": 1191,
+      "company": 159,
+      "revenue": 227970
+    },
+    {
+      "qr": 392,
+      "company": 104,
+      "revenue": 226901
+    },
+    {
+      "qr": 157,
+      "company": 73,
+      "revenue": 226754
+    },
+    {
+      "qr": 58,
+      "company": 12,
+      "revenue": 226751
+    },
+    {
+      "qr": 1545,
+      "company": 130,
+      "revenue": 226310
+    },
+    {
+      "qr": 344,
+      "company": 50,
+      "revenue": 224790
+    },
+    {
+      "qr": 1770,
+      "company": 115,
+      "revenue": 223490
+    },
+    {
+      "qr": 512,
+      "company": 93,
+      "revenue": 223032
+    },
+    {
+      "qr": 1305,
+      "company": 204,
+      "revenue": 221890
+    },
+    {
+      "qr": 350,
+      "company": 45,
+      "revenue": 221620
+    },
+    {
+      "qr": 1505,
+      "company": 97,
+      "revenue": 221430
+    },
+    {
+      "qr": 315,
+      "company": 100,
+      "revenue": 221370
+    },
+    {
+      "qr": 502,
+      "company": 137,
+      "revenue": 221220
+    },
+    {
+      "qr": 1355,
+      "company": 202,
+      "revenue": 220390
+    },
+    {
+      "qr": 1587,
+      "company": 117,
+      "revenue": 219801
+    },
+    {
+      "qr": 1188,
+      "company": 202,
+      "revenue": 219380
+    },
+    {
+      "qr": 346,
+      "company": 52,
+      "revenue": 219160
+    },
+    {
+      "qr": 1185,
+      "company": 207,
+      "revenue": 218770
+    },
+    {
+      "qr": 168,
+      "company": 55,
+      "revenue": 218601
+    },
+    {
+      "qr": 1626,
+      "company": 172,
+      "revenue": 218030
+    },
+    {
+      "qr": 1019,
+      "company": 106,
+      "revenue": 217490
+    },
+    {
+      "qr": 260,
+      "company": 216,
+      "revenue": 217055
+    },
+    {
+      "qr": 376,
+      "company": 104,
+      "revenue": 216970
+    },
+    {
+      "qr": 1901,
+      "company": 159,
+      "revenue": 216380
+    },
+    {
+      "qr": 1971,
+      "company": 179,
+      "revenue": 216320
+    },
+    {
+      "qr": 1877,
+      "company": 165,
+      "revenue": 216160
+    },
+    {
+      "qr": 325,
+      "company": 162,
+      "revenue": 215960
+    },
+    {
+      "qr": 1169,
+      "company": 159,
+      "revenue": 215790
+    },
+    {
+      "qr": 158,
+      "company": 60,
+      "revenue": 215500
+    },
+    {
+      "qr": 1921,
+      "company": 169,
+      "revenue": 215440
+    },
+    {
+      "qr": 244,
+      "company": 50,
+      "revenue": 215090
+    },
+    {
+      "qr": 1197,
+      "company": 207,
+      "revenue": 215050
+    },
+    {
+      "qr": 1617,
+      "company": 172,
+      "revenue": 215020
+    },
+    {
+      "qr": 254,
+      "company": 63,
+      "revenue": 214641
+    },
+    {
+      "qr": 1179,
+      "company": 202,
+      "revenue": 214600
+    },
+    {
+      "qr": 506,
+      "company": 137,
+      "revenue": 214460
+    },
+    {
+      "qr": 248,
+      "company": 216,
+      "revenue": 214030
+    },
+    {
+      "qr": 1501,
+      "company": 128,
+      "revenue": 213990
+    },
+    {
+      "qr": 391,
+      "company": 104,
+      "revenue": 213970
+    },
+    {
+      "qr": 1765,
+      "company": 156,
+      "revenue": 213890
+    },
+    {
+      "qr": 1763,
+      "company": 180,
+      "revenue": 213800
+    },
+    {
+      "qr": 1200,
+      "company": 225,
+      "revenue": 213720
+    },
+    {
+      "qr": 517,
+      "company": 179,
+      "revenue": 213460
+    },
+    {
+      "qr": 1184,
+      "company": 202,
+      "revenue": 213220
+    },
+    {
+      "qr": 173,
+      "company": 22,
+      "revenue": 212950
+    },
+    {
+      "qr": 1887,
+      "company": 165,
+      "revenue": 212800
+    },
+    {
+      "qr": 93,
+      "company": 212,
+      "revenue": 212571
+    },
+    {
+      "qr": 1461,
+      "company": 101,
+      "revenue": 211910
+    },
+    {
+      "qr": 1535,
+      "company": 152,
+      "revenue": 211900
+    },
+    {
+      "qr": 1050,
+      "company": 153,
+      "revenue": 211893
+    },
+    {
+      "qr": 1637,
+      "company": 147,
+      "revenue": 211750
+    },
+    {
+      "qr": 190,
+      "company": 100,
+      "revenue": 211750
+    },
+    {
+      "qr": 278,
+      "company": 244,
+      "revenue": 211440
+    },
+    {
+      "qr": 1325,
+      "company": 207,
+      "revenue": 211430
+    },
+    {
+      "qr": 1092,
+      "company": 147,
+      "revenue": 211340
+    },
+    {
+      "qr": 1589,
+      "company": 117,
+      "revenue": 211290
+    },
+    {
+      "qr": 1937,
+      "company": 170,
+      "revenue": 211270
+    },
+    {
+      "qr": 1054,
+      "company": 153,
+      "revenue": 211163
+    },
+    {
+      "qr": 201,
+      "company": 162,
+      "revenue": 210410
+    },
+    {
+      "qr": 1978,
+      "company": 187,
+      "revenue": 210200
+    },
+    {
+      "qr": 1790,
+      "company": 182,
+      "revenue": 209790
+    },
+    {
+      "qr": 1721,
+      "company": 135,
+      "revenue": 209270
+    },
+    {
+      "qr": 44,
+      "company": 89,
+      "revenue": 207762
+    },
+    {
+      "qr": 501,
+      "company": 137,
+      "revenue": 207510
+    },
+    {
+      "qr": 323,
+      "company": 162,
+      "revenue": 207040
+    },
+    {
+      "qr": 1960,
+      "company": 206,
+      "revenue": 206880
+    },
+    {
+      "qr": 1178,
+      "company": 159,
+      "revenue": 206820
+    },
+    {
+      "qr": 1043,
+      "company": 110,
+      "revenue": 206590
+    },
+    {
+      "qr": 1340,
+      "company": 207,
+      "revenue": 205640
+    },
+    {
+      "qr": 319,
+      "company": 93,
+      "revenue": 205590
+    },
+    {
+      "qr": 193,
+      "company": 93,
+      "revenue": 205110
+    },
+    {
+      "qr": 1932,
+      "company": 179,
+      "revenue": 204890
+    },
+    {
+      "qr": 200,
+      "company": 93,
+      "revenue": 204670
+    },
+    {
+      "qr": 1671,
+      "company": 241,
+      "revenue": 204590
+    },
+    {
+      "qr": 1523,
+      "company": 127,
+      "revenue": 204590
+    },
+    {
+      "qr": 1892,
+      "company": 159,
+      "revenue": 204470
+    },
+    {
+      "qr": 331,
+      "company": 73,
+      "revenue": 204390
+    },
+    {
+      "qr": 1858,
+      "company": 155,
+      "revenue": 204360
+    },
+    {
+      "qr": 1920,
+      "company": 200,
+      "revenue": 204100
+    },
+    {
+      "qr": 1593,
+      "company": 225,
+      "revenue": 204050
+    },
+    {
+      "qr": 1517,
+      "company": 126,
+      "revenue": 203560
+    },
+    {
+      "qr": 1910,
+      "company": 147,
+      "revenue": 203450
+    },
+    {
+      "qr": 1853,
+      "company": 206,
+      "revenue": 203160
+    },
+    {
+      "qr": 1762,
+      "company": 155,
+      "revenue": 203090
+    },
+    {
+      "qr": 1867,
+      "company": 155,
+      "revenue": 202820
+    },
+    {
+      "qr": 1610,
+      "company": 224,
+      "revenue": 202430
+    },
+    {
+      "qr": 1145,
+      "company": 125,
+      "revenue": 202030
+    },
+    {
+      "qr": 1468,
+      "company": 112,
+      "revenue": 201920
+    },
+    {
+      "qr": 1463,
+      "company": 117,
+      "revenue": 201461
+    },
+    {
+      "qr": 1926,
+      "company": 204,
+      "revenue": 201320
+    },
+    {
+      "qr": 1621,
+      "company": 172,
+      "revenue": 200990
+    },
+    {
+      "qr": 345,
+      "company": 43,
+      "revenue": 200710
+    },
+    {
+      "qr": 1908,
+      "company": 184,
+      "revenue": 200310
+    },
+    {
+      "qr": 115,
+      "company": 137,
+      "revenue": 200142
+    },
+    {
+      "qr": 399,
+      "company": 137,
+      "revenue": 200030
+    },
+    {
+      "qr": 1144,
+      "company": 147,
+      "revenue": 199980
+    },
+    {
+      "qr": 224,
+      "company": 100,
+      "revenue": 199620
+    },
+    {
+      "qr": 1450,
+      "company": 97,
+      "revenue": 199200
+    },
+    {
+      "qr": 322,
+      "company": 162,
+      "revenue": 198520
+    },
+    {
+      "qr": 1668,
+      "company": 234,
+      "revenue": 198180
+    },
+    {
+      "qr": 1058,
+      "company": 86,
+      "revenue": 198130
+    },
+    {
+      "qr": 1615,
+      "company": 130,
+      "revenue": 197770
+    },
+    {
+      "qr": 1174,
+      "company": 226,
+      "revenue": 197660
+    },
+    {
+      "qr": 1645,
+      "company": 83,
+      "revenue": 197610
+    },
+    {
+      "qr": 1647,
+      "company": 172,
+      "revenue": 197450
+    },
+    {
+      "qr": 1636,
+      "company": 207,
+      "revenue": 196880
+    },
+    {
+      "qr": 61,
+      "company": 73,
+      "revenue": 196092
+    },
+    {
+      "qr": 1968,
+      "company": 34,
+      "revenue": 195130
+    },
+    {
+      "qr": 1917,
+      "company": 221,
+      "revenue": 194980
+    },
+    {
+      "qr": 1021,
+      "company": 101,
+      "revenue": 194690
+    },
+    {
+      "qr": 383,
+      "company": 104,
+      "revenue": 194400
+    },
+    {
+      "qr": 1840,
+      "company": 135,
+      "revenue": 194380
+    },
+    {
+      "qr": 1471,
+      "company": 112,
+      "revenue": 194370
+    },
+    {
+      "qr": 394,
+      "company": 100,
+      "revenue": 193970
+    },
+    {
+      "qr": 1918,
+      "company": 176,
+      "revenue": 193810
+    },
+    {
+      "qr": 353,
+      "company": 81,
+      "revenue": 193670
+    },
+    {
+      "qr": 1924,
+      "company": 206,
+      "revenue": 193590
+    },
+    {
+      "qr": 1329,
+      "company": 202,
+      "revenue": 193220
+    },
+    {
+      "qr": 1708,
+      "company": 115,
+      "revenue": 193210
+    },
+    {
+      "qr": 1631,
+      "company": 202,
+      "revenue": 192690
+    },
+    {
+      "qr": 1611,
+      "company": 172,
+      "revenue": 192510
+    },
+    {
+      "qr": 1126,
+      "company": 144,
+      "revenue": 192460
+    },
+    {
+      "qr": 1565,
+      "company": 112,
+      "revenue": 191820
+    },
+    {
+      "qr": 151,
+      "company": 22,
+      "revenue": 191220
+    },
+    {
+      "qr": 1161,
+      "company": 174,
+      "revenue": 191120
+    },
+    {
+      "qr": 1176,
+      "company": 234,
+      "revenue": 191070
+    },
+    {
+      "qr": 1326,
+      "company": 240,
+      "revenue": 191040
+    },
+    {
+      "qr": 1915,
+      "company": 166,
+      "revenue": 190460
+    },
+    {
+      "qr": 1449,
+      "company": 97,
+      "revenue": 190460
+    },
+    {
+      "qr": 1175,
+      "company": 207,
+      "revenue": 190150
+    },
+    {
+      "qr": 1990,
+      "company": 202,
+      "revenue": 189570
+    },
+    {
+      "qr": 1664,
+      "company": 204,
+      "revenue": 189450
+    },
+    {
+      "qr": 1170,
+      "company": 173,
+      "revenue": 189060
+    },
+    {
+      "qr": 1592,
+      "company": 128,
+      "revenue": 188860
+    },
+    {
+      "qr": 1758,
+      "company": 143,
+      "revenue": 188610
+    },
+    {
+      "qr": 1333,
+      "company": 205,
+      "revenue": 188420
+    },
+    {
+      "qr": 1055,
+      "company": 188,
+      "revenue": 187650
+    },
+    {
+      "qr": 1633,
+      "company": 241,
+      "revenue": 186870
+    },
+    {
+      "qr": 1482,
+      "company": 123,
+      "revenue": 186790
+    },
+    {
+      "qr": 1172,
+      "company": 226,
+      "revenue": 186200
+    },
+    {
+      "qr": 1120,
+      "company": 123,
+      "revenue": 184900
+    },
+    {
+      "qr": 1570,
+      "company": 117,
+      "revenue": 184862
+    },
+    {
+      "qr": 1498,
+      "company": 86,
+      "revenue": 184490
+    },
+    {
+      "qr": 261,
+      "company": 50,
+      "revenue": 184440
+    },
+    {
+      "qr": 1443,
+      "company": 153,
+      "revenue": 184430
+    },
+    {
+      "qr": 1981,
+      "company": 173,
+      "revenue": 183060
+    },
+    {
+      "qr": 1186,
+      "company": 205,
+      "revenue": 182820
+    },
+    {
+      "qr": 1029,
+      "company": 117,
+      "revenue": 182770
+    },
+    {
+      "qr": 1522,
+      "company": 153,
+      "revenue": 182760
+    },
+    {
+      "qr": 1171,
+      "company": 207,
+      "revenue": 181940
+    },
+    {
+      "qr": 1607,
+      "company": 136,
+      "revenue": 181640
+    },
+    {
+      "qr": 386,
+      "company": 93,
+      "revenue": 181604
+    },
+    {
+      "qr": 1899,
+      "company": 163,
+      "revenue": 181470
+    },
+    {
+      "qr": 1854,
+      "company": 179,
+      "revenue": 181220
+    },
+    {
+      "qr": 1167,
+      "company": 159,
+      "revenue": 180560
+    },
+    {
+      "qr": 1600,
+      "company": 130,
+      "revenue": 180360
+    },
+    {
+      "qr": 1861,
+      "company": 160,
+      "revenue": 180060
+    },
+    {
+      "qr": 1030,
+      "company": 117,
+      "revenue": 179441
+    },
+    {
+      "qr": 1561,
+      "company": 83,
+      "revenue": 179180
+    },
+    {
+      "qr": 1643,
+      "company": 205,
+      "revenue": 178900
+    },
+    {
+      "qr": 1424,
+      "company": 142,
+      "revenue": 178850
+    },
+    {
+      "qr": 1533,
+      "company": 185,
+      "revenue": 178830
+    },
+    {
+      "qr": 1782,
+      "company": 115,
+      "revenue": 178370
+    },
+    {
+      "qr": 1128,
+      "company": 209,
+      "revenue": 178370
+    },
+    {
+      "qr": 1586,
+      "company": 128,
+      "revenue": 177690
+    },
+    {
+      "qr": 1591,
+      "company": 83,
+      "revenue": 177310
+    },
+    {
+      "qr": 1698,
+      "company": 160,
+      "revenue": 177280
+    },
+    {
+      "qr": 333,
+      "company": 100,
+      "revenue": 177210
+    },
+    {
+      "qr": 329,
+      "company": 34,
+      "revenue": 176250
+    },
+    {
+      "qr": 508,
+      "company": 137,
+      "revenue": 176070
+    },
+    {
+      "qr": 1507,
+      "company": 153,
+      "revenue": 175981
+    },
+    {
+      "qr": 1768,
+      "company": 155,
+      "revenue": 175910
+    },
+    {
+      "qr": 1525,
+      "company": 143,
+      "revenue": 175620
+    },
+    {
+      "qr": 1159,
+      "company": 199,
+      "revenue": 175300
+    },
+    {
+      "qr": 1757,
+      "company": 135,
+      "revenue": 174550
+    },
+    {
+      "qr": 354,
+      "company": 116,
+      "revenue": 174270
+    },
+    {
+      "qr": 1408,
+      "company": 86,
+      "revenue": 173660
+    },
+    {
+      "qr": 1118,
+      "company": 144,
+      "revenue": 173480
+    },
+    {
+      "qr": 1852,
+      "company": 115,
+      "revenue": 173480
+    },
+    {
+      "qr": 1150,
+      "company": 126,
+      "revenue": 173370
+    },
+    {
+      "qr": 1311,
+      "company": 202,
+      "revenue": 173330
+    },
+    {
+      "qr": 1155,
+      "company": 173,
+      "revenue": 172960
+    },
+    {
+      "qr": 1987,
+      "company": 238,
+      "revenue": 172800
+    },
+    {
+      "qr": 1497,
+      "company": 128,
+      "revenue": 172740
+    },
+    {
+      "qr": 1878,
+      "company": 163,
+      "revenue": 172060
+    },
+    {
+      "qr": 1799,
+      "company": 174,
+      "revenue": 171840
+    },
+    {
+      "qr": 1599,
+      "company": 83,
+      "revenue": 171740
+    },
+    {
+      "qr": 1114,
+      "company": 147,
+      "revenue": 171700
+    },
+    {
+      "qr": 1026,
+      "company": 141,
+      "revenue": 171450
+    },
+    {
+      "qr": 284,
+      "company": 98,
+      "revenue": 171280
+    },
+    {
+      "qr": 348,
+      "company": 237,
+      "revenue": 171040
+    },
+    {
+      "qr": 1357,
+      "company": 241,
+      "revenue": 170920
+    },
+    {
+      "qr": 1929,
+      "company": 171,
+      "revenue": 170390
+    },
+    {
+      "qr": 1874,
+      "company": 157,
+      "revenue": 170060
+    },
+    {
+      "qr": 1879,
+      "company": 160,
+      "revenue": 169870
+    },
+    {
+      "qr": 1500,
+      "company": 110,
+      "revenue": 169800
+    },
+    {
+      "qr": 1974,
+      "company": 159,
+      "revenue": 169150
+    },
+    {
+      "qr": 140,
+      "company": 22,
+      "revenue": 168620
+    },
+    {
+      "qr": 1795,
+      "company": 174,
+      "revenue": 168580
+    },
+    {
+      "qr": 1412,
+      "company": 122,
+      "revenue": 168260
+    },
+    {
+      "qr": 1771,
+      "company": 155,
+      "revenue": 167850
+    },
+    {
+      "qr": 1478,
+      "company": 127,
+      "revenue": 167320
+    },
+    {
+      "qr": 1568,
+      "company": 110,
+      "revenue": 166880
+    },
+    {
+      "qr": 152,
+      "company": 21,
+      "revenue": 166650
+    },
+    {
+      "qr": 1905,
+      "company": 163,
+      "revenue": 166590
+    },
+    {
+      "qr": 1868,
+      "company": 191,
+      "revenue": 166450
+    },
+    {
+      "qr": 230,
+      "company": 32,
+      "revenue": 166380
+    },
+    {
+      "qr": 505,
+      "company": 137,
+      "revenue": 165973
+    },
+    {
+      "qr": 1168,
+      "company": 159,
+      "revenue": 165790
+    },
+    {
+      "qr": 1679,
+      "company": 83,
+      "revenue": 165590
+    },
+    {
+      "qr": 46,
+      "company": 38,
+      "revenue": 165580
+    },
+    {
+      "qr": 1540,
+      "company": 83,
+      "revenue": 165570
+    },
+    {
+      "qr": 1308,
+      "company": 190,
+      "revenue": 164660
+    },
+    {
+      "qr": 88,
+      "company": 93,
+      "revenue": 164628
+    },
+    {
+      "qr": 1339,
+      "company": 190,
+      "revenue": 164470
+    },
+    {
+      "qr": 1143,
+      "company": 147,
+      "revenue": 164370
+    },
+    {
+      "qr": 1166,
+      "company": 162,
+      "revenue": 164280
+    },
+    {
+      "qr": 1101,
+      "company": 190,
+      "revenue": 164080
+    },
+    {
+      "qr": 1655,
+      "company": 202,
+      "revenue": 163820
+    },
+    {
+      "qr": 1680,
+      "company": 131,
+      "revenue": 163280
+    },
+    {
+      "qr": 267,
+      "company": 52,
+      "revenue": 163100
+    },
+    {
+      "qr": 1387,
+      "company": 179,
+      "revenue": 163090
+    },
+    {
+      "qr": 1720,
+      "company": 115,
+      "revenue": 163060
+    },
+    {
+      "qr": 1053,
+      "company": 114,
+      "revenue": 163060
+    },
+    {
+      "qr": 1415,
+      "company": 83,
+      "revenue": 162570
+    },
+    {
+      "qr": 1898,
+      "company": 160,
+      "revenue": 162020
+    },
+    {
+      "qr": 1202,
+      "company": 159,
+      "revenue": 161470
+    },
+    {
+      "qr": 1547,
+      "company": 83,
+      "revenue": 161470
+    },
+    {
+      "qr": 1047,
+      "company": 128,
+      "revenue": 161320
+    },
+    {
+      "qr": 1914,
+      "company": 234,
+      "revenue": 160960
+    },
+    {
+      "qr": 387,
+      "company": 211,
+      "revenue": 160640
+    },
+    {
+      "qr": 1106,
+      "company": 191,
+      "revenue": 160570
+    },
+    {
+      "qr": 1342,
+      "company": 201,
+      "revenue": 160010
+    },
+    {
+      "qr": 222,
+      "company": 52,
+      "revenue": 159810
+    },
+    {
+      "qr": 1766,
+      "company": 143,
+      "revenue": 159810
+    },
+    {
+      "qr": 1755,
+      "company": 144,
+      "revenue": 159540
+    },
+    {
+      "qr": 362,
+      "company": 116,
+      "revenue": 158771
+    },
+    {
+      "qr": 301,
+      "company": 100,
+      "revenue": 158730
+    },
+    {
+      "qr": 125,
+      "company": 60,
+      "revenue": 157890
+    },
+    {
+      "qr": 154,
+      "company": 22,
+      "revenue": 157600
+    },
+    {
+      "qr": 1531,
+      "company": 132,
+      "revenue": 157390
+    },
+    {
+      "qr": 1061,
+      "company": 143,
+      "revenue": 157020
+    },
+    {
+      "qr": 1077,
+      "company": 111,
+      "revenue": 156940
+    },
+    {
+      "qr": 1859,
+      "company": 163,
+      "revenue": 156780
+    },
+    {
+      "qr": 1969,
+      "company": 171,
+      "revenue": 156550
+    },
+    {
+      "qr": 1516,
+      "company": 117,
+      "revenue": 155980
+    },
+    {
+      "qr": 1828,
+      "company": 149,
+      "revenue": 155550
+    },
+    {
+      "qr": 1073,
+      "company": 111,
+      "revenue": 155500
+    },
+    {
+      "qr": 1606,
+      "company": 242,
+      "revenue": 155090
+    },
+    {
+      "qr": 373,
+      "company": 93,
+      "revenue": 154602
+    },
+    {
+      "qr": 1731,
+      "company": 135,
+      "revenue": 153940
+    },
+    {
+      "qr": 1006,
+      "company": 188,
+      "revenue": 153940
+    },
+    {
+      "qr": 1323,
+      "company": 202,
+      "revenue": 153830
+    },
+    {
+      "qr": 1885,
+      "company": 160,
+      "revenue": 153510
+    },
+    {
+      "qr": 1983,
+      "company": 159,
+      "revenue": 153360
+    },
+    {
+      "qr": 1139,
+      "company": 241,
+      "revenue": 153140
+    },
+    {
+      "qr": 1557,
+      "company": 112,
+      "revenue": 153120
+    },
+    {
+      "qr": 121,
+      "company": 70,
+      "revenue": 152980
+    },
+    {
+      "qr": 1300,
+      "company": 201,
+      "revenue": 152780
+    },
+    {
+      "qr": 1886,
+      "company": 160,
+      "revenue": 152410
+    },
+    {
+      "qr": 1112,
+      "company": 234,
+      "revenue": 152250
+    },
+    {
+      "qr": 1865,
+      "company": 160,
+      "revenue": 152090
+    },
+    {
+      "qr": 1102,
+      "company": 219,
+      "revenue": 151840
+    },
+    {
+      "qr": 341,
+      "company": 116,
+      "revenue": 150510
+    },
+    {
+      "qr": 1452,
+      "company": 119,
+      "revenue": 150470
+    },
+    {
+      "qr": 1322,
+      "company": 190,
+      "revenue": 150320
+    },
+    {
+      "qr": 1567,
+      "company": 110,
+      "revenue": 149460
+    },
+    {
+      "qr": 1331,
+      "company": 190,
+      "revenue": 149400
+    },
+    {
+      "qr": 1078,
+      "company": 111,
+      "revenue": 149290
+    },
+    {
+      "qr": 1822,
+      "company": 149,
+      "revenue": 148190
+    },
+    {
+      "qr": 1711,
+      "company": 115,
+      "revenue": 148090
+    },
+    {
+      "qr": 1683,
+      "company": 131,
+      "revenue": 147950
+    },
+    {
+      "qr": 1016,
+      "company": 114,
+      "revenue": 147950
+    },
+    {
+      "qr": 1085,
+      "company": 187,
+      "revenue": 147810
+    },
+    {
+      "qr": 1619,
+      "company": 119,
+      "revenue": 147130
+    },
+    {
+      "qr": 1801,
+      "company": 171,
+      "revenue": 146780
+    },
+    {
+      "qr": 1411,
+      "company": 126,
+      "revenue": 146480
+    },
+    {
+      "qr": 504,
+      "company": 137,
+      "revenue": 145651
+    },
+    {
+      "qr": 1485,
+      "company": 112,
+      "revenue": 145430
+    },
+    {
+      "qr": 1670,
+      "company": 202,
+      "revenue": 145380
+    },
+    {
+      "qr": 1013,
+      "company": 128,
+      "revenue": 145320
+    },
+    {
+      "qr": 1090,
+      "company": 203,
+      "revenue": 145010
+    },
+    {
+      "qr": 1623,
+      "company": 83,
+      "revenue": 144910
+    },
+    {
+      "qr": 1303,
+      "company": 203,
+      "revenue": 144740
+    },
+    {
+      "qr": 1595,
+      "company": 132,
+      "revenue": 144010
+    },
+    {
+      "qr": 1895,
+      "company": 160,
+      "revenue": 143590
+    },
+    {
+      "qr": 33,
+      "company": 55,
+      "revenue": 143568
+    },
+    {
+      "qr": 1928,
+      "company": 182,
+      "revenue": 143540
+    },
+    {
+      "qr": 1344,
+      "company": 190,
+      "revenue": 143500
+    },
+    {
+      "qr": 192,
+      "company": 179,
+      "revenue": 143110
+    },
+    {
+      "qr": 1911,
+      "company": 163,
+      "revenue": 142890
+    },
+    {
+      "qr": 359,
+      "company": 104,
+      "revenue": 141140
+    },
+    {
+      "qr": 1972,
+      "company": 197,
+      "revenue": 141000
+    },
+    {
+      "qr": 1785,
+      "company": 115,
+      "revenue": 140920
+    },
+    {
+      "qr": 1977,
+      "company": 197,
+      "revenue": 140600
+    },
+    {
+      "qr": 1316,
+      "company": 201,
+      "revenue": 140530
+    },
+    {
+      "qr": 1551,
+      "company": 132,
+      "revenue": 140450
+    },
+    {
+      "qr": 400,
+      "company": 89,
+      "revenue": 140180
+    },
+    {
+      "qr": 1907,
+      "company": 160,
+      "revenue": 140050
+    },
+    {
+      "qr": 1844,
+      "company": 122,
+      "revenue": 139950
+    },
+    {
+      "qr": 1147,
+      "company": 149,
+      "revenue": 139700
+    },
+    {
+      "qr": 1834,
+      "company": 122,
+      "revenue": 139570
+    },
+    {
+      "qr": 1041,
+      "company": 128,
+      "revenue": 138830
+    },
+    {
+      "qr": 1,
+      "company": 179,
+      "revenue": 138731
+    },
+    {
+      "qr": 1855,
+      "company": 160,
+      "revenue": 138590
+    },
+    {
+      "qr": 385,
+      "company": 80,
+      "revenue": 137830
+    },
+    {
+      "qr": 1596,
+      "company": 224,
+      "revenue": 137700
+    },
+    {
+      "qr": 1548,
+      "company": 112,
+      "revenue": 137690
+    },
+    {
+      "qr": 307,
+      "company": 89,
+      "revenue": 137343
+    },
+    {
+      "qr": 1756,
+      "company": 151,
+      "revenue": 137130
+    },
+    {
+      "qr": 177,
+      "company": 51,
+      "revenue": 137040
+    },
+    {
+      "qr": 1036,
+      "company": 119,
+      "revenue": 136500
+    },
+    {
+      "qr": 1800,
+      "company": 199,
+      "revenue": 136360
+    },
+    {
+      "qr": 1665,
+      "company": 203,
+      "revenue": 136180
+    },
+    {
+      "qr": 1995,
+      "company": 189,
+      "revenue": 135750
+    },
+    {
+      "qr": 242,
+      "company": 60,
+      "revenue": 135063
+    },
+    {
+      "qr": 1644,
+      "company": 242,
+      "revenue": 134955
+    },
+    {
+      "qr": 166,
+      "company": 8,
+      "revenue": 134650
+    },
+    {
+      "qr": 1784,
+      "company": 151,
+      "revenue": 134580
+    },
+    {
+      "qr": 513,
+      "company": 93,
+      "revenue": 134458
+    },
+    {
+      "qr": 1925,
+      "company": 171,
+      "revenue": 134110
+    },
+    {
+      "qr": 1875,
+      "company": 160,
+      "revenue": 133920
+    },
+    {
+      "qr": 14,
+      "company": 12,
+      "revenue": 133871
+    },
+    {
+      "qr": 1773,
+      "company": 115,
+      "revenue": 133180
+    },
+    {
+      "qr": 1476,
+      "company": 117,
+      "revenue": 132100
+    },
+    {
+      "qr": 1883,
+      "company": 160,
+      "revenue": 132050
+    },
+    {
+      "qr": 1044,
+      "company": 114,
+      "revenue": 131870
+    },
+    {
+      "qr": 1045,
+      "company": 114,
+      "revenue": 131760
+    },
+    {
+      "qr": 1132,
+      "company": 234,
+      "revenue": 131650
+    },
+    {
+      "qr": 1081,
+      "company": 142,
+      "revenue": 130690
+    },
+    {
+      "qr": 1622,
+      "company": 131,
+      "revenue": 129820
+    },
+    {
+      "qr": 1818,
+      "company": 135,
+      "revenue": 129770
+    },
+    {
+      "qr": 1780,
+      "company": 156,
+      "revenue": 129690
+    },
+    {
+      "qr": 1674,
+      "company": 202,
+      "revenue": 129600
+    },
+    {
+      "qr": 1034,
+      "company": 114,
+      "revenue": 129560
+    },
+    {
+      "qr": 1774,
+      "company": 156,
+      "revenue": 129210
+    },
+    {
+      "qr": 1486,
+      "company": 117,
+      "revenue": 129150
+    },
+    {
+      "qr": 102,
+      "company": 62,
+      "revenue": 129050
+    },
+    {
+      "qr": 163,
+      "company": 51,
+      "revenue": 128700
+    },
+    {
+      "qr": 509,
+      "company": 3,
+      "revenue": 128450
+    },
+    {
+      "qr": 1775,
+      "company": 156,
+      "revenue": 127990
+    },
+    {
+      "qr": 156,
+      "company": 62,
+      "revenue": 127300
+    },
+    {
+      "qr": 1183,
+      "company": 209,
+      "revenue": 127200
+    },
+    {
+      "qr": 1767,
+      "company": 156,
+      "revenue": 126630
+    },
+    {
+      "qr": 1484,
+      "company": 128,
+      "revenue": 126390
+    },
+    {
+      "qr": 1998,
+      "company": 189,
+      "revenue": 126200
+    },
+    {
+      "qr": 1776,
+      "company": 115,
+      "revenue": 126100
+    },
+    {
+      "qr": 162,
+      "company": 22,
+      "revenue": 125520
+    },
+    {
+      "qr": 1469,
+      "company": 101,
+      "revenue": 125500
+    },
+    {
+      "qr": 1035,
+      "company": 110,
+      "revenue": 124670
+    },
+    {
+      "qr": 1011,
+      "company": 188,
+      "revenue": 124440
+    },
+    {
+      "qr": 1553,
+      "company": 112,
+      "revenue": 124350
+    },
+    {
+      "qr": 1649,
+      "company": 179,
+      "revenue": 124090
+    },
+    {
+      "qr": 1075,
+      "company": 111,
+      "revenue": 124000
+    },
+    {
+      "qr": 1407,
+      "company": 125,
+      "revenue": 123890
+    },
+    {
+      "qr": 1876,
+      "company": 160,
+      "revenue": 123730
+    },
+    {
+      "qr": 1157,
+      "company": 147,
+      "revenue": 123720
+    },
+    {
+      "qr": 206,
+      "company": 17,
+      "revenue": 123710
+    },
+    {
+      "qr": 262,
+      "company": 103,
+      "revenue": 123290
+    },
+    {
+      "qr": 1826,
+      "company": 187,
+      "revenue": 122900
+    },
+    {
+      "qr": 1733,
+      "company": 156,
+      "revenue": 122250
+    },
+    {
+      "qr": 1509,
+      "company": 133,
+      "revenue": 122190
+    },
+    {
+      "qr": 1635,
+      "company": 242,
+      "revenue": 121985
+    },
+    {
+      "qr": 1986,
+      "company": 173,
+      "revenue": 120800
+    },
+    {
+      "qr": 161,
+      "company": 22,
+      "revenue": 120350
+    },
+    {
+      "qr": 355,
+      "company": 116,
+      "revenue": 120270
+    },
+    {
+      "qr": 1563,
+      "company": 112,
+      "revenue": 119690
+    },
+    {
+      "qr": 1723,
+      "company": 115,
+      "revenue": 118900
+    },
+    {
+      "qr": 1906,
+      "company": 160,
+      "revenue": 118730
+    },
+    {
+      "qr": 1869,
+      "company": 156,
+      "revenue": 118630
+    },
+    {
+      "qr": 1418,
+      "company": 125,
+      "revenue": 118080
+    },
+    {
+      "qr": 1613,
+      "company": 131,
+      "revenue": 117990
+    },
+    {
+      "qr": 1837,
+      "company": 234,
+      "revenue": 117780
+    },
+    {
+      "qr": 1896,
+      "company": 160,
+      "revenue": 117750
+    },
+    {
+      "qr": 1634,
+      "company": 234,
+      "revenue": 117210
+    },
+    {
+      "qr": 1417,
+      "company": 242,
+      "revenue": 116845
+    },
+    {
+      "qr": 1747,
+      "company": 180,
+      "revenue": 116400
+    },
+    {
+      "qr": 1098,
+      "company": 214,
+      "revenue": 116070
+    },
+    {
+      "qr": 1309,
+      "company": 194,
+      "revenue": 115690
+    },
+    {
+      "qr": 285,
+      "company": 186,
+      "revenue": 115572
+    },
+    {
+      "qr": 1095,
+      "company": 201,
+      "revenue": 115470
+    },
+    {
+      "qr": 1722,
+      "company": 160,
+      "revenue": 115140
+    },
+    {
+      "qr": 235,
+      "company": 36,
+      "revenue": 114192
+    },
+    {
+      "qr": 366,
+      "company": 216,
+      "revenue": 113920
+    },
+    {
+      "qr": 232,
+      "company": 36,
+      "revenue": 113062
+    },
+    {
+      "qr": 1940,
+      "company": 234,
+      "revenue": 112820
+    },
+    {
+      "qr": 364,
+      "company": 116,
+      "revenue": 112640
+    },
+    {
+      "qr": 87,
+      "company": 51,
+      "revenue": 112360
+    },
+    {
+      "qr": 1618,
+      "company": 119,
+      "revenue": 111640
+    },
+    {
+      "qr": 1046,
+      "company": 119,
+      "revenue": 111120
+    },
+    {
+      "qr": 1131,
+      "company": 147,
+      "revenue": 110530
+    },
+    {
+      "qr": 1769,
+      "company": 156,
+      "revenue": 110010
+    },
+    {
+      "qr": 1307,
+      "company": 201,
+      "revenue": 109730
+    },
+    {
+      "qr": 1893,
+      "company": 160,
+      "revenue": 108790
+    },
+    {
+      "qr": 1602,
+      "company": 172,
+      "revenue": 108200
+    },
+    {
+      "qr": 1704,
+      "company": 135,
+      "revenue": 107460
+    },
+    {
+      "qr": 1666,
+      "company": 209,
+      "revenue": 107360
+    },
+    {
+      "qr": 1111,
+      "company": 209,
+      "revenue": 107320
+    },
+    {
+      "qr": 1306,
+      "company": 132,
+      "revenue": 107230
+    },
+    {
+      "qr": 187,
+      "company": 89,
+      "revenue": 106617
+    },
+    {
+      "qr": 363,
+      "company": 237,
+      "revenue": 106500
+    },
+    {
+      "qr": 1764,
+      "company": 156,
+      "revenue": 106490
+    },
+    {
+      "qr": 1682,
+      "company": 201,
+      "revenue": 106140
+    },
+    {
+      "qr": 1527,
+      "company": 127,
+      "revenue": 105970
+    },
+    {
+      "qr": 1761,
+      "company": 151,
+      "revenue": 105960
+    },
+    {
+      "qr": 1133,
+      "company": 147,
+      "revenue": 105810
+    },
+    {
+      "qr": 1138,
+      "company": 147,
+      "revenue": 105750
+    },
+    {
+      "qr": 1890,
+      "company": 160,
+      "revenue": 105750
+    },
+    {
+      "qr": 1216,
+      "company": 219,
+      "revenue": 105630
+    },
+    {
+      "qr": 1362,
+      "company": 238,
+      "revenue": 104710
+    },
+    {
+      "qr": 1232,
+      "company": 219,
+      "revenue": 104470
+    },
+    {
+      "qr": 1457,
+      "company": 112,
+      "revenue": 104350
+    },
+    {
+      "qr": 1454,
+      "company": 241,
+      "revenue": 103760
+    },
+    {
+      "qr": 1083,
+      "company": 126,
+      "revenue": 103730
+    },
+    {
+      "qr": 334,
+      "company": 237,
+      "revenue": 103360
+    },
+    {
+      "qr": 332,
+      "company": 75,
+      "revenue": 102760
+    },
+    {
+      "qr": 1742,
+      "company": 241,
+      "revenue": 101900
+    },
+    {
+      "qr": 1663,
+      "company": 244,
+      "revenue": 101850
+    },
+    {
+      "qr": 188,
+      "company": 201,
+      "revenue": 101802
+    },
+    {
+      "qr": 1897,
+      "company": 160,
+      "revenue": 101690
+    },
+    {
+      "qr": 1572,
+      "company": 128,
+      "revenue": 101500
+    },
+    {
+      "qr": 1121,
+      "company": 219,
+      "revenue": 101280
+    },
+    {
+      "qr": 1312,
+      "company": 208,
+      "revenue": 101230
+    },
+    {
+      "qr": 1345,
+      "company": 132,
+      "revenue": 101140
+    },
+    {
+      "qr": 1220,
+      "company": 219,
+      "revenue": 100810
+    },
+    {
+      "qr": 1097,
+      "company": 190,
+      "revenue": 99720
+    },
+    {
+      "qr": 1537,
+      "company": 132,
+      "revenue": 99560
+    },
+    {
+      "qr": 1728,
+      "company": 181,
+      "revenue": 99240
+    },
+    {
+      "qr": 1857,
+      "company": 160,
+      "revenue": 98660
+    },
+    {
+      "qr": 1107,
+      "company": 214,
+      "revenue": 97340
+    },
+    {
+      "qr": 1433,
+      "company": 225,
+      "revenue": 97290
+    },
+    {
+      "qr": 1975,
+      "company": 197,
+      "revenue": 96790
+    },
+    {
+      "qr": 1123,
+      "company": 214,
+      "revenue": 95870
+    },
+    {
+      "qr": 287,
+      "company": 116,
+      "revenue": 95860
+    },
+    {
+      "qr": 1338,
+      "company": 132,
+      "revenue": 95630
+    },
+    {
+      "qr": 1421,
+      "company": 144,
+      "revenue": 95370
+    },
+    {
+      "qr": 1430,
+      "company": 127,
+      "revenue": 95340
+    },
+    {
+      "qr": 1717,
+      "company": 181,
+      "revenue": 95310
+    },
+    {
+      "qr": 1209,
+      "company": 219,
+      "revenue": 94660
+    },
+    {
+      "qr": 1057,
+      "company": 123,
+      "revenue": 94330
+    },
+    {
+      "qr": 141,
+      "company": 8,
+      "revenue": 94290
+    },
+    {
+      "qr": 1536,
+      "company": 101,
+      "revenue": 94080
+    },
+    {
+      "qr": 1939,
+      "company": 225,
+      "revenue": 93830
+    },
+    {
+      "qr": 1037,
+      "company": 128,
+      "revenue": 93600
+    },
+    {
+      "qr": 1673,
+      "company": 209,
+      "revenue": 93520
+    },
+    {
+      "qr": 1033,
+      "company": 114,
+      "revenue": 92960
+    },
+    {
+      "qr": 675,
+      "company": 3,
+      "revenue": 92520
+    },
+    {
+      "qr": 1641,
+      "company": 214,
+      "revenue": 91690
+    },
+    {
+      "qr": 1576,
+      "company": 242,
+      "revenue": 91340
+    },
+    {
+      "qr": 306,
+      "company": 73,
+      "revenue": 90800
+    },
+    {
+      "qr": 1627,
+      "company": 242,
+      "revenue": 90475
+    },
+    {
+      "qr": 86,
+      "company": 161,
+      "revenue": 90201
+    },
+    {
+      "qr": 1578,
+      "company": 224,
+      "revenue": 88710
+    },
+    {
+      "qr": 1318,
+      "company": 210,
+      "revenue": 88310
+    },
+    {
+      "qr": 1751,
+      "company": 181,
+      "revenue": 87280
+    },
+    {
+      "qr": 1154,
+      "company": 213,
+      "revenue": 86810
+    },
+    {
+      "qr": 1814,
+      "company": 181,
+      "revenue": 86610
+    },
+    {
+      "qr": 225,
+      "company": 186,
+      "revenue": 86490
+    },
+    {
+      "qr": 1676,
+      "company": 123,
+      "revenue": 86310
+    },
+    {
+      "qr": 109,
+      "company": 51,
+      "revenue": 86100
+    },
+    {
+      "qr": 1831,
+      "company": 181,
+      "revenue": 85840
+    },
+    {
+      "qr": 1583,
+      "company": 110,
+      "revenue": 85260
+    },
+    {
+      "qr": 276,
+      "company": 186,
+      "revenue": 85222
+    },
+    {
+      "qr": 1218,
+      "company": 238,
+      "revenue": 84070
+    },
+    {
+      "qr": 8,
+      "company": 161,
+      "revenue": 83973
+    },
+    {
+      "qr": 1386,
+      "company": 240,
+      "revenue": 83920
+    },
+    {
+      "qr": 1405,
+      "company": 181,
+      "revenue": 83860
+    },
+    {
+      "qr": 104,
+      "company": 8,
+      "revenue": 82940
+    },
+    {
+      "qr": 1018,
+      "company": 114,
+      "revenue": 81880
+    },
+    {
+      "qr": 186,
+      "company": 103,
+      "revenue": 81600
+    },
+    {
+      "qr": 136,
+      "company": 54,
+      "revenue": 81271
+    },
+    {
+      "qr": 1620,
+      "company": 224,
+      "revenue": 81140
+    },
+    {
+      "qr": 1321,
+      "company": 190,
+      "revenue": 80920
+    },
+    {
+      "qr": 1226,
+      "company": 240,
+      "revenue": 79590
+    },
+    {
+      "qr": 1391,
+      "company": 240,
+      "revenue": 79510
+    },
+    {
+      "qr": 117,
+      "company": 62,
+      "revenue": 77752
+    },
+    {
+      "qr": 1194,
+      "company": 208,
+      "revenue": 77360
+    },
+    {
+      "qr": 1020,
+      "company": 114,
+      "revenue": 77150
+    },
+    {
+      "qr": 89,
+      "company": 51,
+      "revenue": 76250
+    },
+    {
+      "qr": 1612,
+      "company": 210,
+      "revenue": 75770
+    },
+    {
+      "qr": 1999,
+      "company": 208,
+      "revenue": 75320
+    },
+    {
+      "qr": 1609,
+      "company": 213,
+      "revenue": 75190
+    },
+    {
+      "qr": 1335,
+      "company": 202,
+      "revenue": 74980
+    },
+    {
+      "qr": 294,
+      "company": 186,
+      "revenue": 74391
+    },
+    {
+      "qr": 1437,
+      "company": 242,
+      "revenue": 74255
+    },
+    {
+      "qr": 295,
+      "company": 186,
+      "revenue": 74155
+    },
+    {
+      "qr": 132,
+      "company": 77,
+      "revenue": 73847
+    },
+    {
+      "qr": 1954,
+      "company": 227,
+      "revenue": 73590
+    },
+    {
+      "qr": 1474,
+      "company": 208,
+      "revenue": 73440
+    },
+    {
+      "qr": 1542,
+      "company": 130,
+      "revenue": 73310
+    },
+    {
+      "qr": 1388,
+      "company": 240,
+      "revenue": 73170
+    },
+    {
+      "qr": 1363,
+      "company": 192,
+      "revenue": 72900
+    },
+    {
+      "qr": 199,
+      "company": 103,
+      "revenue": 72720
+    },
+    {
+      "qr": 229,
+      "company": 186,
+      "revenue": 72630
+    },
+    {
+      "qr": 1399,
+      "company": 230,
+      "revenue": 72330
+    },
+    {
+      "qr": 1555,
+      "company": 101,
+      "revenue": 72220
+    },
+    {
+      "qr": 1382,
+      "company": 230,
+      "revenue": 71380
+    },
+    {
+      "qr": 1130,
+      "company": 213,
+      "revenue": 71180
+    },
+    {
+      "qr": 1788,
+      "company": 184,
+      "revenue": 70860
+    },
+    {
+      "qr": 1212,
+      "company": 230,
+      "revenue": 70850
+    },
+    {
+      "qr": 1632,
+      "company": 209,
+      "revenue": 70180
+    },
+    {
+      "qr": 1341,
+      "company": 190,
+      "revenue": 69980
+    },
+    {
+      "qr": 381,
+      "company": 89,
+      "revenue": 69530
+    },
+    {
+      "qr": 1117,
+      "company": 208,
+      "revenue": 69390
+    },
+    {
+      "qr": 356,
+      "company": 64,
+      "revenue": 69320
+    },
+    {
+      "qr": 1489,
+      "company": 9,
+      "revenue": 68430
+    },
+    {
+      "qr": 1207,
+      "company": 224,
+      "revenue": 67340
+    },
+    {
+      "qr": 119,
+      "company": 35,
+      "revenue": 66585
+    },
+    {
+      "qr": 1070,
+      "company": 213,
+      "revenue": 65660
+    },
+    {
+      "qr": 342,
+      "company": 64,
+      "revenue": 65590
+    },
+    {
+      "qr": 1779,
+      "company": 181,
+      "revenue": 65580
+    },
+    {
+      "qr": 1180,
+      "company": 235,
+      "revenue": 65110
+    },
+    {
+      "qr": 1082,
+      "company": 125,
+      "revenue": 64860
+    },
+    {
+      "qr": 1208,
+      "company": 224,
+      "revenue": 64610
+    },
+    {
+      "qr": 1320,
+      "company": 208,
+      "revenue": 64300
+    },
+    {
+      "qr": 1205,
+      "company": 224,
+      "revenue": 63920
+    },
+    {
+      "qr": 1580,
+      "company": 127,
+      "revenue": 63850
+    },
+    {
+      "qr": 1426,
+      "company": 123,
+      "revenue": 63690
+    },
+    {
+      "qr": 1884,
+      "company": 160,
+      "revenue": 63350
+    },
+    {
+      "qr": 1238,
+      "company": 224,
+      "revenue": 63310
+    },
+    {
+      "qr": 210,
+      "company": 3,
+      "revenue": 62780
+    },
+    {
+      "qr": 221,
+      "company": 64,
+      "revenue": 60940
+    },
+    {
+      "qr": 1681,
+      "company": 139,
+      "revenue": 60840
+    },
+    {
+      "qr": 1027,
+      "company": 9,
+      "revenue": 60500
+    },
+    {
+      "qr": 1781,
+      "company": 181,
+      "revenue": 60350
+    },
+    {
+      "qr": 1529,
+      "company": 119,
+      "revenue": 60160
+    },
+    {
+      "qr": 1193,
+      "company": 234,
+      "revenue": 59930
+    },
+    {
+      "qr": 1502,
+      "company": 117,
+      "revenue": 59350
+    },
+    {
+      "qr": 1594,
+      "company": 139,
+      "revenue": 59140
+    },
+    {
+      "qr": 1660,
+      "company": 230,
+      "revenue": 58970
+    },
+    {
+      "qr": 1327,
+      "company": 132,
+      "revenue": 58920
+    },
+    {
+      "qr": 1862,
+      "company": 160,
+      "revenue": 58620
+    },
+    {
+      "qr": 1214,
+      "company": 235,
+      "revenue": 58430
+    },
+    {
+      "qr": 521,
+      "company": 103,
+      "revenue": 57970
+    },
+    {
+      "qr": 1374,
+      "company": 238,
+      "revenue": 57700
+    },
+    {
+      "qr": 1835,
+      "company": 181,
+      "revenue": 57370
+    },
+    {
+      "qr": 12,
+      "company": 161,
+      "revenue": 56931
+    },
+    {
+      "qr": 1137,
+      "company": 230,
+      "revenue": 56800
+    },
+    {
+      "qr": 1654,
+      "company": 234,
+      "revenue": 56110
+    },
+    {
+      "qr": 1744,
+      "company": 181,
+      "revenue": 55930
+    },
+    {
+      "qr": 1729,
+      "company": 9,
+      "revenue": 55320
+    },
+    {
+      "qr": 1229,
+      "company": 238,
+      "revenue": 54960
+    },
+    {
+      "qr": 902,
+      "company": 105,
+      "revenue": 52975
+    },
+    {
+      "qr": 1134,
+      "company": 227,
+      "revenue": 52540
+    },
+    {
+      "qr": 1383,
+      "company": 230,
+      "revenue": 52210
+    },
+    {
+      "qr": 1448,
+      "company": 127,
+      "revenue": 51470
+    },
+    {
+      "qr": 1122,
+      "company": 227,
+      "revenue": 51270
+    },
+    {
+      "qr": 503,
+      "company": 137,
+      "revenue": 51091
+    },
+    {
+      "qr": 519,
+      "company": 103,
+      "revenue": 49740
+    },
+    {
+      "qr": 1192,
+      "company": 227,
+      "revenue": 48430
+    },
+    {
+      "qr": 1847,
+      "company": 121,
+      "revenue": 47690
+    },
+    {
+      "qr": 520,
+      "company": 23,
+      "revenue": 47150
+    },
+    {
+      "qr": 1460,
+      "company": 127,
+      "revenue": 47080
+    },
+    {
+      "qr": 1304,
+      "company": 135,
+      "revenue": 46670
+    },
+    {
+      "qr": 1821,
+      "company": 121,
+      "revenue": 46480
+    },
+    {
+      "qr": 1087,
+      "company": 135,
+      "revenue": 45940
+    },
+    {
+      "qr": 1336,
+      "company": 224,
+      "revenue": 45630
+    },
+    {
+      "qr": 1922,
+      "company": 234,
+      "revenue": 45300
+    },
+    {
+      "qr": 1100,
+      "company": 121,
+      "revenue": 44820
+    },
+    {
+      "qr": 1963,
+      "company": 232,
+      "revenue": 43910
+    },
+    {
+      "qr": 1970,
+      "company": 227,
+      "revenue": 43670
+    },
+    {
+      "qr": 1023,
+      "company": 143,
+      "revenue": 43530
+    },
+    {
+      "qr": 1239,
+      "company": 220,
+      "revenue": 42920
+    },
+    {
+      "qr": 1136,
+      "company": 219,
+      "revenue": 42250
+    },
+    {
+      "qr": 1086,
+      "company": 219,
+      "revenue": 41630
+    },
+    {
+      "qr": 801,
+      "company": 69,
+      "revenue": 40501
+    },
+    {
+      "qr": 1933,
+      "company": 233,
+      "revenue": 40220
+    },
+    {
+      "qr": 1372,
+      "company": 227,
+      "revenue": 40130
+    },
+    {
+      "qr": 1094,
+      "company": 121,
+      "revenue": 40080
+    },
+    {
+      "qr": 1230,
+      "company": 220,
+      "revenue": 37860
+    },
+    {
+      "qr": 1115,
+      "company": 124,
+      "revenue": 37830
+    },
+    {
+      "qr": 1348,
+      "company": 227,
+      "revenue": 37460
+    },
+    {
+      "qr": 1146,
+      "company": 124,
+      "revenue": 37350
+    },
+    {
+      "qr": 1217,
+      "company": 133,
+      "revenue": 37170
+    },
+    {
+      "qr": 1406,
+      "company": 150,
+      "revenue": 37140
+    },
+    {
+      "qr": 803,
+      "company": 69,
+      "revenue": 37101
+    },
+    {
+      "qr": 1219,
+      "company": 220,
+      "revenue": 36860
+    },
+    {
+      "qr": 1378,
+      "company": 232,
+      "revenue": 36800
+    },
+    {
+      "qr": 1224,
+      "company": 238,
+      "revenue": 36700
+    },
+    {
+      "qr": 1739,
+      "company": 239,
+      "revenue": 35980
+    },
+    {
+      "qr": 1149,
+      "company": 120,
+      "revenue": 35240
+    },
+    {
+      "qr": 1841,
+      "company": 121,
+      "revenue": 35190
+    },
+    {
+      "qr": 1129,
+      "company": 232,
+      "revenue": 35080
+    },
+    {
+      "qr": 1662,
+      "company": 231,
+      "revenue": 34800
+    },
+    {
+      "qr": 164,
+      "company": 22,
+      "revenue": 34800
+    },
+    {
+      "qr": 1753,
+      "company": 133,
+      "revenue": 34770
+    },
+    {
+      "qr": 1833,
+      "company": 219,
+      "revenue": 34270
+    },
+    {
+      "qr": 1196,
+      "company": 231,
+      "revenue": 34210
+    },
+    {
+      "qr": 1432,
+      "company": 142,
+      "revenue": 33860
+    },
+    {
+      "qr": 1079,
+      "company": 120,
+      "revenue": 33810
+    },
+    {
+      "qr": 1688,
+      "company": 239,
+      "revenue": 33310
+    },
+    {
+      "qr": 1909,
+      "company": 160,
+      "revenue": 32740
+    },
+    {
+      "qr": 1317,
+      "company": 231,
+      "revenue": 32450
+    },
+    {
+      "qr": 1860,
+      "company": 160,
+      "revenue": 32410
+    },
+    {
+      "qr": 1065,
+      "company": 120,
+      "revenue": 32290
+    },
+    {
+      "qr": 1153,
+      "company": 124,
+      "revenue": 32080
+    },
+    {
+      "qr": 1839,
+      "company": 121,
+      "revenue": 31700
+    },
+    {
+      "qr": 1135,
+      "company": 220,
+      "revenue": 31580
+    },
+    {
+      "qr": 1506,
+      "company": 120,
+      "revenue": 31490
+    },
+    {
+      "qr": 1343,
+      "company": 233,
+      "revenue": 31140
+    },
+    {
+      "qr": 1109,
+      "company": 232,
+      "revenue": 31020
+    },
+    {
+      "qr": 1072,
+      "company": 9,
+      "revenue": 30610
+    },
+    {
+      "qr": 1211,
+      "company": 233,
+      "revenue": 30140
+    },
+    {
+      "qr": 1730,
+      "company": 133,
+      "revenue": 29330
+    },
+    {
+      "qr": 993,
+      "company": 61,
+      "revenue": 28960
+    },
+    {
+      "qr": 1330,
+      "company": 232,
+      "revenue": 28770
+    },
+    {
+      "qr": 1068,
+      "company": 120,
+      "revenue": 28610
+    },
+    {
+      "qr": 37,
+      "company": 54,
+      "revenue": 28463
+    },
+    {
+      "qr": 1215,
+      "company": 233,
+      "revenue": 28410
+    },
+    {
+      "qr": 1116,
+      "company": 227,
+      "revenue": 27750
+    },
+    {
+      "qr": 985,
+      "company": 61,
+      "revenue": 27230
+    },
+    {
+      "qr": 128,
+      "company": 21,
+      "revenue": 27101
+    },
+    {
+      "qr": 1838,
+      "company": 121,
+      "revenue": 26550
+    },
+    {
+      "qr": 1709,
+      "company": 133,
+      "revenue": 26550
+    },
+    {
+      "qr": 1375,
+      "company": 234,
+      "revenue": 26490
+    },
+    {
+      "qr": 1817,
+      "company": 150,
+      "revenue": 26480
+    },
+    {
+      "qr": 1849,
+      "company": 121,
+      "revenue": 25940
+    },
+    {
+      "qr": 1409,
+      "company": 124,
+      "revenue": 25510
+    },
+    {
+      "qr": 1710,
+      "company": 239,
+      "revenue": 25460
+    },
+    {
+      "qr": 920,
+      "company": 43,
+      "revenue": 24700
+    },
+    {
+      "qr": 1302,
+      "company": 231,
+      "revenue": 24660
+    },
+    {
+      "qr": 1001,
+      "company": 73,
+      "revenue": 24645
+    },
+    {
+      "qr": 1314,
+      "company": 232,
+      "revenue": 24550
+    },
+    {
+      "qr": 1794,
+      "company": 198,
+      "revenue": 24250
+    },
+    {
+      "qr": 1420,
+      "company": 120,
+      "revenue": 22810
+    },
+    {
+      "qr": 1182,
+      "company": 232,
+      "revenue": 22610
+    },
+    {
+      "qr": 988,
+      "company": 61,
+      "revenue": 21870
+    },
+    {
+      "qr": 31,
+      "company": 54,
+      "revenue": 21737
+    },
+    {
+      "qr": 1181,
+      "company": 232,
+      "revenue": 21200
+    },
+    {
+      "qr": 1798,
+      "company": 198,
+      "revenue": 21140
+    },
+    {
+      "qr": 1713,
+      "company": 239,
+      "revenue": 20860
+    },
+    {
+      "qr": 1370,
+      "company": 232,
+      "revenue": 20740
+    },
+    {
+      "qr": 991,
+      "company": 61,
+      "revenue": 20330
+    },
+    {
+      "qr": 998,
+      "company": 4,
+      "revenue": 20282
+    },
+    {
+      "qr": 1066,
+      "company": 120,
+      "revenue": 20100
+    },
+    {
+      "qr": 1206,
+      "company": 233,
+      "revenue": 20080
+    },
+    {
+      "qr": 1364,
+      "company": 220,
+      "revenue": 19950
+    },
+    {
+      "qr": 802,
+      "company": 69,
+      "revenue": 19726
+    },
+    {
+      "qr": 1803,
+      "company": 183,
+      "revenue": 19700
+    },
+    {
+      "qr": 1221,
+      "company": 236,
+      "revenue": 19520
+    },
+    {
+      "qr": 35,
+      "company": 15,
+      "revenue": 19416
+    },
+    {
+      "qr": 1084,
+      "company": 124,
+      "revenue": 19390
+    },
+    {
+      "qr": 15,
+      "company": 21,
+      "revenue": 18753
+    },
+    {
+      "qr": 1735,
+      "company": 239,
+      "revenue": 18410
+    },
+    {
+      "qr": 101,
+      "company": 75,
+      "revenue": 18130
+    },
+    {
+      "qr": 1705,
+      "company": 239,
+      "revenue": 17940
+    },
+    {
+      "qr": 138,
+      "company": 21,
+      "revenue": 17801
+    },
+    {
+      "qr": 1332,
+      "company": 132,
+      "revenue": 17210
+    },
+    {
+      "qr": 901,
+      "company": 43,
+      "revenue": 16929
+    },
+    {
+      "qr": 1328,
+      "company": 236,
+      "revenue": 16570
+    },
+    {
+      "qr": 1863,
+      "company": 160,
+      "revenue": 15530
+    },
+    {
+      "qr": 1948,
+      "company": 227,
+      "revenue": 15210
+    },
+    {
+      "qr": 1691,
+      "company": 201,
+      "revenue": 14450
+    },
+    {
+      "qr": 1198,
+      "company": 233,
+      "revenue": 14280
+    },
+    {
+      "qr": 903,
+      "company": 43,
+      "revenue": 14250
+    },
+    {
+      "qr": 1076,
+      "company": 120,
+      "revenue": 14000
+    },
+    {
+      "qr": 1393,
+      "company": 239,
+      "revenue": 13960
+    },
+    {
+      "qr": 1824,
+      "company": 121,
+      "revenue": 13890
+    },
+    {
+      "qr": 1088,
+      "company": 222,
+      "revenue": 13380
+    },
+    {
+      "qr": 1749,
+      "company": 133,
+      "revenue": 13000
+    },
+    {
+      "qr": 1222,
+      "company": 73,
+      "revenue": 12850
+    },
+    {
+      "qr": 1151,
+      "company": 120,
+      "revenue": 12800
+    },
+    {
+      "qr": 997,
+      "company": 4,
+      "revenue": 12631
+    },
+    {
+      "qr": 996,
+      "company": 4,
+      "revenue": 12600
+    },
+    {
+      "qr": 1943,
+      "company": 232,
+      "revenue": 12600
+    },
+    {
+      "qr": 1823,
+      "company": 121,
+      "revenue": 12540
+    },
+    {
+      "qr": 139,
+      "company": 62,
+      "revenue": 12500
+    },
+    {
+      "qr": 984,
+      "company": 43,
+      "revenue": 12150
+    },
+    {
+      "qr": 989,
+      "company": 4,
+      "revenue": 12000
+    },
+    {
+      "qr": 1237,
+      "company": 73,
+      "revenue": 11880
+    },
+    {
+      "qr": 1815,
+      "company": 150,
+      "revenue": 11510
+    },
+    {
+      "qr": 1103,
+      "company": 217,
+      "revenue": 11270
+    },
+    {
+      "qr": 1889,
+      "company": 222,
+      "revenue": 11260
+    },
+    {
+      "qr": 1096,
+      "company": 217,
+      "revenue": 11030
+    },
+    {
+      "qr": 1394,
+      "company": 133,
+      "revenue": 11020
+    },
+    {
+      "qr": 1842,
+      "company": 150,
+      "revenue": 10340
+    },
+    {
+      "qr": 1830,
+      "company": 150,
+      "revenue": 10280
+    }
+  ]
+}

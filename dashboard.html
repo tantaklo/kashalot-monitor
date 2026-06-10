@@ -203,6 +203,33 @@
 
     .tag.up { background: #052e16; color: #4ade80; }
 
+    /* Revenue block */
+    .revenue-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .top-list {
+      margin-top: 4px;
+    }
+
+    .top-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #1e1e2a;
+      font-size: 13px;
+    }
+
+    .top-rank { color: #4b5563; width: 24px; flex-shrink: 0; text-align: right; }
+    .top-qr   { color: #94a3b8; width: 60px; flex-shrink: 0; }
+    .top-bar-wrap { flex: 1; height: 6px; background: #12121a; border-radius: 3px; overflow: hidden; }
+    .top-bar  { height: 100%; background: #3b82f6; border-radius: 3px; }
+    .top-sum  { color: #e2e8f0; font-weight: 600; width: 90px; text-align: right; flex-shrink: 0; }
+
     /* Tariff analytics */
     .tariff-grid {
       display: grid;
@@ -323,6 +350,35 @@
         <div class="chart-empty" id="chartEmpty">Данные появятся после первого автоматического сканирования</div>
         <canvas id="chartCanvas" style="display:none" height="160"></canvas>
       </div>
+    </div>
+
+    <!-- Revenue analytics -->
+    <div class="chart-card" id="revenueSection" style="display:none">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Выручка по парку</div>
+          <div class="chart-sub" id="revenueUpdated"></div>
+        </div>
+      </div>
+      <div class="revenue-grid">
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-num green" id="revTotal">—</div>
+          <div class="stat-label">Суммарная выручка</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🐋</div>
+          <div class="stat-num blue" id="revFleet">—</div>
+          <div class="stat-label">Устройств в работе</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📊</div>
+          <div class="stat-num yellow" id="revAvg">—</div>
+          <div class="stat-label">Средняя на устройство</div>
+        </div>
+      </div>
+      <div class="section-title" style="margin-top:8px">Топ-15 устройств</div>
+      <div class="top-list" id="topList"></div>
     </div>
 
     <!-- Tariff analytics -->
@@ -604,7 +660,45 @@
       scanning = false;
     }
 
+    // --- Revenue ---
+    function fmt(n) {
+      if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' млн ₽';
+      if (n >= 1_000)     return (n / 1_000).toFixed(0) + ' тыс ₽';
+      return n + ' ₽';
+    }
+
+    async function loadRevenue() {
+      try {
+        const res = await fetch('./data/revenue.json?t=' + Date.now());
+        if (!res.ok) return;
+        const data = await res.json();
+
+        document.getElementById('revTotal').textContent  = fmt(data.total_revenue);
+        document.getElementById('revFleet').textContent  = data.fleet_size;
+        document.getElementById('revAvg').textContent    = fmt(data.avg_revenue);
+        document.getElementById('revenueUpdated').textContent = 'Данные за всё время · обновлено ' + data.updated;
+
+        const top = data.devices.slice(0, 15);
+        const maxRev = top[0].revenue;
+        const list = document.getElementById('topList');
+        list.innerHTML = '';
+        top.forEach((d, i) => {
+          const row = document.createElement('div');
+          row.className = 'top-row';
+          row.innerHTML = `
+            <span class="top-rank">${i + 1}</span>
+            <span class="top-qr">QR ${d.qr}</span>
+            <div class="top-bar-wrap"><div class="top-bar" style="width:${Math.round(d.revenue/maxRev*100)}%"></div></div>
+            <span class="top-sum">${fmt(d.revenue)}</span>`;
+          list.appendChild(row);
+        });
+
+        document.getElementById('revenueSection').style.display = 'block';
+      } catch(e) { console.error(e); }
+    }
+
     loadHistory();
+    loadRevenue();
   </script>
 </body>
 </html>
