@@ -187,26 +187,30 @@ function parseAvgCheck(html) {
 // --- Orders search (факт: реальные цены по тарифным слотам) ---
 
 async function fetchOrdersCsrf(jar) {
-  // Следуем редиректам (true), иначе после логина через 302 сессия может не подтвердиться
   const res = await request({
     hostname: 'gw.bumerang.tech',
     path: '/admin/order',
     method: 'GET',
     headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': jarToString(jar) },
-  }, null, true);
+  }, null, false);
   updateJar(jar, res.headers);
   const csrf = res.body.match(/name="csrf-token" content="([^"]+)"/)?.[1]
             || extractCsrf(res.body);
   if (!csrf) {
-    console.log('DEBUG fetchOrdersCsrf status:', res.status, 'body[:300]:', res.body.slice(0, 300));
+    console.log('DEBUG fetchOrdersCsrf status:', res.status, 'body[:300]:', res.body.replace(/\s+/g,' ').slice(0, 300));
     throw new Error('CSRF для orders не найден');
   }
-  return csrf;
+  // Также пробуем XSRF-TOKEN cookie (Laravel принимает его как X-XSRF-TOKEN)
+  const xsrfCookie = jar['XSRF-TOKEN'];
+  const xsrfToken  = xsrfCookie ? decodeURIComponent(xsrfCookie) : csrf;
+  console.log('Orders CSRF получен, XSRF-TOKEN cookie:', xsrfCookie ? 'есть' : 'нет');
+  return { csrf, xsrfToken };
 }
 
-async function fetchOrdersForDate(jar, csrf, date) {
+async function fetchOrdersForDate(jar, tokens, date) {
+  const { csrf, xsrfToken } = tokens;
   const params = new URLSearchParams({
-    draw: '1', start: '0', length: '3000',
+    draw: '1', start: '0', length: '1000',
     'search[value]': '', 'search[regex]': 'false',
     'order[0][column]': '0', 'order[0][dir]': 'desc',
     'columns[0][data]': 'id',
@@ -221,8 +225,6 @@ async function fetchOrdersForDate(jar, csrf, date) {
     'columns[9][data]': 'bonus_amount',
     start_date: date,
     end_date: date,
-    date_range_start: date,
-    date_range_finish: date,
   }).toString();
 
   const res = await request({
@@ -237,6 +239,7 @@ async function fetchOrdersForDate(jar, csrf, date) {
       'Referer': BASE + '/admin/order',
       'X-Requested-With': 'XMLHttpRequest',
       'X-CSRF-TOKEN': csrf,
+      'X-XSRF-TOKEN': xsrfToken,
     },
   }, params, false);
 
@@ -322,8 +325,8 @@ async function main() {
   // --- orders-daily.json: фактические цены по слотам ---
   console.log('Загружаем детальные заказы...');
   try {
-    const csrf   = await fetchOrdersCsrf(jar);
-    const oData  = await fetchOrdersForDate(jar, csrf, today);
+    const tokens = await fetchOrdersCsrf(jar);
+    const oData  = await fetchOrdersForDate(jar, tokens, today);
     const slots  = parseOrderStats(oData);
 
     const totalPaid = Object.values(slots).reduce((s, v) => s + v.count, 0);
