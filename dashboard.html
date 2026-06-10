@@ -425,6 +425,20 @@
       </div>
     </div>
 
+    <!-- Daily revenue chart -->
+    <div class="chart-card" id="revenueDailySection" style="display:none">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Выручка по дням</div>
+          <div class="chart-sub" id="revenueDailySub">из админки · фиксируется в 23:55</div>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-empty" id="revenueDailyEmpty">Данные появятся после первого ночного сбора</div>
+        <canvas id="revenueDailyCanvas" style="display:none" height="160"></canvas>
+      </div>
+    </div>
+
     <!-- Revenue analytics -->
     <div class="chart-card" id="revenueSection">
       <div class="chart-header collapsible" onclick="toggleSection('revenueBody', 'revenueArrow')">
@@ -999,9 +1013,94 @@
       });
     });
 
+    // --- Daily revenue chart ---
+    function drawRevenueChart(history) {
+      const canvas = document.getElementById('revenueDailyCanvas');
+      const empty  = document.getElementById('revenueDailyEmpty');
+      if (!history || history.length < 2) return;
+
+      empty.style.display  = 'none';
+      canvas.style.display = 'block';
+
+      const dpr = window.devicePixelRatio || 1;
+      const W   = canvas.parentElement.offsetWidth;
+      const H   = 160;
+      canvas.width  = W * dpr; canvas.height = H * dpr;
+      canvas.style.width  = W + 'px'; canvas.style.height = H + 'px';
+
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      const pad = { top: 16, right: 16, bottom: 36, left: 64 };
+      const cw = W - pad.left - pad.right;
+      const ch = H - pad.top - pad.bottom;
+
+      const vals  = history.map(r => r.revenue);
+      const maxV  = Math.max(...vals, 1);
+      const minV  = Math.min(...vals);
+      const range = maxV - minV || 1;
+
+      const xOf = i => pad.left + (i / (history.length - 1)) * cw;
+      const yOf = v => pad.top + ch - ((v - minV) / range) * ch;
+
+      // Grid lines
+      ctx.strokeStyle = '#2d2d3d'; ctx.lineWidth = 1;
+      [0, 0.5, 1].forEach(t => {
+        const y = pad.top + ch * (1 - t);
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cw, y); ctx.stroke();
+        const label = Math.round((minV + range * t) / 1000) + ' тыс';
+        ctx.fillStyle = '#4b5563'; ctx.font = '11px system-ui'; ctx.textAlign = 'right';
+        ctx.fillText(label, pad.left - 6, y + 4);
+      });
+
+      // X labels
+      const step = Math.max(1, Math.floor(history.length / 7));
+      ctx.fillStyle = '#4b5563'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+      history.forEach((r, i) => {
+        if (i % step === 0 || i === history.length - 1) {
+          const parts = r.date.split('-');
+          ctx.fillText(`${parts[2]}.${parts[1]}`, xOf(i), H - 8);
+        }
+      });
+
+      // Area
+      const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch);
+      grad.addColorStop(0, '#4ade8030'); grad.addColorStop(1, '#4ade8000');
+      ctx.beginPath();
+      history.forEach((r, i) => i === 0 ? ctx.moveTo(xOf(i), yOf(r.revenue)) : ctx.lineTo(xOf(i), yOf(r.revenue)));
+      ctx.lineTo(xOf(history.length - 1), pad.top + ch);
+      ctx.lineTo(xOf(0), pad.top + ch);
+      ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+
+      // Line
+      ctx.beginPath(); ctx.strokeStyle = '#4ade80'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+      history.forEach((r, i) => i === 0 ? ctx.moveTo(xOf(i), yOf(r.revenue)) : ctx.lineTo(xOf(i), yOf(r.revenue)));
+      ctx.stroke();
+
+      // Last dot + value
+      const last = history[history.length - 1];
+      ctx.beginPath(); ctx.arc(xOf(history.length - 1), yOf(last.revenue), 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#4ade80'; ctx.fill();
+
+      document.getElementById('revenueDailySub').textContent =
+        `последнее: ${fmt(last.revenue)} · ${last.date} · фиксируется в 23:55`;
+    }
+
+    async function loadRevenueDaily() {
+      try {
+        const res = await fetch('./data/revenue-daily.json?t=' + Date.now());
+        if (!res.ok) return;
+        const history = await res.json();
+        if (!history.length) return;
+        document.getElementById('revenueDailySection').style.display = 'block';
+        drawRevenueChart(history);
+      } catch {}
+    }
+
     loadHistory();
     loadRevenue();
     loadManagers();
+    loadRevenueDaily();
   </script>
 </body>
 </html>

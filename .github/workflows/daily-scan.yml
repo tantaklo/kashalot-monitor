@@ -2,8 +2,9 @@ name: Daily Fleet Scan
 
 on:
   schedule:
-    - cron: '0 6 * * *'   # 09:00 по Москве (UTC+3)
-  workflow_dispatch:        # ручной запуск из GitHub UI
+    - cron: '0 6 * * *'    # 09:00 Москва — сканирование доступности
+    - cron: '55 20 * * *'   # 23:55 Москва — выручка за день
+  workflow_dispatch:         # ручной запуск из GitHub UI
 
 jobs:
   scan:
@@ -20,13 +21,21 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Run scan
+      - name: Run fleet scan (09:00)
+        if: github.event.schedule == '0 6 * * *' || github.event_name == 'workflow_dispatch'
         run: node scan.js
+
+      - name: Run revenue scrape (23:55)
+        if: github.event.schedule == '55 20 * * *' || github.event_name == 'workflow_dispatch'
+        env:
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: node scrape-admin.js
 
       - name: Commit results
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/history.json
-          git diff --cached --quiet || git commit -m "scan: $(date -u '+%Y-%m-%d')"
+          git add data/history.json data/revenue-daily.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "data: $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
