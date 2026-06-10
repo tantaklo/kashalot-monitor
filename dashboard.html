@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Кашалот — Дашборд</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f13;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 32px 24px;
+    }
+
+    header {
+      max-width: 760px;
+      margin: 0 auto 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand { font-size: 18px; font-weight: 700; color: #e2e8f0; }
+    .brand span { color: #3b82f6; }
+
+    .last-update {
+      font-size: 12px;
+      color: #4b5563;
+    }
+
+    .main {
+      max-width: 760px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Hero — большая цифра */
+    .hero {
+      background: #1a1a24;
+      border: 1px solid #2d2d3d;
+      border-radius: 20px;
+      padding: 48px 40px;
+      text-align: center;
+    }
+
+    .hero-label {
+      font-size: 13px;
+      color: #6b7280;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .hero-number {
+      font-size: 96px;
+      font-weight: 800;
+      color: #4ade80;
+      line-height: 1;
+      margin-bottom: 12px;
+      transition: color 0.4s;
+    }
+
+    .hero-number.loading { color: #3b82f6; }
+
+    .hero-sub {
+      font-size: 16px;
+      color: #6b7280;
+      margin-bottom: 40px;
+    }
+
+    /* Progress */
+    .progress-wrap {
+      height: 6px;
+      background: #2d2d3d;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      border-radius: 6px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .progress-bar.done { background: linear-gradient(90deg, #16a34a, #4ade80); }
+
+    .progress-label {
+      font-size: 13px;
+      color: #4b5563;
+      margin-bottom: 32px;
+    }
+
+    .btn {
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 28px;
+      font-size: 15px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+    }
+
+    .btn:hover { background: #2563eb; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Stats grid */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: #1a1a24;
+      border: 1px solid #2d2d3d;
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: center;
+    }
+
+    .stat-icon { font-size: 28px; margin-bottom: 12px; }
+
+    .stat-num {
+      font-size: 40px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      transition: color 0.3s;
+    }
+
+    .stat-num.green  { color: #4ade80; }
+    .stat-num.yellow { color: #fbbf24; }
+    .stat-num.gray   { color: #4b5563; }
+
+    .stat-label {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    /* Log */
+    .section-title {
+      font-size: 12px;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+    }
+
+    .found-list-wrap {
+      background: #1a1a24;
+      border: 1px solid #2d2d3d;
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .found-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .found-list::-webkit-scrollbar { width: 4px; }
+    .found-list::-webkit-scrollbar-track { background: transparent; }
+    .found-list::-webkit-scrollbar-thumb { background: #2d2d3d; border-radius: 4px; }
+
+    .tag {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .tag.up       { background: #052e16; color: #4ade80; }
+    .tag.offline  { background: #1a1400; color: #fbbf24; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">Кашалот <span>Шеринг</span></div>
+    <div class="last-update" id="lastUpdate">Ещё не сканировалось</div>
+  </header>
+
+  <div class="main">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-label">Доступны к аренде прямо сейчас</div>
+      <div class="hero-number loading" id="heroNumber">—</div>
+      <div class="hero-sub" id="heroSub">Нажмите «Сканировать», чтобы проверить все устройства</div>
+
+      <div class="progress-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-label" id="progressLabel"></div>
+
+      <button class="btn" id="btnScan" onclick="startScan()">Сканировать</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-num green" id="cntUp">—</div>
+        <div class="stat-label">Доступны</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🌙</div>
+        <div class="stat-num yellow" id="cntOffline">—</div>
+        <div class="stat-label">Не в сезоне</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🐋</div>
+        <div class="stat-num gray" id="cntTotal">—</div>
+        <div class="stat-label">Всего в парке</div>
+      </div>
+    </div>
+
+    <!-- Found list -->
+    <div class="found-list-wrap" id="foundSection" style="display:none">
+      <div class="section-title">Доступные устройства</div>
+      <div class="found-list" id="foundList"></div>
+    </div>
+
+  </div>
+
+  <script>
+    const PROXY = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev/?url=';
+    const TOTAL_RANGE = 2000;
+    const CONCURRENCY = 30;
+
+    let scanning = false;
+
+    function parseStatus(html) {
+      if (!html || html.includes('Нет Кашалота')) return 'notfound';
+      if (html.includes('устал') || html.includes('вернется') || html.includes('погода')) return 'offline';
+      if (html.includes('shadow-text')) return 'up';
+      return 'notfound';
+    }
+
+    async function checkOne(num) {
+      const url = PROXY + encodeURIComponent('https://k-s.app/qr/' + num);
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) return { num, status: 'error' };
+        const html = await res.text();
+        return { num, status: parseStatus(html) };
+      } catch {
+        return { num, status: 'error' };
+      }
+    }
+
+    async function runBatch(nums) {
+      return Promise.all(nums.map(n => checkOne(n)));
+    }
+
+    async function startScan() {
+      if (scanning) return;
+      scanning = true;
+
+      const btn = document.getElementById('btnScan');
+      btn.disabled = true;
+      btn.textContent = 'Сканирование...';
+
+      const heroNumber  = document.getElementById('heroNumber');
+      const heroSub     = document.getElementById('heroSub');
+      const progressBar = document.getElementById('progressBar');
+      const progressLbl = document.getElementById('progressLabel');
+      const cntUp       = document.getElementById('cntUp');
+      const cntOffline  = document.getElementById('cntOffline');
+      const cntTotal    = document.getElementById('cntTotal');
+      const foundList   = document.getElementById('foundList');
+      const foundSection = document.getElementById('foundSection');
+      const lastUpdate  = document.getElementById('lastUpdate');
+
+      heroNumber.className = 'hero-number loading';
+      heroNumber.textContent = '...';
+      heroSub.textContent = 'Идёт проверка устройств...';
+      progressBar.className = 'progress-bar';
+      progressBar.style.width = '0%';
+      foundList.innerHTML = '';
+      foundSection.style.display = 'none';
+
+      let up = 0, offline = 0, total = 0, done = 0;
+
+      cntUp.textContent = '0';
+      cntOffline.textContent = '0';
+      cntTotal.textContent = '0';
+
+      const nums = Array.from({ length: TOTAL_RANGE }, (_, i) => i + 1);
+
+      for (let i = 0; i < nums.length; i += CONCURRENCY) {
+        const batch = nums.slice(i, i + CONCURRENCY);
+        const results = await runBatch(batch);
+
+        results.forEach(({ num, status }) => {
+          done++;
+          if (status === 'up') {
+            up++;
+            total++;
+            const tag = document.createElement('a');
+            tag.className = 'tag up';
+            tag.href = 'https://k-s.app/qr/' + num;
+            tag.target = '_blank';
+            tag.textContent = '№' + num;
+            foundList.appendChild(tag);
+            if (foundSection.style.display === 'none') foundSection.style.display = 'block';
+          } else if (status === 'offline') {
+            offline++;
+            total++;
+          }
+        });
+
+        const pct = Math.round((done / TOTAL_RANGE) * 100);
+        progressBar.style.width = pct + '%';
+        progressLbl.textContent = `Проверено ${done} из ${TOTAL_RANGE} (${pct}%)`;
+        heroNumber.textContent = up;
+        cntUp.textContent = up;
+        cntOffline.textContent = offline;
+        cntTotal.textContent = total;
+      }
+
+      heroNumber.className = 'hero-number';
+      heroSub.textContent = `из ${total} устройств в парке`;
+      progressBar.className = 'progress-bar done';
+      progressBar.style.width = '100%';
+      progressLbl.textContent = `Сканирование завершено · ${TOTAL_RANGE} адресов проверено`;
+      lastUpdate.textContent = 'Обновлено в ' + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+      btn.disabled = false;
+      btn.textContent = 'Обновить';
+      scanning = false;
+    }
+  </script>
+</body>
+</html>
