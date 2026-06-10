@@ -149,7 +149,7 @@ async function fetchDashboard(cookies) {
 
   if (!res.body.includes('За сегодня')) {
     console.log('DEBUG dashboard status:', res.status);
-    console.log('DEBUG dashboard body[:600]:', res.body.slice(0, 600));
+    console.log('DEBUG dashboard body[:3000]:', res.body.slice(0, 3000));
     throw new Error('Дашборд не загрузился или сессия не активна');
   }
   return res.body;
