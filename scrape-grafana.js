@@ -224,6 +224,23 @@ async function main() {
   }
   const n3 = saveJson(carsPath, carsHistory, today, { date: today, cars });
   console.log(`Сохранено top-cars-daily.json (${n3} записей)`);
+
+  // --- history.json: дописываем активность в запись за сегодня ---
+  const histPath = path.join(__dirname, 'data', 'history.json');
+  let histData = [];
+  if (fs.existsSync(histPath)) {
+    try { histData = JSON.parse(fs.readFileSync(histPath, 'utf-8')); } catch {}
+  }
+  const hi = histData.findIndex(r => r.date === today);
+  if (hi >= 0) {
+    histData[hi].active_objects = carsCount;
+  } else {
+    // Сканирований ещё не было — создаём минимальную запись
+    histData.push({ date: today, active_objects: carsCount });
+  }
+  histData.sort((a, b) => a.date.localeCompare(b.date));
+  fs.writeFileSync(histPath, JSON.stringify(histData, null, 2), 'utf-8');
+  console.log(`history.json: active_objects=${carsCount} за ${today}`);
 }
 
 main().catch(err => {
