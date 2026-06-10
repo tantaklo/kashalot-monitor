@@ -245,6 +245,122 @@
     }
     .revenue-link:hover { border-color: #3b82f6; background: #1e1e2e; }
 
+    /* Fleet metrics card */
+    .fleet-card {
+      background: #1a1a24;
+      border: 1px solid #2d2d3d;
+      border-radius: 16px;
+      padding: 28px 32px;
+      max-width: 560px;
+      width: 100%;
+      margin-top: 16px;
+    }
+
+    .fleet-card-title {
+      font-size: 12px;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .fleet-date {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 20px;
+    }
+
+    .fleet-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .fleet-stat {
+      background: #12121a;
+      border: 1px solid #2d2d3d;
+      border-radius: 10px;
+      padding: 14px 8px;
+      text-align: center;
+    }
+
+    .fleet-stat-val {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .fleet-stat-val.avail  { color: #60a5fa; }
+    .fleet-stat-val.active { color: #4ade80; }
+    .fleet-stat-val.share  { color: #a78bfa; }
+
+    .fleet-stat-label {
+      font-size: 11px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .fleet-share-bar {
+      height: 6px;
+      background: #2d2d3d;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .fleet-share-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #7c3aed, #a78bfa);
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    .fleet-history-title {
+      font-size: 12px;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .fleet-history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .fleet-history-table th {
+      color: #4b5563;
+      font-weight: 500;
+      text-align: right;
+      padding: 4px 8px;
+      border-bottom: 1px solid #2d2d3d;
+    }
+
+    .fleet-history-table th:first-child { text-align: left; }
+
+    .fleet-history-table td {
+      color: #94a3b8;
+      text-align: right;
+      padding: 6px 8px;
+      border-bottom: 1px solid #1e1e2a;
+    }
+
+    .fleet-history-table td:first-child { text-align: left; color: #6b7280; }
+    .fleet-history-table tr:last-child td { border-bottom: none; }
+    .fleet-history-table .today td { color: #e2e8f0; }
+    .fleet-history-table .today td:first-child { color: #94a3b8; }
+
+    .fleet-no-data {
+      font-size: 13px;
+      color: #4b5563;
+      text-align: center;
+      padding: 16px;
+    }
+
     .log { margin-top: 24px; text-align: left; }
 
     .log-title {
@@ -334,6 +450,36 @@
       <ul class="log-list" id="logList"></ul>
     </div>
 
+  </div>
+
+  <!-- Fleet metrics card -->
+  <div class="fleet-card" id="fleetCard">
+    <div class="fleet-card-title">Флот · суточные метрики</div>
+    <div class="fleet-date" id="fleetDate">Загружаем данные…</div>
+
+    <div class="fleet-stats">
+      <div class="fleet-stat">
+        <div class="fleet-stat-val avail" id="fAvail">—</div>
+        <div class="fleet-stat-label">Доступность</div>
+      </div>
+      <div class="fleet-stat">
+        <div class="fleet-stat-val active" id="fActive">—</div>
+        <div class="fleet-stat-label">Активность</div>
+      </div>
+      <div class="fleet-stat">
+        <div class="fleet-stat-val share" id="fShare">—</div>
+        <div class="fleet-stat-label">Доля</div>
+      </div>
+    </div>
+
+    <div class="fleet-share-bar">
+      <div class="fleet-share-fill" id="fShareBar" style="width:0%"></div>
+    </div>
+
+    <div class="fleet-history-title">История за 7 дней</div>
+    <div id="fleetHistoryWrap">
+      <div class="fleet-no-data">Загружаем…</div>
+    </div>
   </div>
 
   <script>
@@ -520,6 +666,66 @@
 
     check();
     checkInterval = setInterval(check, INTERVAL);
+
+    // --- Fleet metrics ---
+    async function loadFleetMetrics() {
+      try {
+        const res = await fetch('data/history.json?_=' + Date.now());
+        if (!res.ok) throw new Error(res.status);
+        const history = await res.json();
+        if (!history.length) return;
+
+        history.sort((a, b) => a.date.localeCompare(b.date));
+        const last7 = history.slice(-7);
+        const latest = last7[last7.length - 1];
+
+        const avail  = latest.max_available ?? null;
+        const active = latest.active_objects ?? latest.peak_rented ?? null;
+        const share  = (avail && active) ? Math.round(active / avail * 100) : null;
+
+        const fmt = v => v != null ? v : '—';
+        const fmtPct = v => v != null ? v + '%' : '—';
+
+        document.getElementById('fAvail').textContent  = fmt(avail);
+        document.getElementById('fActive').textContent = fmt(active);
+        document.getElementById('fShare').textContent  = fmtPct(share);
+        document.getElementById('fShareBar').style.width = (share ?? 0) + '%';
+
+        const d = new Date(latest.date + 'T00:00:00');
+        const label = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+        document.getElementById('fleetDate').textContent = label;
+
+        // History table
+        const wrap = document.getElementById('fleetHistoryWrap');
+        const rows = last7.map(r => {
+          const av = r.max_available ?? null;
+          const ac = r.active_objects ?? r.peak_rented ?? null;
+          const sh = (av && ac) ? Math.round(ac / av * 100) : null;
+          const isToday = r.date === latest.date;
+          const dateLabel = new Date(r.date + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+          return `<tr class="${isToday ? 'today' : ''}">
+            <td>${dateLabel}</td>
+            <td>${av ?? '—'}</td>
+            <td>${ac ?? '—'}</td>
+            <td>${sh != null ? sh + '%' : '—'}</td>
+          </tr>`;
+        }).join('');
+
+        wrap.innerHTML = `<table class="fleet-history-table">
+          <thead><tr>
+            <th>Дата</th>
+            <th>Доступность</th>
+            <th>Активность</th>
+            <th>Доля</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+      } catch (e) {
+        document.getElementById('fleetDate').textContent = 'Нет данных (' + e.message + ')';
+      }
+    }
+
+    loadFleetMetrics();
   </script>
 </body>
 </html>
