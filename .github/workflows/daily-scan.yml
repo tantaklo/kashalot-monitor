@@ -36,6 +36,6 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/history.json data/revenue-daily.json 2>/dev/null || true
+          git add data/history.json data/revenue-daily.json data/tariff-history.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "data: $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
