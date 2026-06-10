@@ -34,9 +34,9 @@ jobs:
       - name: Run revenue scrape (23:55)
         if: github.event.schedule == '55 20 * * *' || github.event_name == 'workflow_dispatch'
         env:
-          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
-        run: node scrape-admin.js
+          GRAFANA_USER: ${{ secrets.GRAFANA_USER }}
+          GRAFANA_PASSWORD: ${{ secrets.GRAFANA_PASSWORD }}
+        run: node scrape-grafana.js
 
       - name: Commit results
         run: |
