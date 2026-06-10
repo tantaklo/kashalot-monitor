@@ -15,25 +15,14 @@
       padding: 32px 24px;
     }
 
-    header {
-      max-width: 860px;
-      margin: 0 auto 40px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .brand { font-size: 18px; font-weight: 700; }
-    .brand span { color: #3b82f6; }
-
-    .header-links { display: flex; gap: 16px; }
-    .header-links a {
-      font-size: 13px;
-      color: #4b5563;
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    .header-links a:hover { color: #94a3b8; }
+    .site-nav { position: sticky; top: 0; z-index: 100; background: #0a0a10; border-bottom: 1px solid #1e1e2a; padding: 0 24px; margin: -32px -24px 32px; }
+    .nav-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 50px; }
+    .nav-brand { font-size: 15px; font-weight: 700; color: #e2e8f0; text-decoration: none; }
+    .nav-brand em { color: #3b82f6; font-style: normal; }
+    .nav-links { display: flex; gap: 2px; align-items: center; }
+    .nav-link { font-size: 13px; color: #4b5563; text-decoration: none; padding: 6px 14px; border-radius: 8px; transition: color 0.15s, background 0.15s; }
+    .nav-link:hover { color: #94a3b8; background: #1a1a24; }
+    .nav-link.active { color: #e2e8f0; }
 
     .main {
       max-width: 860px;
@@ -369,16 +358,74 @@
     }
     .mgr-co-name { flex: 1; }
     .mgr-co-sum  { color: #94a3b8; text-align: right; }
+    /* Revenue analytics section */
+    .rev-kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .rev-kpi {
+      background: #12121a;
+      border: 1px solid #1e1e2a;
+      border-radius: 12px;
+      padding: 14px 18px;
+    }
+    .rev-kpi-label {
+      font-size: 10px;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .rev-kpi-value {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+    .rev-kpi-value.accent { color: #60a5fa; }
+    .rev-kpi-value.green  { color: #4ade80; }
+    .rev-kpi-value.muted  { color: #94a3b8; }
+    .rev-kpi-sub { font-size: 11px; color: #4b5563; }
+    .period-tabs { display: flex; gap: 6px; margin-bottom: 18px; }
+    .period-tab {
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid #2d2d3d;
+      background: transparent;
+      color: #4b5563;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .period-tab.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+    .period-tab:hover:not(.active) { border-color: #4b5563; color: #94a3b8; }
+    .rev-chart-block { margin-bottom: 24px; }
+    .rev-chart-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
+    }
+    .rev-chart-wrap { position: relative; height: 180px; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <header>
-    <div class="brand">Кашалот <span>Шеринг</span></div>
-    <div class="header-links">
-      <a href="index.html">Мониторинг устройства</a>
-      <span class="last-update" id="lastUpdate"></span>
+  <nav class="site-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="index.html">Кашалот <em>Шеринг</em></a>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">Мониторинг</a>
+        <a class="nav-link active" href="dashboard.html">Аналитика</a>
+        <span class="last-update" id="lastUpdate" style="font-size:12px;color:#374151;margin-left:8px"></span>
+      </div>
     </div>
-  </header>
+  </nav>
 
   <div class="main">
 
@@ -439,7 +486,81 @@
       </div>
     </div>
 
-    <!-- Revenue analytics -->
+    <!-- Admin revenue analytics (Chart.js) -->
+    <div class="chart-card" id="revAnalyticsSection">
+      <div class="chart-header collapsible" onclick="toggleSection('revAnalyticsBody', 'revAnalyticsArrow')">
+        <div>
+          <div class="chart-title">Аналитика выручки <span class="toggle-arrow open" id="revAnalyticsArrow">▼</span></div>
+          <div class="chart-sub" id="revAnalyticsUpdated">из админки · фиксируется в 23:55</div>
+        </div>
+      </div>
+      <div class="section-body open" id="revAnalyticsBody">
+
+        <div class="rev-kpi-row">
+          <div class="rev-kpi">
+            <div class="rev-kpi-label">Выручка / кашалот</div>
+            <div class="rev-kpi-value accent" id="raKpiPerUnit">—</div>
+            <div class="rev-kpi-sub">₽ / активный · сегодня</div>
+          </div>
+          <div class="rev-kpi">
+            <div class="rev-kpi-label">Выручка итого</div>
+            <div class="rev-kpi-value green" id="raKpiRevenue">—</div>
+            <div class="rev-kpi-sub" id="raKpiRevenueDate">нет данных</div>
+          </div>
+          <div class="rev-kpi">
+            <div class="rev-kpi-label">Заказов</div>
+            <div class="rev-kpi-value muted" id="raKpiOrders">—</div>
+            <div class="rev-kpi-sub">поездок · сегодня</div>
+          </div>
+          <div class="rev-kpi">
+            <div class="rev-kpi-label">Средний чек</div>
+            <div class="rev-kpi-value accent" id="raKpiAvgCheck">—</div>
+            <div class="rev-kpi-sub">₽ / поездка</div>
+          </div>
+          <div class="rev-kpi">
+            <div class="rev-kpi-label">Доступность парка</div>
+            <div class="rev-kpi-value green" id="raKpiAvail">—</div>
+            <div class="rev-kpi-sub"><span id="raKpiActive">—</span> из <span id="raKpiTotal">—</span> активны</div>
+          </div>
+          <div class="rev-kpi">
+            <div class="rev-kpi-label">Выручка / кашалот 7д</div>
+            <div class="rev-kpi-value accent" id="raKpiAvg7">—</div>
+            <div class="rev-kpi-sub">₽ · среднее за 7 дней</div>
+          </div>
+        </div>
+
+        <div class="period-tabs" id="raPeriodTabs">
+          <button class="period-tab active" data-period="7">7 дней</button>
+          <button class="period-tab" data-period="30">30 дней</button>
+          <button class="period-tab" data-period="0">Всё время</button>
+        </div>
+
+        <div class="rev-chart-block">
+          <div class="rev-chart-title">Выручка на один активный кашалот, ₽/день</div>
+          <div class="rev-chart-wrap"><canvas id="raChartPerUnit"></canvas></div>
+        </div>
+        <div class="rev-chart-block">
+          <div class="rev-chart-title">Выручка итого, ₽/день</div>
+          <div class="rev-chart-wrap"><canvas id="raChartRevenue"></canvas></div>
+        </div>
+        <div class="rev-chart-block">
+          <div class="rev-chart-title">Заказы в день</div>
+          <div class="rev-chart-wrap"><canvas id="raChartOrders"></canvas></div>
+        </div>
+        <div class="rev-chart-block">
+          <div class="rev-chart-title">Средний чек, ₽</div>
+          <div class="rev-chart-wrap"><canvas id="raChartAvgCheck"></canvas></div>
+        </div>
+        <div class="rev-chart-block">
+          <div class="rev-chart-title">Доступность парка, %</div>
+          <div class="rev-chart-wrap"><canvas id="raChartAvail"></canvas></div>
+        </div>
+
+        <div style="font-size:12px;color:#374151;text-align:right;margin-top:-8px" id="raUpdatedAt"></div>
+      </div>
+    </div>
+
+    <!-- Revenue analytics (CSV) -->
     <div class="chart-card" id="revenueSection">
       <div class="chart-header collapsible" onclick="toggleSection('revenueBody', 'revenueArrow')">
         <div style="display:flex;align-items:center">
@@ -1101,6 +1222,118 @@
     loadRevenue();
     loadManagers();
     loadRevenueDaily();
+
+    // --- Аналитика выручки (Chart.js) ---
+    Chart.defaults.color = '#4b5563';
+    Chart.defaults.borderColor = '#1e1e2a';
+    Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+
+    function raChartOpts(yLabel, yMax) {
+      const opts = {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1a1a24', borderColor: '#2d2d3d', borderWidth: 1,
+            titleColor: '#94a3b8', bodyColor: '#e2e8f0',
+            callbacks: { label: ctx => ' ' + ctx.parsed.y.toLocaleString('ru-RU') + (yLabel ? ' ' + yLabel : '') }
+          }
+        },
+        scales: {
+          x: { grid: { color: '#1a1a24' }, ticks: { maxTicksLimit: 8, maxRotation: 0 } },
+          y: { grid: { color: '#1e1e2a' }, beginAtZero: false, ticks: { callback: v => v.toLocaleString('ru-RU') } }
+        }
+      };
+      if (yMax) opts.scales.y.max = yMax;
+      return opts;
+    }
+
+    function raBuildChart(canvasId, labels, data, color, yLabel, yMax) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      const type = data.filter(v => v != null).length <= 1 ? 'bar' : 'line';
+      const dataset = type === 'bar'
+        ? { data, backgroundColor: color + '60', borderColor: color, borderWidth: 2, borderRadius: 6 }
+        : { data, borderColor: color, backgroundColor: color + '18', borderWidth: 2,
+            pointRadius: data.length < 15 ? 4 : 2, pointBackgroundColor: color, fill: true, tension: 0.35 };
+      const opts = raChartOpts(yLabel, yMax);
+      if (type === 'bar') opts.scales.y.beginAtZero = true;
+      return new Chart(ctx, { type, data: { labels, datasets: [dataset] }, options: opts });
+    }
+
+    let raAllData = [];
+    const raCharts = {};
+
+    function raRenderCharts(days) {
+      const rows = days ? raAllData.slice(-days) : raAllData;
+      const labels   = rows.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
+      const perUnit  = rows.map(r => r.activeObjects ? Math.round(r.revenue / r.activeObjects) : null);
+      const revenue  = rows.map(r => r.revenue);
+      const orders   = rows.map(r => r.orders ?? null);
+      const avgCheck = rows.map(r => r.avgCheck ?? null);
+      const avail    = rows.map(r => r.totalObjects ? Math.round(r.activeObjects / r.totalObjects * 100) : null);
+
+      ['perUnit','revenue','orders','avgCheck','avail'].forEach(k => {
+        if (raCharts[k]) { raCharts[k].destroy(); delete raCharts[k]; }
+      });
+
+      raCharts.perUnit  = raBuildChart('raChartPerUnit',  labels, perUnit,  '#60a5fa', '₽');
+      raCharts.revenue  = raBuildChart('raChartRevenue',  labels, revenue,  '#4ade80', '₽');
+      raCharts.orders   = raBuildChart('raChartOrders',   labels, orders,   '#f59e0b', '');
+      raCharts.avgCheck = raBuildChart('raChartAvgCheck', labels, avgCheck, '#f472b6', '₽');
+      raCharts.avail    = raBuildChart('raChartAvail',    labels, avail,    '#34d399', '%', 100);
+    }
+
+    function raUpdateKPI(rows) {
+      if (!rows.length) return;
+      const last = rows[rows.length - 1];
+      const perUnit = last.activeObjects ? Math.round(last.revenue / last.activeObjects) : null;
+      const avail   = last.totalObjects  ? Math.round(last.activeObjects / last.totalObjects * 100) : null;
+      document.getElementById('raKpiPerUnit').textContent  = perUnit ? perUnit.toLocaleString('ru-RU') : '—';
+      document.getElementById('raKpiRevenue').textContent  = last.revenue.toLocaleString('ru-RU') + ' ₽';
+      document.getElementById('raKpiRevenueDate').textContent = last.date;
+      document.getElementById('raKpiOrders').textContent   = last.orders != null ? last.orders.toLocaleString('ru-RU') : '—';
+      document.getElementById('raKpiAvgCheck').textContent = last.avgCheck != null ? last.avgCheck.toLocaleString('ru-RU') : '—';
+      document.getElementById('raKpiAvail').textContent    = avail != null ? avail + '%' : '—';
+      document.getElementById('raKpiActive').textContent   = last.activeObjects ?? '—';
+      document.getElementById('raKpiTotal').textContent    = last.totalObjects ?? '—';
+      const last7 = rows.slice(-7).filter(r => r.activeObjects);
+      if (last7.length) {
+        const avg = Math.round(last7.reduce((s, r) => s + r.revenue / r.activeObjects, 0) / last7.length);
+        document.getElementById('raKpiAvg7').textContent = avg.toLocaleString('ru-RU');
+      }
+    }
+
+    let raActivePeriod = 7;
+    document.getElementById('raPeriodTabs').querySelectorAll('.period-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('raPeriodTabs').querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        raActivePeriod = parseInt(btn.dataset.period);
+        raRenderCharts(raActivePeriod);
+      });
+    });
+
+    let raResizeTimer;
+    window.addEventListener('scroll', () => {
+      clearTimeout(raResizeTimer);
+      raResizeTimer = setTimeout(() => { Object.values(raCharts).forEach(c => c.resize()); }, 100);
+    }, { passive: true });
+
+    async function loadRevAnalytics() {
+      try {
+        const res = await fetch('./data/revenue-daily.json?t=' + Date.now());
+        if (!res.ok) return;
+        raAllData = await res.json();
+        raAllData.sort((a, b) => a.date.localeCompare(b.date));
+        raUpdateKPI(raAllData);
+        requestAnimationFrame(() => raRenderCharts(raActivePeriod));
+        const last = raAllData[raAllData.length - 1];
+        document.getElementById('raUpdatedAt').textContent = 'Обновлено: ' + last.date;
+      } catch (e) { console.error('Revenue analytics:', e); }
+    }
+
+    loadRevAnalytics();
   </script>
 </body>
 </html>

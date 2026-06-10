@@ -15,9 +15,17 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 24px;
+      padding: 40px 24px 64px;
     }
+
+    .site-nav { position: sticky; top: 0; z-index: 100; width: 100%; background: #0a0a10; border-bottom: 1px solid #1e1e2a; padding: 0 24px; margin-bottom: 0; align-self: stretch; }
+    .nav-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 50px; }
+    .nav-brand { font-size: 15px; font-weight: 700; color: #e2e8f0; text-decoration: none; }
+    .nav-brand em { color: #3b82f6; font-style: normal; }
+    .nav-links { display: flex; gap: 2px; }
+    .nav-link { font-size: 13px; color: #4b5563; text-decoration: none; padding: 6px 14px; border-radius: 8px; transition: color 0.15s, background 0.15s; }
+    .nav-link:hover { color: #94a3b8; background: #1a1a24; }
+    .nav-link.active { color: #e2e8f0; }
 
     .card {
       background: #1a1a24;
@@ -270,7 +278,16 @@
   </style>
 </head>
 <body>
-  <div class="card">
+  <nav class="site-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="index.html">Кашалот <em>Шеринг</em></a>
+      <div class="nav-links">
+        <a class="nav-link active" href="index.html">Мониторинг</a>
+        <a class="nav-link" href="dashboard.html">Аналитика</a>
+      </div>
+    </div>
+  </nav>
+  <div class="card" style="margin-top: 40px">
     <div class="label">Мониторинг доступности</div>
     <div class="url" id="urlDisplay">https://k-s.app/qr/1057</div>
 

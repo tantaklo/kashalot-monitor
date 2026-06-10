@@ -16,29 +16,14 @@
       padding: 32px 24px 64px;
     }
 
-    .page-header {
-      max-width: 900px;
-      margin: 0 auto 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .page-title {
-      font-size: 22px;
-      font-weight: 600;
-      color: #e2e8f0;
-    }
-
-    .back-link {
-      font-size: 13px;
-      color: #4b5563;
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-    .back-link:hover { color: #94a3b8; }
+    .site-nav { position: sticky; top: 0; z-index: 100; background: #0a0a10; border-bottom: 1px solid #1e1e2a; padding: 0 24px; margin: -32px -24px 32px; }
+    .nav-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 50px; }
+    .nav-brand { font-size: 15px; font-weight: 700; color: #e2e8f0; text-decoration: none; }
+    .nav-brand em { color: #3b82f6; font-style: normal; }
+    .nav-links { display: flex; gap: 2px; }
+    .nav-link { font-size: 13px; color: #4b5563; text-decoration: none; padding: 6px 14px; border-radius: 8px; transition: color 0.15s, background 0.15s; }
+    .nav-link:hover { color: #94a3b8; background: #1a1a24; }
+    .nav-link.active { color: #e2e8f0; }
 
     /* KPI Cards */
     .kpi-row {
@@ -151,13 +136,15 @@
 </head>
 <body>
 
-  <div class="page-header">
-    <div class="page-title">Выручка · аналитика</div>
-    <div style="display:flex;gap:20px;align-items:center">
-      <a class="back-link" href="index.html">← Мониторинг доступности</a>
-      <a class="back-link" href="dashboard.html">Тарифы и флот →</a>
+  <nav class="site-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="index.html">Кашалот <em>Шеринг</em></a>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">Мониторинг</a>
+        <a class="nav-link active" href="dashboard.html">Аналитика</a>
+      </div>
     </div>
-  </div>
+  </nav>
 
   <!-- KPI Row 1: ключевые показатели -->
   <div class="kpi-row">
