@@ -108,19 +108,13 @@
       animation: pulse-blue 1.2s infinite;
     }
 
-    .status-ring.up {
-      background: #052e16;
-      box-shadow: 0 0 32px #16a34a55;
-    }
-
-    .status-ring.down {
-      background: #2d0707;
-      box-shadow: 0 0 32px #dc262655;
-    }
+    .status-ring.up       { background: #052e16; box-shadow: 0 0 32px #16a34a55; }
+    .status-ring.notfound { background: #1a1400; box-shadow: 0 0 32px #ca8a0455; }
+    .status-ring.down     { background: #2d0707; box-shadow: 0 0 32px #dc262655; }
 
     @keyframes pulse-blue {
       0%, 100% { box-shadow: 0 0 0 0 #3b82f620; }
-      50% { box-shadow: 0 0 24px 8px #3b82f630; }
+      50%       { box-shadow: 0 0 24px 8px #3b82f630; }
     }
 
     .status-text {
@@ -131,6 +125,7 @@
     }
 
     .status-text.up       { color: #4ade80; }
+    .status-text.notfound { color: #fbbf24; }
     .status-text.down     { color: #f87171; }
     .status-text.checking { color: #60a5fa; }
 
@@ -141,11 +136,38 @@
       min-height: 20px;
     }
 
-    .divider {
-      height: 1px;
-      background: #2d2d3d;
-      margin-bottom: 32px;
+    /* Тарифы */
+    .tariffs-wrap { margin-bottom: 32px; text-align: left; }
+
+    .tariffs-title {
+      font-size: 12px;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
     }
+
+    .tariffs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .tariff-card {
+      background: #12121a;
+      border: 1px solid #2d2d3d;
+      border-radius: 10px;
+      padding: 14px 12px;
+    }
+
+    .tariff-type { font-size: 12px; font-weight: 600; color: #94a3b8; margin-bottom: 2px; }
+    .tariff-meta { font-size: 11px; color: #4b5563; margin-bottom: 8px; }
+
+    .tariff-prices { display: flex; align-items: baseline; gap: 8px; }
+    .tariff-price-now { font-size: 20px; font-weight: 700; color: #4ade80; }
+    .tariff-price-old { font-size: 13px; color: #4b5563; text-decoration: line-through; }
+
+    .divider { height: 1px; background: #2d2d3d; margin-bottom: 32px; }
 
     .stats {
       display: grid;
@@ -161,12 +183,7 @@
       padding: 16px 8px;
     }
 
-    .stat-val {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
+    .stat-val { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
     .stat-val.green { color: #4ade80; }
     .stat-val.red   { color: #f87171; }
     .stat-val.blue  { color: #60a5fa; }
@@ -221,8 +238,9 @@
 
     .log-item .time { color: #4b5563; flex-shrink: 0; }
     .log-item .dot  { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-    .log-item .dot.up   { background: #4ade80; }
-    .log-item .dot.down { background: #f87171; }
+    .log-item .dot.up       { background: #4ade80; }
+    .log-item .dot.notfound { background: #fbbf24; }
+    .log-item .dot.down     { background: #f87171; }
     .log-item .msg { color: #94a3b8; }
   </style>
 </head>
@@ -240,6 +258,11 @@
     <div class="status-ring checking" id="ring">🔄</div>
     <div class="status-text checking" id="statusText">Проверка...</div>
     <div class="status-sub" id="statusSub">Ожидание первого ответа</div>
+
+    <div class="tariffs-wrap" id="tariffsWrap" style="display:none">
+      <div class="tariffs-title">Тарифы на аренду</div>
+      <div class="tariffs" id="tariffsGrid"></div>
+    </div>
 
     <div class="divider"></div>
 
@@ -271,24 +294,27 @@
 
   <script>
     const INTERVAL = 10000;
+    const PROXY = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev/?url=';
 
     let qrNum = '1057';
     let countUp = 0, countDown = 0, countTotal = 0;
     let nextCheck = Date.now() + INTERVAL;
     let timerRAF, checkInterval;
 
-    const ring       = document.getElementById('ring');
-    const statusText = document.getElementById('statusText');
-    const statusSub  = document.getElementById('statusSub');
-    const elUp       = document.getElementById('countUp');
-    const elDown     = document.getElementById('countDown');
-    const elTotal    = document.getElementById('countTotal');
-    const timerBar   = document.getElementById('timerBar');
-    const timerLabel = document.getElementById('timerLabel');
-    const logList    = document.getElementById('logList');
-    const qrInput    = document.getElementById('qrInput');
-    const btnApply   = document.getElementById('btnApply');
-    const urlDisplay = document.getElementById('urlDisplay');
+    const ring        = document.getElementById('ring');
+    const statusText  = document.getElementById('statusText');
+    const statusSub   = document.getElementById('statusSub');
+    const elUp        = document.getElementById('countUp');
+    const elDown      = document.getElementById('countDown');
+    const elTotal     = document.getElementById('countTotal');
+    const timerBar    = document.getElementById('timerBar');
+    const timerLabel  = document.getElementById('timerLabel');
+    const logList     = document.getElementById('logList');
+    const qrInput     = document.getElementById('qrInput');
+    const btnApply    = document.getElementById('btnApply');
+    const urlDisplay  = document.getElementById('urlDisplay');
+    const tariffsWrap = document.getElementById('tariffsWrap');
+    const tariffsGrid = document.getElementById('tariffsGrid');
 
     function applyNewTarget() {
       const num = qrInput.value.trim();
@@ -298,6 +324,7 @@
       countUp = 0; countDown = 0; countTotal = 0;
       elUp.textContent = 0; elDown.textContent = 0; elTotal.textContent = 0;
       logList.innerHTML = '';
+      tariffsWrap.style.display = 'none';
       clearInterval(checkInterval);
       check();
       checkInterval = setInterval(check, INTERVAL);
@@ -306,13 +333,11 @@
     btnApply.addEventListener('click', applyNewTarget);
     qrInput.addEventListener('keydown', e => { if (e.key === 'Enter') applyNewTarget(); });
 
-    function setStatus(state) {
+    function setStatus(state, label) {
       ring.className = 'status-ring ' + state;
       statusText.className = 'status-text ' + state;
-      const icons = { up: '✅', down: '❌', checking: '🔄' };
-      ring.textContent = icons[state] || '🔄';
-      const labels = { up: 'Доступен', down: 'Недоступен', checking: 'Проверка...' };
-      statusText.textContent = labels[state] || '';
+      ring.textContent = { up: '✅', notfound: '⚠️', down: '❌', checking: '🔄' }[state] || '🔄';
+      statusText.textContent = label;
     }
 
     function addLog(state, msg) {
@@ -324,39 +349,95 @@
       if (logList.children.length > 50) logList.removeChild(logList.lastChild);
     }
 
+    function renderTariffs(tariffs) {
+      tariffsGrid.innerHTML = '';
+      tariffs.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'tariff-card';
+        card.innerHTML = `
+          <div class="tariff-type">${t.type}</div>
+          <div class="tariff-meta">${t.duration}${t.speed ? ' · ' + t.speed : ''}</div>
+          <div class="tariff-prices">
+            <span class="tariff-price-now">${t.price}</span>
+            ${t.oldPrice ? `<span class="tariff-price-old">${t.oldPrice}</span>` : ''}
+          </div>`;
+        tariffsGrid.appendChild(card);
+      });
+      tariffsWrap.style.display = tariffs.length ? 'block' : 'none';
+    }
+
+    function parseTariffs(html) {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+
+      const notFound = Array.from(doc.querySelectorAll('h3'))
+        .some(el => el.textContent.includes('Нет Кашалота'));
+      if (notFound) return { notFound: true, tariffs: [] };
+
+      const tariffs = [];
+      doc.querySelectorAll('a').forEach(a => {
+        const typeEl     = a.querySelector('.box h3.white');
+        const timeEl     = a.querySelector('.time h3.white');
+        const imgEl      = a.querySelector('img[alt]');
+        const priceEl    = a.querySelector('h1.white');
+        const oldPriceEl = a.querySelector('.anchor-price');
+        if (!typeEl || !priceEl) return;
+
+        const clean = s => s.replace(/[^\d₽]/g, '').trim();
+        const priceRaw = priceEl.textContent.trim();
+        const price = priceRaw.match(/\d+/) ? priceRaw.match(/\d+/)[0] + ' ₽' : priceRaw;
+        const oldRaw = oldPriceEl ? oldPriceEl.childNodes[0]?.textContent.trim() : '';
+        const oldPrice = oldRaw && oldRaw.match(/\d+/) ? oldRaw.match(/\d+/)[0] + ' ₽' : '';
+
+        tariffs.push({
+          type:     typeEl.textContent.trim(),
+          duration: timeEl ? timeEl.textContent.trim() : '',
+          speed:    imgEl  ? imgEl.getAttribute('alt') : '',
+          price,
+          oldPrice,
+        });
+      });
+
+      return { notFound: false, tariffs };
+    }
+
     async function check() {
-      setStatus('checking');
-      statusSub.textContent = 'Отправляем запрос...';
+      setStatus('checking', 'Проверка...');
+      statusSub.textContent = 'Загружаем страницу...';
       timerBar.style.transition = 'none';
       timerBar.style.width = '100%';
 
       const t0 = Date.now();
-      const url = 'https://k-s.app/qr/' + qrNum;
-      let ok = false;
-      let msg = '';
+      const pageUrl = 'https://k-s.app/qr/' + qrNum;
 
       try {
-        await fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' });
-        ok = true;
+        const res = await fetch(PROXY + encodeURIComponent(pageUrl), { cache: 'no-store' });
+        if (!res.ok) throw new Error('ошибка прокси: ' + res.status);
+        const html = await res.text();
+        const ms = Date.now() - t0;
+        const { notFound, tariffs } = parseTariffs(html);
+
+        if (notFound) {
+          countDown++;
+          setStatus('notfound', 'Не найден');
+          statusSub.textContent = `Кашалот №${qrNum} не существует · ${new Date().toLocaleTimeString('ru-RU')}`;
+          addLog('notfound', `Кашалот №${qrNum} не найден`);
+          tariffsWrap.style.display = 'none';
+        } else {
+          countUp++;
+          setStatus('up', 'Доступен');
+          statusSub.textContent = `Ответ за ${ms} мс · ${new Date().toLocaleTimeString('ru-RU')}`;
+          addLog('up', `Доступен, ${tariffs.length} тарифов (${ms} мс)`);
+          renderTariffs(tariffs);
+        }
       } catch (e) {
-        msg = e.message || 'network error';
-      }
-
-      const ms = Date.now() - t0;
-      countTotal++;
-
-      if (ok) {
-        countUp++;
-        setStatus('up');
-        statusSub.textContent = `Ответ за ${ms} мс · ${new Date().toLocaleTimeString('ru-RU')}`;
-        addLog('up', `Доступен (${ms} мс)`);
-      } else {
         countDown++;
-        setStatus('down');
+        setStatus('down', 'Сервер недоступен');
         statusSub.textContent = `Нет ответа · ${new Date().toLocaleTimeString('ru-RU')}`;
-        addLog('down', 'Нет ответа: ' + msg);
+        addLog('down', 'Нет ответа: ' + (e.message || 'network error'));
+        tariffsWrap.style.display = 'none';
       }
 
+      countTotal++;
       elUp.textContent = countUp;
       elDown.textContent = countDown;
       elTotal.textContent = countTotal;
