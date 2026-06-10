@@ -319,6 +319,19 @@
 
     .last-update { font-size: 12px; color: #4b5563; }
 
+    /* Collapsible sections */
+    .chart-header.collapsible { cursor: pointer; user-select: none; }
+    .chart-header.collapsible:hover .chart-title { color: #94a3b8; }
+    .toggle-arrow {
+      font-size: 12px;
+      color: #4b5563;
+      transition: transform 0.2s;
+      margin-left: 8px;
+    }
+    .toggle-arrow.open { transform: rotate(180deg); }
+    .section-body { display: none; }
+    .section-body.open { display: block; }
+
     /* Manager ranking */
     .mgr-row {
       display: flex;
@@ -413,51 +426,59 @@
     </div>
 
     <!-- Revenue analytics -->
-    <div class="chart-card" id="revenueSection" style="display:none">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Выручка по парку</div>
-          <div class="chart-sub" id="revenueUpdated"></div>
+    <div class="chart-card" id="revenueSection">
+      <div class="chart-header collapsible" onclick="toggleSection('revenueBody', 'revenueArrow')">
+        <div style="display:flex;align-items:center">
+          <div>
+            <div class="chart-title">Выручка по парку <span class="toggle-arrow" id="revenueArrow">▼</span></div>
+            <div class="chart-sub" id="revenueUpdated">нет данных</div>
+          </div>
         </div>
       </div>
-      <div class="revenue-grid">
-        <div class="stat-card">
-          <div class="stat-icon">💰</div>
-          <div class="stat-num green" id="revTotal">—</div>
-          <div class="stat-label">Суммарная выручка</div>
+      <div class="section-body" id="revenueBody">
+        <div class="revenue-grid">
+          <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-num green" id="revTotal">—</div>
+            <div class="stat-label">Суммарная выручка</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🐋</div>
+            <div class="stat-num blue" id="revFleet">—</div>
+            <div class="stat-label">Устройств в работе</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-num yellow" id="revAvg">—</div>
+            <div class="stat-label">Средняя на устройство</div>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-icon">🐋</div>
-          <div class="stat-num blue" id="revFleet">—</div>
-          <div class="stat-label">Устройств в работе</div>
+        <div class="drop-zone" id="dropZone">
+          📂 Перетащи сюда CSV с выручкой — или нажми чтобы выбрать файл
+          <input type="file" id="csvInput" accept=".csv" />
         </div>
-        <div class="stat-card">
-          <div class="stat-icon">📊</div>
-          <div class="stat-num yellow" id="revAvg">—</div>
-          <div class="stat-label">Средняя на устройство</div>
-        </div>
+        <div class="section-title" style="margin-top:8px">Топ-15 устройств</div>
+        <div class="top-list" id="topList"></div>
       </div>
-      <div class="drop-zone" id="dropZone">
-        📂 Перетащи сюда CSV с выручкой — или нажми чтобы выбрать файл
-        <input type="file" id="csvInput" accept=".csv" />
-      </div>
-      <div class="section-title" style="margin-top:8px">Топ-15 устройств</div>
-      <div class="top-list" id="topList"></div>
     </div>
 
     <!-- Manager ranking -->
-    <div class="chart-card" id="managersSection" style="display:none">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Рейтинг управляющих</div>
-          <div class="chart-sub" id="managersUpdated">Суммарная выручка по всем локациям</div>
+    <div class="chart-card" id="managersSection">
+      <div class="chart-header collapsible" onclick="toggleSection('managersBody', 'managersArrow')">
+        <div style="display:flex;align-items:center">
+          <div>
+            <div class="chart-title">Рейтинг управляющих <span class="toggle-arrow" id="managersArrow">▼</span></div>
+            <div class="chart-sub" id="managersUpdated">нет данных</div>
+          </div>
         </div>
       </div>
-      <div class="drop-zone" id="dropZoneMgr">
-        📂 Перетащи сюда CSV «Выручки по компаниям» — или нажми чтобы выбрать файл
-        <input type="file" id="csvMgrInput" accept=".csv" />
+      <div class="section-body" id="managersBody">
+        <div class="drop-zone" id="dropZoneMgr">
+          📂 Перетащи сюда CSV «Выручки по компаниям» — или нажми чтобы выбрать файл
+          <input type="file" id="csvMgrInput" accept=".csv" />
+        </div>
+        <div class="top-list" id="mgrList"></div>
       </div>
-      <div class="top-list" id="mgrList"></div>
     </div>
 
     <!-- Tariff analytics -->
@@ -481,6 +502,13 @@
     const CONCURRENCY = 30;
 
     let scanning = false;
+
+    function toggleSection(bodyId, arrowId) {
+      const body  = document.getElementById(bodyId);
+      const arrow = document.getElementById(arrowId);
+      const open  = body.classList.toggle('open');
+      arrow.classList.toggle('open', open);
+    }
     let fleetSize = 0;
 
     function updatePct(available) {
@@ -835,7 +863,7 @@
         list.appendChild(row);
       });
 
-      document.getElementById('revenueSection').style.display = 'block';
+      // section always visible, body toggled manually
     }
 
     async function loadRevenue() {
@@ -931,7 +959,7 @@
 
       document.getElementById('managersUpdated').textContent =
         `${data.total_managers} управляющих · данные за всё время · обновлено ${data.updated}`;
-      document.getElementById('managersSection').style.display = 'block';
+      // section always visible, body toggled manually
     }
 
     function handleMgrFile(file) {
