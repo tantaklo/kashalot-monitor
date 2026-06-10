@@ -2,8 +2,10 @@ name: Daily Fleet Scan
 
 on:
   schedule:
-    - cron: '0 6 * * *'    # 09:00 Москва — сканирование доступности
-    - cron: '55 20 * * *'   # 23:55 Москва — выручка за день
+    - cron: '0 6 * * *'    # 09:00 Москва — утреннее сканирование
+    - cron: '0 11 * * *'   # 14:00 Москва — дневное сканирование
+    - cron: '0 16 * * *'   # 19:00 Москва — вечернее сканирование
+    - cron: '55 20 * * *'  # 23:55 Москва — выручка из админки
   workflow_dispatch:         # ручной запуск из GitHub UI
 
 jobs:
@@ -21,8 +23,12 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Run fleet scan (09:00)
-        if: github.event.schedule == '0 6 * * *' || github.event_name == 'workflow_dispatch'
+      - name: Run fleet scan (09:00 / 14:00 / 19:00)
+        if: >
+          github.event.schedule == '0 6 * * *' ||
+          github.event.schedule == '0 11 * * *' ||
+          github.event.schedule == '0 16 * * *' ||
+          github.event_name == 'workflow_dispatch'
         run: node scan.js
 
       - name: Run revenue scrape (23:55)

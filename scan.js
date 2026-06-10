@@ -72,23 +72,41 @@ async function scan() {
 
   const today = new Date().toISOString().slice(0, 10);
 
-  // --- history.json ---
-  const entry = { date: today, available: up, offline, total };
+  // --- history.json: максимум доступных и пик аренды за день ---
   const history = loadJson('./data/history.json', []);
   const idx = history.findIndex(r => r.date === today);
+  const prev = history[idx];
+
+  // max_available — пиковое число доступных (лучший момент дня)
+  // peak_rented  — пик одновременных аренд = total − min_available
+  const prevMax    = prev?.max_available ?? 0;
+  const prevMin    = prev?.min_available ?? up;
+  const maxAvail   = Math.max(up, prevMax);
+  const minAvail   = Math.min(up, prevMin);
+  const peakRented = total > 0 ? total - minAvail : (prev?.peak_rented ?? 0);
+  const scans      = (prev?.scans ?? 0) + 1;
+
+  const entry = { date: today, max_available: maxAvail, min_available: minAvail, peak_rented: peakRented, offline, total, scans };
   if (idx >= 0) history[idx] = entry; else history.push(entry);
   history.sort((a, b) => a.date.localeCompare(b.date));
   saveJson('./data/history.json', history.slice(-365));
-  console.log(`history: ${JSON.stringify(entry)}`);
+  console.log(`history [скан ${scans}]: max_available=${maxAvail}, peak_rented=${peakRented}`);
 
-  // --- tariff-history.json ---
-  const tariffEntry = { date: today, available: up, slots: slotMap };
+  // --- tariff-history.json: тарифы сохраняем только если слотов больше, чем раньше ---
   const tariffHistory = loadJson('./data/tariff-history.json', []);
   const ti = tariffHistory.findIndex(r => r.date === today);
-  if (ti >= 0) tariffHistory[ti] = tariffEntry; else tariffHistory.push(tariffEntry);
-  tariffHistory.sort((a, b) => a.date.localeCompare(b.date));
-  saveJson('./data/tariff-history.json', tariffHistory.slice(-365));
-  console.log(`tariff-history: ${Object.keys(slotMap).length} тарифных слотов`);
+  const prevTariff = tariffHistory[ti];
+  const prevSlots  = Object.keys(prevTariff?.slots ?? {}).reduce((s, k) => s + Object.values(prevTariff.slots[k]).reduce((a, b) => a + b, 0), 0);
+  const curSlots   = Object.keys(slotMap).reduce((s, k) => s + Object.values(slotMap[k]).reduce((a, b) => a + b, 0), 0);
+  if (!prevTariff || curSlots >= prevSlots) {
+    const tariffEntry = { date: today, available: up, slots: slotMap };
+    if (ti >= 0) tariffHistory[ti] = tariffEntry; else tariffHistory.push(tariffEntry);
+    tariffHistory.sort((a, b) => a.date.localeCompare(b.date));
+    saveJson('./data/tariff-history.json', tariffHistory.slice(-365));
+    console.log(`tariff-history: обновлено (${curSlots} устройств с тарифами)`);
+  } else {
+    console.log(`tariff-history: пропущено (${curSlots} < ${prevSlots} устройств, оставляем лучший замер)`);
+  }
 }
 
 scan();
