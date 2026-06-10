@@ -1,17 +1,17 @@
 [
   {
     "date": "2026-06-10",
-    "revenue": 4090,
-    "orders": null,
-    "avgCheck": null,
-    "activeObjects": 7,
+    "revenue": 151960,
+    "orders": 392,
+    "avgCheck": 388,
+    "activeObjects": 128,
     "totalObjects": 1248
   },
   {
     "date": "2026-06-11",
-    "revenue": 2550,
-    "orders": 6,
-    "avgCheck": 425,
+    "revenue": 2890,
+    "orders": 7,
+    "avgCheck": 413,
     "activeObjects": 5,
     "totalObjects": null
   }

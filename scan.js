@@ -70,20 +70,23 @@ async function scan() {
 
   console.log('\nГотово.');
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Дата по Москве (UTC+3)
+  const nowMoscow = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  const today = nowMoscow.toISOString().slice(0, 10);
 
   // --- history.json: максимум доступных и пик аренды за день ---
   const history = loadJson('./data/history.json', []);
   const idx = history.findIndex(r => r.date === today);
   const prev = history[idx];
 
-  // max_available — пиковое число доступных (лучший момент дня)
-  // peak_rented  — пик одновременных аренд = total − min_available
+  // max_available — пиковое число доступных за день
+  // min_available — минимум доступных (момент пиковой нагрузки)
+  // peak_rented   — пик одновременных аренд = max_available − min_available
   const prevMax    = prev?.max_available ?? 0;
   const prevMin    = prev?.min_available ?? up;
   const maxAvail   = Math.max(up, prevMax);
   const minAvail   = Math.min(up, prevMin);
-  const peakRented = total > 0 ? total - minAvail : (prev?.peak_rented ?? 0);
+  const peakRented = maxAvail - minAvail;
   const scans      = (prev?.scans ?? 0) + 1;
 
   const entry = { date: today, max_available: maxAvail, min_available: minAvail, peak_rented: peakRented, offline, total, scans };
