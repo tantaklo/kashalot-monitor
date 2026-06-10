@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Выручка — Кашалот</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f13;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 32px 24px 64px;
+    }
+
+    .page-header {
+      max-width: 900px;
+      margin: 0 auto 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    .back-link {
+      font-size: 13px;
+      color: #4b5563;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: #94a3b8; }
+
+    /* KPI Cards */
+    .kpi-row {
+      max-width: 900px;
+      margin: 0 auto 32px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .kpi {
+      background: #1a1a24;
+      border: 1px solid #2d2d3d;
+      border-radius: 14px;
+      padding: 20px 24px;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .kpi-value.accent { color: #60a5fa; }
+    .kpi-value.green  { color: #4ade80; }
+    .kpi-value.muted  { color: #94a3b8; }
+
+    .kpi-sub {
+      font-size: 12px;
+      color: #4b5563;
+    }
+
+    /* Chart cards */
+    .chart-card {
+      background: #1a1a24;
+      border: 1px solid #2d2d3d;
+      border-radius: 14px;
+      padding: 24px;
+      max-width: 900px;
+      margin: 0 auto 20px;
+    }
+
+    .chart-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 20px;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 200px;
+    }
+
+    /* Period tabs */
+    .period-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid #2d2d3d;
+      background: transparent;
+      color: #4b5563;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .tab.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+      color: #fff;
+    }
+
+    .tab:hover:not(.active) { border-color: #4b5563; color: #94a3b8; }
+
+    /* Empty state */
+    .empty-note {
+      font-size: 13px;
+      color: #4b5563;
+      text-align: center;
+      padding: 40px 0;
+    }
+
+    /* Updated at */
+    .updated {
+      max-width: 900px;
+      margin: 0 auto;
+      font-size: 12px;
+      color: #374151;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-header">
+    <div class="page-title">Выручка · аналитика</div>
+    <a class="back-link" href="index.html">← Мониторинг доступности</a>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Выручка / кашалот сегодня</div>
+      <div class="kpi-value accent" id="kpiPerUnit">—</div>
+      <div class="kpi-sub">₽ / активный кашалот</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Выручка за сегодня</div>
+      <div class="kpi-value green" id="kpiRevenue">—</div>
+      <div class="kpi-sub" id="kpiRevenueDate">данных нет</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Активных кашалотов</div>
+      <div class="kpi-value muted" id="kpiActive">—</div>
+      <div class="kpi-sub">из <span id="kpiTotal">—</span> всего</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Среднее за 7 дней</div>
+      <div class="kpi-value accent" id="kpiAvg7">—</div>
+      <div class="kpi-sub">₽ / кашалот</div>
+    </div>
+  </div>
+
+  <!-- Chart 1: выручка на кашалот -->
+  <div class="chart-card">
+    <div class="chart-title">Выручка на один активный кашалот, ₽/день</div>
+    <div class="period-tabs" id="tabsPerUnit">
+      <button class="tab active" data-period="7">7 дней</button>
+      <button class="tab" data-period="30">30 дней</button>
+      <button class="tab" data-period="0">Всё время</button>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chartPerUnit"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 2: выручка итого -->
+  <div class="chart-card">
+    <div class="chart-title">Выручка итого, ₽/день</div>
+    <div class="period-tabs" id="tabsRevenue">
+      <button class="tab active" data-period="7">7 дней</button>
+      <button class="tab" data-period="30">30 дней</button>
+      <button class="tab" data-period="0">Всё время</button>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chartRevenue"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 3: активные кашалоты -->
+  <div class="chart-card">
+    <div class="chart-title">Активных кашалотов в день</div>
+    <div class="period-tabs" id="tabsActive">
+      <button class="tab active" data-period="7">7 дней</button>
+      <button class="tab" data-period="30">30 дней</button>
+      <button class="tab" data-period="0">Всё время</button>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chartActive"></canvas>
+    </div>
+  </div>
+
+  <div class="updated" id="updatedAt"></div>
+
+  <script>
+    const DATA_URL = 'data/revenue-daily.json';
+
+    // Chart.js defaults
+    Chart.defaults.color = '#4b5563';
+    Chart.defaults.borderColor = '#1e1e2a';
+    Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+
+    const CHART_OPTS = (yLabel) => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a24',
+          borderColor: '#2d2d3d',
+          borderWidth: 1,
+          titleColor: '#94a3b8',
+          bodyColor: '#e2e8f0',
+          callbacks: {
+            label: ctx => ' ' + ctx.parsed.y.toLocaleString('ru-RU') + (yLabel ? ' ' + yLabel : ''),
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: '#1a1a24' },
+          ticks: { maxTicksLimit: 8, maxRotation: 0 }
+        },
+        y: {
+          grid: { color: '#1e1e2a' },
+          beginAtZero: false,
+          ticks: {
+            callback: v => v.toLocaleString('ru-RU'),
+          }
+        }
+      }
+    });
+
+    function makeDataset(data, color) {
+      return {
+        data,
+        borderColor: color,
+        backgroundColor: color + '18',
+        borderWidth: 2,
+        pointRadius: data.length < 15 ? 4 : 2,
+        pointBackgroundColor: color,
+        fill: true,
+        tension: 0.35,
+      };
+    }
+
+    function buildChart(canvasId, labels, data, color, yLabel) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      // С одной точкой используем bar-тип, иначе line
+      const type = data.length <= 1 ? 'bar' : 'line';
+      const dataset = type === 'bar'
+        ? { data, backgroundColor: color + '60', borderColor: color, borderWidth: 2, borderRadius: 6 }
+        : makeDataset(data, color);
+      return new Chart(ctx, {
+        type,
+        data: { labels, datasets: [dataset] },
+        options: CHART_OPTS(yLabel),
+      });
+    }
+
+    function formatDate(iso) {
+      const [, m, d] = iso.split('-');
+      return d + '.' + m;
+    }
+
+    function filterPeriod(rows, days) {
+      if (!days) return rows;
+      return rows.slice(-days);
+    }
+
+    let allData = [];
+    const charts = {};
+
+    function renderCharts(days) {
+      const rows = filterPeriod(allData, days);
+      const labels    = rows.map(r => formatDate(r.date));
+      const perUnit   = rows.map(r => r.activeObjects ? Math.round(r.revenue / r.activeObjects) : null);
+      const revenue   = rows.map(r => r.revenue);
+      const active    = rows.map(r => r.activeObjects);
+
+      ['perUnit', 'revenue', 'active'].forEach(key => {
+        if (charts[key]) { charts[key].destroy(); delete charts[key]; }
+      });
+      charts.perUnit  = buildChart('chartPerUnit', labels, perUnit,  '#60a5fa', '₽');
+      charts.revenue  = buildChart('chartRevenue',  labels, revenue,  '#4ade80', '₽');
+      charts.active   = buildChart('chartActive',   labels, active,   '#a78bfa', '');
+    }
+
+    function updateKPI(rows) {
+      if (!rows.length) return;
+      const last = rows[rows.length - 1];
+
+      const perUnit = last.activeObjects ? Math.round(last.revenue / last.activeObjects) : null;
+      document.getElementById('kpiPerUnit').textContent = perUnit ? perUnit.toLocaleString('ru-RU') : '—';
+      document.getElementById('kpiRevenue').textContent = last.revenue.toLocaleString('ru-RU') + ' ₽';
+      document.getElementById('kpiRevenueDate').textContent = last.date;
+      document.getElementById('kpiActive').textContent = last.activeObjects ?? '—';
+      document.getElementById('kpiTotal').textContent = last.totalObjects ?? '—';
+
+      const last7 = rows.slice(-7).filter(r => r.activeObjects);
+      if (last7.length) {
+        const avg = Math.round(last7.reduce((s, r) => s + r.revenue / r.activeObjects, 0) / last7.length);
+        document.getElementById('kpiAvg7').textContent = avg.toLocaleString('ru-RU');
+      }
+    }
+
+    function setupTabs(tabsId, onSelect) {
+      const container = document.getElementById(tabsId);
+      container.querySelectorAll('.tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          container.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          onSelect(parseInt(btn.dataset.period));
+        });
+      });
+    }
+
+    let activePeriod = 7;
+
+    setupTabs('tabsPerUnit',  p => { activePeriod = p; renderCharts(p); });
+    setupTabs('tabsRevenue',  p => { activePeriod = p; renderCharts(p); });
+    setupTabs('tabsActive',   p => { activePeriod = p; renderCharts(p); });
+
+    async function load() {
+      try {
+        const res = await fetch(DATA_URL + '?t=' + Date.now());
+        allData = await res.json();
+        allData.sort((a, b) => a.date.localeCompare(b.date));
+        updateKPI(allData);
+        renderCharts(activePeriod);
+
+        const last = allData[allData.length - 1];
+        document.getElementById('updatedAt').textContent = 'Обновлено: ' + last.date;
+      } catch (e) {
+        document.getElementById('kpiPerUnit').textContent = '—';
+        console.error('Не удалось загрузить данные:', e);
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
