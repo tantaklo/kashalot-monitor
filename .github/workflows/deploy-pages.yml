@@ -37,6 +37,7 @@ jobs:
           npx staticrypt@3 dashboard.html \
             --password "$DASHBOARD_PASSWORD" \
             --directory encrypted \
+            --remember 30 \
             --short
           cp encrypted/dashboard.html dashboard.html
           rm -rf encrypted
