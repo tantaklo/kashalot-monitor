@@ -17,12 +17,27 @@ if (!EMAIL || !PASS) {
 
 // --- HTTP helpers ---
 
-function request(options, body = null) {
+function request(options, body = null, followRedirects = true) {
   return new Promise((resolve, reject) => {
     const req = https.request(options, res => {
       let data = '';
       res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: data }));
+      res.on('end', () => {
+        const result = { status: res.statusCode, headers: res.headers, body: data };
+        if (followRedirects && [301, 302, 303].includes(res.statusCode) && res.headers.location) {
+          const loc = res.headers.location;
+          const url = new URL(loc.startsWith('http') ? loc : 'https://gw.bumerang.tech' + loc);
+          const newOpts = {
+            hostname: url.hostname,
+            path: url.pathname + url.search,
+            method: 'GET',
+            headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': options.headers['Cookie'] || '' },
+          };
+          request(newOpts, null, true).then(resolve).catch(reject);
+        } else {
+          resolve(result);
+        }
+      });
     });
     req.on('error', reject);
     if (body) req.write(body);
@@ -37,54 +52,81 @@ function parseCookies(headers) {
 
 // --- Login flow ---
 
+function extractCsrf(html) {
+  const m = html.match(/name="_token"[^>]*value="([^"]+)"/) ||
+            html.match(/value="([^"]+)"[^>]*name="_token"/);
+  return m ? m[1] : null;
+}
+
 async function login() {
-  // 1. GET /admin/login — берём CSRF токен
-  const loginPage = await request({
+  // Шаг 1: GET /admin/login/username — получаем CSRF токен
+  const step1 = await request({
     hostname: 'gw.bumerang.tech',
-    path: '/admin/login',
+    path: '/admin/login/username',
     method: 'GET',
-    headers: { 'User-Agent': 'Mozilla/5.0' },
+    headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': '' },
   });
 
-  // DEBUG: показываем кусок HTML вокруг _token
-  const tokenIdx = loginPage.body.indexOf('_token');
-  if (tokenIdx >= 0) {
-    console.log('DEBUG _token ctx:', loginPage.body.slice(Math.max(0, tokenIdx - 20), tokenIdx + 120));
-  } else {
-    console.log('DEBUG: _token вообще не найден в HTML, статус:', loginPage.status);
-    console.log('DEBUG HTML начало:', loginPage.body.slice(0, 500));
+  const csrf1 = extractCsrf(step1.body);
+  if (!csrf1) {
+    console.log('DEBUG step1 status:', step1.status, 'body[:500]:', step1.body.slice(0, 500));
+    throw new Error('CSRF токен не найден на /admin/login/username');
   }
+  const cookies1 = parseCookies(step1.headers);
 
-  // value может быть до или после name — ищем оба варианта
-  const tokenMatch = loginPage.body.match(/name="_token"[^>]*value="([^"]+)"/) ||
-                     loginPage.body.match(/value="([^"]+)"[^>]*name="_token"/);
-  if (!tokenMatch) throw new Error('CSRF токен не найден');
-  const csrfToken = tokenMatch[1];
-  const cookies1  = parseCookies(loginPage.headers);
-
-  // 2. POST /admin/login
-  const body = new URLSearchParams({ _token: csrfToken, email: EMAIL, password: PASS }).toString();
-
-  const loginPost = await request({
+  // Шаг 2: POST email
+  const body1 = new URLSearchParams({ _token: csrf1, email: EMAIL }).toString();
+  const post1 = await request({
     hostname: 'gw.bumerang.tech',
-    path: '/admin/login',
+    path: '/admin/login/username',
     method: 'POST',
     headers: {
-      'User-Agent':   'Mozilla/5.0',
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Content-Length': Buffer.byteLength(body),
-      'Cookie': cookies1,
-      'Referer': BASE + '/admin/login',
+      'User-Agent':     'Mozilla/5.0',
+      'Content-Type':   'application/x-www-form-urlencoded',
+      'Content-Length': Buffer.byteLength(body1),
+      'Cookie':         cookies1,
+      'Referer':        BASE + '/admin/login/username',
     },
-  }, body);
+  }, body1);
 
-  if (loginPost.status !== 302 && loginPost.status !== 200) {
-    throw new Error(`Ошибка входа: HTTP ${loginPost.status}`);
+  const cookies2 = [cookies1, parseCookies(post1.headers)].filter(Boolean).join('; ');
+
+  // Шаг 3: GET /admin/login/password — новый CSRF
+  const step3 = await request({
+    hostname: 'gw.bumerang.tech',
+    path: '/admin/login/password',
+    method: 'GET',
+    headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': cookies2 },
+  });
+
+  const csrf3 = extractCsrf(step3.body);
+  if (!csrf3) {
+    console.log('DEBUG step3 status:', step3.status, 'body[:500]:', step3.body.slice(0, 500));
+    throw new Error('CSRF токен не найден на /admin/login/password');
+  }
+  const cookies3 = [cookies2, parseCookies(step3.headers)].filter(Boolean).join('; ');
+
+  // Шаг 4: POST password
+  const body2 = new URLSearchParams({ _token: csrf3, password: PASS }).toString();
+  const post2 = await request({
+    hostname: 'gw.bumerang.tech',
+    path: '/admin/login/password',
+    method: 'POST',
+    headers: {
+      'User-Agent':     'Mozilla/5.0',
+      'Content-Type':   'application/x-www-form-urlencoded',
+      'Content-Length': Buffer.byteLength(body2),
+      'Cookie':         cookies3,
+      'Referer':        BASE + '/admin/login/password',
+    },
+  }, body2);
+
+  if (post2.status !== 302 && post2.status !== 200) {
+    throw new Error(`Ошибка входа: HTTP ${post2.status}`);
   }
 
-  // Объединяем куки
-  const cookies2 = [cookies1, parseCookies(loginPost.headers)].filter(Boolean).join('; ');
-  return cookies2;
+  const cookiesFinal = [cookies3, parseCookies(post2.headers)].filter(Boolean).join('; ');
+  return cookiesFinal;
 }
 
 // --- Fetch dashboard ---
