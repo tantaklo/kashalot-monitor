@@ -147,9 +147,10 @@ async function fetchDashboard(cookies) {
     },
   });
 
-  if (!res.body.includes('За сегодня')) {
+  // Проверяем что это дашборд (admin/bill есть в первых 500 символах только при авторизации)
+  if (!res.body.includes('/admin/bill') && !res.body.includes('За сегодня')) {
     console.log('DEBUG dashboard status:', res.status);
-    console.log('DEBUG dashboard body[:3000]:', res.body.slice(0, 3000));
+    console.log('DEBUG dashboard body[:1000]:', res.body.slice(0, 1000));
     throw new Error('Дашборд не загрузился или сессия не активна');
   }
   return res.body;
@@ -158,10 +159,19 @@ async function fetchDashboard(cookies) {
 // --- Parse ---
 
 function parseRevenue(html) {
-  // <strong>67 420 Р</strong> ... <small>За сегодня</small>
-  const m = html.match(/<strong[^>]*>([\d\s]+\s*[РP])<\/strong>[\s\S]{0,300}?<small>За сегодня<\/small>/);
-  if (!m) throw new Error('Не нашёл блок выручки в HTML');
-  return parseInt(m[1].replace(/[^\d]/g, ''));
+  // Структура: <a href="/admin/bill">74 010 Р</a> ... За сегодня
+  // Ищем число перед "За сегодня" (до 500 символов до него)
+  const idx = html.indexOf('За сегодня');
+  if (idx > 0) {
+    const before = html.slice(Math.max(0, idx - 500), idx);
+    // Ищем последнее вхождение числа с Р/P
+    const matches = [...before.matchAll(/([\d\s]{3,})\s*[РP]/g)];
+    if (matches.length > 0) {
+      const last = matches[matches.length - 1];
+      return parseInt(last[1].replace(/[^\d]/g, ''));
+    }
+  }
+  throw new Error('Не нашёл блок выручки рядом с "За сегодня"');
 }
 
 function parseActiveObjects(html) {
