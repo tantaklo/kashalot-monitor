@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Мониторинг k-s.app</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f13;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: #1a1a24;
+      border: 1px solid #2d2d3d;
+      border-radius: 16px;
+      padding: 40px 48px;
+      max-width: 560px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .label {
+      font-size: 13px;
+      color: #6b7280;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .url {
+      font-size: 15px;
+      color: #94a3b8;
+      margin-bottom: 40px;
+      word-break: break-all;
+    }
+
+    .status-ring {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      transition: background 0.4s, box-shadow 0.4s;
+    }
+
+    .status-ring.checking {
+      background: #1e2a3a;
+      box-shadow: 0 0 0 0 transparent;
+      animation: pulse-blue 1.2s infinite;
+    }
+
+    .status-ring.up {
+      background: #052e16;
+      box-shadow: 0 0 32px #16a34a55;
+    }
+
+    .status-ring.down {
+      background: #2d0707;
+      box-shadow: 0 0 32px #dc262655;
+    }
+
+    @keyframes pulse-blue {
+      0%, 100% { box-shadow: 0 0 0 0 #3b82f620; }
+      50% { box-shadow: 0 0 24px 8px #3b82f630; }
+    }
+
+    .status-text {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      transition: color 0.4s;
+    }
+
+    .status-text.up { color: #4ade80; }
+    .status-text.down { color: #f87171; }
+    .status-text.checking { color: #60a5fa; }
+
+    .status-sub {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 40px;
+      min-height: 20px;
+    }
+
+    .divider {
+      height: 1px;
+      background: #2d2d3d;
+      margin-bottom: 32px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-box {
+      background: #12121a;
+      border: 1px solid #2d2d3d;
+      border-radius: 10px;
+      padding: 16px 8px;
+    }
+
+    .stat-val {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .stat-val.green { color: #4ade80; }
+    .stat-val.red { color: #f87171; }
+    .stat-val.blue { color: #60a5fa; }
+
+    .stat-label {
+      font-size: 11px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .timer-bar-wrap {
+      height: 4px;
+      background: #2d2d3d;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+
+    .timer-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      border-radius: 4px;
+      width: 100%;
+      transform-origin: left;
+      transition: none;
+    }
+
+    .timer-label {
+      font-size: 12px;
+      color: #4b5563;
+    }
+
+    .log {
+      margin-top: 24px;
+      text-align: left;
+    }
+
+    .log-title {
+      font-size: 12px;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .log-list {
+      list-style: none;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .log-list::-webkit-scrollbar { width: 4px; }
+    .log-list::-webkit-scrollbar-track { background: transparent; }
+    .log-list::-webkit-scrollbar-thumb { background: #2d2d3d; border-radius: 4px; }
+
+    .log-item {
+      font-size: 12px;
+      padding: 5px 0;
+      border-bottom: 1px solid #1e1e2a;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .log-item .time { color: #4b5563; flex-shrink: 0; }
+    .log-item .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .log-item .dot.up { background: #4ade80; }
+    .log-item .dot.down { background: #f87171; }
+    .log-item .msg { color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="label">Мониторинг доступности</div>
+    <div class="url">https://k-s.app/qr/1057</div>
+
+    <div class="status-ring checking" id="ring">🔄</div>
+    <div class="status-text checking" id="statusText">Проверка...</div>
+    <div class="status-sub" id="statusSub">Ожидание первого ответа</div>
+
+    <div class="divider"></div>
+
+    <div class="stats">
+      <div class="stat-box">
+        <div class="stat-val green" id="countUp">0</div>
+        <div class="stat-label">Доступен</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val red" id="countDown">0</div>
+        <div class="stat-label">Недоступен</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val blue" id="countTotal">0</div>
+        <div class="stat-label">Всего</div>
+      </div>
+    </div>
+
+    <div class="timer-bar-wrap">
+      <div class="timer-bar" id="timerBar"></div>
+    </div>
+    <div class="timer-label" id="timerLabel">Следующая проверка через 10 сек</div>
+
+    <div class="log">
+      <div class="log-title">Последние события</div>
+      <ul class="log-list" id="logList"></ul>
+    </div>
+  </div>
+
+  <script>
+    const TARGET = 'https://k-s.app/qr/1057';
+    const INTERVAL = 10000;
+
+    let countUp = 0, countDown = 0, countTotal = 0;
+    let nextCheck = Date.now() + INTERVAL;
+    let timerRAF;
+
+    const ring = document.getElementById('ring');
+    const statusText = document.getElementById('statusText');
+    const statusSub = document.getElementById('statusSub');
+    const elUp = document.getElementById('countUp');
+    const elDown = document.getElementById('countDown');
+    const elTotal = document.getElementById('countTotal');
+    const timerBar = document.getElementById('timerBar');
+    const timerLabel = document.getElementById('timerLabel');
+    const logList = document.getElementById('logList');
+
+    function setStatus(state) {
+      ring.className = 'status-ring ' + state;
+      statusText.className = 'status-text ' + state;
+      if (state === 'up') {
+        ring.textContent = '✅';
+        statusText.textContent = 'Доступен';
+      } else if (state === 'down') {
+        ring.textContent = '❌';
+        statusText.textContent = 'Недоступен';
+      } else {
+        ring.textContent = '🔄';
+        statusText.textContent = 'Проверка...';
+      }
+    }
+
+    function addLog(state, msg) {
+      const now = new Date();
+      const time = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const li = document.createElement('li');
+      li.className = 'log-item';
+      li.innerHTML = `<span class="time">${time}</span><span class="dot ${state}"></span><span class="msg">${msg}</span>`;
+      logList.prepend(li);
+      if (logList.children.length > 50) logList.removeChild(logList.lastChild);
+    }
+
+    async function check() {
+      setStatus('checking');
+      statusSub.textContent = 'Отправляем запрос...';
+      timerBar.style.transition = 'none';
+      timerBar.style.width = '100%';
+
+      const t0 = Date.now();
+      let ok = false;
+      let msg = '';
+
+      try {
+        const res = await fetch(TARGET, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' });
+        // no-cors всегда возвращает opaque response (type='opaque'), это означает — сервер ответил
+        ok = true;
+        msg = 'Сервер ответил';
+      } catch (e) {
+        ok = false;
+        msg = 'Нет ответа: ' + (e.message || 'network error');
+      }
+
+      const ms = Date.now() - t0;
+      countTotal++;
+
+      if (ok) {
+        countUp++;
+        setStatus('up');
+        statusSub.textContent = `Последний ответ: ${ms} мс · ${new Date().toLocaleTimeString('ru-RU')}`;
+        addLog('up', `Доступен (${ms} мс)`);
+      } else {
+        countDown++;
+        setStatus('down');
+        statusSub.textContent = `Ошибка · ${new Date().toLocaleTimeString('ru-RU')}`;
+        addLog('down', msg);
+      }
+
+      elUp.textContent = countUp;
+      elDown.textContent = countDown;
+      elTotal.textContent = countTotal;
+
+      nextCheck = Date.now() + INTERVAL;
+      animateTimer();
+    }
+
+    function animateTimer() {
+      cancelAnimationFrame(timerRAF);
+
+      function frame() {
+        const remaining = Math.max(0, nextCheck - Date.now());
+        const pct = (remaining / INTERVAL) * 100;
+        timerBar.style.transition = 'width 0.1s linear';
+        timerBar.style.width = pct + '%';
+        const sec = Math.ceil(remaining / 1000);
+        timerLabel.textContent = sec > 0
+          ? `Следующая проверка через ${sec} сек`
+          : 'Проверяем...';
+        if (remaining > 0) timerRAF = requestAnimationFrame(frame);
+      }
+
+      timerRAF = requestAnimationFrame(frame);
+    }
+
+    check();
+    setInterval(check, INTERVAL);
+  </script>
+</body>
+</html>
