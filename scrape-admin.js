@@ -46,6 +46,15 @@ async function login() {
     headers: { 'User-Agent': 'Mozilla/5.0' },
   });
 
+  // DEBUG: показываем кусок HTML вокруг _token
+  const tokenIdx = loginPage.body.indexOf('_token');
+  if (tokenIdx >= 0) {
+    console.log('DEBUG _token ctx:', loginPage.body.slice(Math.max(0, tokenIdx - 20), tokenIdx + 120));
+  } else {
+    console.log('DEBUG: _token вообще не найден в HTML, статус:', loginPage.status);
+    console.log('DEBUG HTML начало:', loginPage.body.slice(0, 500));
+  }
+
   // value может быть до или после name — ищем оба варианта
   const tokenMatch = loginPage.body.match(/name="_token"[^>]*value="([^"]+)"/) ||
                      loginPage.body.match(/value="([^"]+)"[^>]*name="_token"/);
