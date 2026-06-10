@@ -46,7 +46,9 @@ async function login() {
     headers: { 'User-Agent': 'Mozilla/5.0' },
   });
 
-  const tokenMatch = loginPage.body.match(/<input[^>]+name="_token"[^>]+value="([^"]+)"/);
+  // value может быть до или после name — ищем оба варианта
+  const tokenMatch = loginPage.body.match(/name="_token"[^>]*value="([^"]+)"/) ||
+                     loginPage.body.match(/value="([^"]+)"[^>]*name="_token"/);
   if (!tokenMatch) throw new Error('CSRF токен не найден');
   const csrfToken = tokenMatch[1];
   const cookies1  = parseCookies(loginPage.headers);
