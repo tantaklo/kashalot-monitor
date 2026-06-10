@@ -187,15 +187,20 @@ function parseAvgCheck(html) {
 // --- Orders search (факт: реальные цены по тарифным слотам) ---
 
 async function fetchOrdersCsrf(jar) {
+  // Следуем редиректам (true), иначе после логина через 302 сессия может не подтвердиться
   const res = await request({
     hostname: 'gw.bumerang.tech',
     path: '/admin/order',
     method: 'GET',
     headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': jarToString(jar) },
-  }, null, false);
+  }, null, true);
   updateJar(jar, res.headers);
   const csrf = res.body.match(/name="csrf-token" content="([^"]+)"/)?.[1]
             || extractCsrf(res.body);
+  if (!csrf) {
+    console.log('DEBUG fetchOrdersCsrf status:', res.status, 'body[:300]:', res.body.slice(0, 300));
+    throw new Error('CSRF для orders не найден');
+  }
   return csrf;
 }
 
