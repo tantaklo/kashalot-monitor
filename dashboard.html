@@ -1471,6 +1471,7 @@
     // --- Договоры ---
     const PARTNERS = [
       {
+        key: 'Баранова',
         name: 'ИП Баранова Л.Г.',
         contract: '№ 050526-П-1',
         date: '20.04.2026',
@@ -1481,6 +1482,7 @@
         statusLabel: '✅ ЭЦП подписан',
       },
       {
+        key: 'Котовщикова',
         name: 'ИП Котовщикова К.Н.',
         contract: '№ 240526-П-2',
         date: '24.05.2026',
@@ -1491,6 +1493,7 @@
         statusLabel: '✅ ЭЦП подписан',
       },
       {
+        key: 'Богатищев',
         name: 'ИП Богатищев Н.Н.',
         contract: '№ 090626-П-3',
         date: '09.06.2026',
@@ -1501,6 +1504,7 @@
         statusLabel: '⏳ Ожидает ЭЦП',
       },
       {
+        key: 'ГородскиеРешения',
         name: 'ООО «Городские Решения»',
         contract: '—',
         date: '—',
@@ -1541,7 +1545,25 @@
       });
     }
 
-    renderPartners();
+    async function loadPartnerStatuses() {
+      try {
+        const res = await fetch('./data/partners-status.json?t=' + Date.now());
+        if (!res.ok) { renderPartners(); return; }
+        const statuses = await res.json();
+        const labels = {
+          signed:  { status: 'signed',  statusLabel: '✅ ЭЦП подписан' },
+          pending: { status: 'pending', statusLabel: '⏳ Ожидает ЭЦП' },
+          draft:   { status: 'draft',   statusLabel: '📝 Договор в работе' },
+        };
+        PARTNERS.forEach(p => {
+          const s = statuses[p.key];
+          if (s && labels[s]) Object.assign(p, labels[s]);
+        });
+      } catch {}
+      renderPartners();
+    }
+
+    loadPartnerStatuses();
   </script>
 </body>
 </html>
