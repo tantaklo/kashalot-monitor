@@ -308,6 +308,25 @@
 
     .last-update { font-size: 12px; color: #4b5563; }
 
+    /* Tariff avg metrics */
+    .tariff-avg-row { display: flex; align-items: baseline; gap: 6px; margin: 6px 0 14px; }
+    .tariff-avg-price { font-size: 20px; font-weight: 700; color: #4ade80; }
+    .tariff-avg-sep { font-size: 12px; color: #374151; }
+    .tariff-avg-min { font-size: 13px; color: #60a5fa; font-weight: 600; }
+    .tariff-summary {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding: 14px 20px;
+      background: #12121a;
+      border: 1px solid #1e1e2a;
+      border-radius: 12px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .tariff-summary b { color: #e2e8f0; font-weight: 600; }
+
     /* Collapsible sections */
     .chart-header.collapsible { cursor: pointer; user-select: none; }
     .chart-header.collapsible:hover .chart-title { color: #94a3b8; }
@@ -802,11 +821,13 @@
       const grid = document.getElementById('tariffGrid');
       grid.innerHTML = '';
 
-      // Canonical slot order
       const order = ['Детский|5 мин', 'Быстрый|5 мин', 'Детский|10 мин', 'Быстрый|10 мин'];
       const slots = order.filter(k => slotMap[k]);
 
       if (!slots.length) return;
+
+      let totalWeightedMinPrice = 0, totalDevicesAll = 0;
+      let sum10min = 0, devices10min = 0;
 
       slots.forEach(key => {
         const [type, duration] = key.split('|');
@@ -815,11 +836,28 @@
         const sorted = Object.entries(priceMap).sort((a, b) => b[1] - a[1]);
         const maxCount = sorted[0][1];
 
+        // Взвешенная средняя цена и цена минуты
+        const totalDevices = Object.values(priceMap).reduce((s, c) => s + c, 0);
+        const weightedSum  = Object.entries(priceMap).reduce((s, [p, c]) => s + parseInt(p) * c, 0);
+        const avgPrice     = Math.round(weightedSum / totalDevices);
+        const minutes      = parseInt(duration);
+        const pricePerMin  = (avgPrice / minutes).toFixed(1);
+
+        totalWeightedMinPrice += parseFloat(pricePerMin) * totalDevices;
+        totalDevicesAll += totalDevices;
+
+        if (minutes === 10) { sum10min += weightedSum; devices10min += totalDevices; }
+
         const card = document.createElement('div');
         card.className = 'tariff-slot';
         card.innerHTML = `
           <div class="tariff-slot-title">${type} · ${duration}</div>
           <div class="tariff-slot-meta">${speed}</div>
+          <div class="tariff-avg-row">
+            <span class="tariff-avg-price">${avgPrice} ₽</span>
+            <span class="tariff-avg-sep">·</span>
+            <span class="tariff-avg-min">${pricePerMin} ₽/мин</span>
+          </div>
           ${sorted.map(([price, cnt]) => `
             <div class="price-row">
               <div class="price-label">${price}</div>
@@ -828,6 +866,18 @@
             </div>`).join('')}`;
         grid.appendChild(card);
       });
+
+      // Итоговая строка
+      const avgMinOverall = totalDevicesAll ? (totalWeightedMinPrice / totalDevicesAll).toFixed(1) : null;
+      const avg10         = devices10min ? Math.round(sum10min / devices10min) : null;
+
+      const summary = document.createElement('div');
+      summary.className = 'tariff-summary';
+      summary.innerHTML = [
+        avgMinOverall ? `Средняя стоимость минуты по парку: <b>${avgMinOverall} ₽</b>` : '',
+        avg10 ? `Средняя стоимость абонемента 10 мин: <b>${avg10} ₽</b>` : '',
+      ].filter(Boolean).map(t => `<span>${t}</span>`).join('');
+      grid.appendChild(summary);
 
       document.getElementById('tariffSection').style.display = 'block';
     }
