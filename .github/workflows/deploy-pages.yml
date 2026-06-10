@@ -34,11 +34,12 @@ jobs:
         env:
           DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
         run: |
-          npx staticrypt@3 revenue.html \
+          npx staticrypt@3 revenue.html dashboard.html \
             --password "$DASHBOARD_PASSWORD" \
             --directory encrypted \
             --short
           cp encrypted/revenue.html revenue.html
+          cp encrypted/dashboard.html dashboard.html
           rm -rf encrypted
 
       - name: Setup Pages
