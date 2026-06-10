@@ -105,7 +105,6 @@
 
     .status-ring.checking {
       background: #1e2a3a;
-      box-shadow: 0 0 0 0 transparent;
       animation: pulse-blue 1.2s infinite;
     }
 
@@ -131,14 +130,14 @@
       transition: color 0.4s;
     }
 
-    .status-text.up { color: #4ade80; }
-    .status-text.down { color: #f87171; }
+    .status-text.up       { color: #4ade80; }
+    .status-text.down     { color: #f87171; }
     .status-text.checking { color: #60a5fa; }
 
     .status-sub {
       font-size: 14px;
       color: #6b7280;
-      margin-bottom: 40px;
+      margin-bottom: 32px;
       min-height: 20px;
     }
 
@@ -169,8 +168,8 @@
     }
 
     .stat-val.green { color: #4ade80; }
-    .stat-val.red { color: #f87171; }
-    .stat-val.blue { color: #60a5fa; }
+    .stat-val.red   { color: #f87171; }
+    .stat-val.blue  { color: #60a5fa; }
 
     .stat-label {
       font-size: 11px;
@@ -192,19 +191,11 @@
       background: linear-gradient(90deg, #3b82f6, #60a5fa);
       border-radius: 4px;
       width: 100%;
-      transform-origin: left;
-      transition: none;
     }
 
-    .timer-label {
-      font-size: 12px;
-      color: #4b5563;
-    }
+    .timer-label { font-size: 12px; color: #4b5563; }
 
-    .log {
-      margin-top: 24px;
-      text-align: left;
-    }
+    .log { margin-top: 24px; text-align: left; }
 
     .log-title {
       font-size: 12px;
@@ -214,12 +205,7 @@
       margin-bottom: 10px;
     }
 
-    .log-list {
-      list-style: none;
-      max-height: 150px;
-      overflow-y: auto;
-    }
-
+    .log-list { list-style: none; max-height: 150px; overflow-y: auto; }
     .log-list::-webkit-scrollbar { width: 4px; }
     .log-list::-webkit-scrollbar-track { background: transparent; }
     .log-list::-webkit-scrollbar-thumb { background: #2d2d3d; border-radius: 4px; }
@@ -234,8 +220,8 @@
     }
 
     .log-item .time { color: #4b5563; flex-shrink: 0; }
-    .log-item .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-    .log-item .dot.up { background: #4ade80; }
+    .log-item .dot  { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .log-item .dot.up   { background: #4ade80; }
     .log-item .dot.down { background: #f87171; }
     .log-item .msg { color: #94a3b8; }
   </style>
@@ -286,29 +272,29 @@
   <script>
     const INTERVAL = 10000;
 
-    let target = 'https://k-s.app/qr/1057';
+    let qrNum = '1057';
     let countUp = 0, countDown = 0, countTotal = 0;
     let nextCheck = Date.now() + INTERVAL;
     let timerRAF, checkInterval;
 
-    const ring = document.getElementById('ring');
+    const ring       = document.getElementById('ring');
     const statusText = document.getElementById('statusText');
-    const statusSub = document.getElementById('statusSub');
-    const elUp = document.getElementById('countUp');
-    const elDown = document.getElementById('countDown');
-    const elTotal = document.getElementById('countTotal');
-    const timerBar = document.getElementById('timerBar');
+    const statusSub  = document.getElementById('statusSub');
+    const elUp       = document.getElementById('countUp');
+    const elDown     = document.getElementById('countDown');
+    const elTotal    = document.getElementById('countTotal');
+    const timerBar   = document.getElementById('timerBar');
     const timerLabel = document.getElementById('timerLabel');
-    const logList = document.getElementById('logList');
-    const qrInput = document.getElementById('qrInput');
-    const btnApply = document.getElementById('btnApply');
+    const logList    = document.getElementById('logList');
+    const qrInput    = document.getElementById('qrInput');
+    const btnApply   = document.getElementById('btnApply');
     const urlDisplay = document.getElementById('urlDisplay');
 
     function applyNewTarget() {
       const num = qrInput.value.trim();
       if (!num) return;
-      target = 'https://k-s.app/qr/' + num;
-      urlDisplay.textContent = target;
+      qrNum = num;
+      urlDisplay.textContent = 'https://k-s.app/qr/' + qrNum;
       countUp = 0; countDown = 0; countTotal = 0;
       elUp.textContent = 0; elDown.textContent = 0; elTotal.textContent = 0;
       logList.innerHTML = '';
@@ -323,21 +309,14 @@
     function setStatus(state) {
       ring.className = 'status-ring ' + state;
       statusText.className = 'status-text ' + state;
-      if (state === 'up') {
-        ring.textContent = '✅';
-        statusText.textContent = 'Доступен';
-      } else if (state === 'down') {
-        ring.textContent = '❌';
-        statusText.textContent = 'Недоступен';
-      } else {
-        ring.textContent = '🔄';
-        statusText.textContent = 'Проверка...';
-      }
+      const icons = { up: '✅', down: '❌', checking: '🔄' };
+      ring.textContent = icons[state] || '🔄';
+      const labels = { up: 'Доступен', down: 'Недоступен', checking: 'Проверка...' };
+      statusText.textContent = labels[state] || '';
     }
 
     function addLog(state, msg) {
-      const now = new Date();
-      const time = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const li = document.createElement('li');
       li.className = 'log-item';
       li.innerHTML = `<span class="time">${time}</span><span class="dot ${state}"></span><span class="msg">${msg}</span>`;
@@ -352,17 +331,15 @@
       timerBar.style.width = '100%';
 
       const t0 = Date.now();
+      const url = 'https://k-s.app/qr/' + qrNum;
       let ok = false;
       let msg = '';
 
       try {
-        const res = await fetch(target, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' });
-        // no-cors всегда возвращает opaque response (type='opaque'), это означает — сервер ответил
+        await fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' });
         ok = true;
-        msg = 'Сервер ответил';
       } catch (e) {
-        ok = false;
-        msg = 'Нет ответа: ' + (e.message || 'network error');
+        msg = e.message || 'network error';
       }
 
       const ms = Date.now() - t0;
@@ -371,13 +348,13 @@
       if (ok) {
         countUp++;
         setStatus('up');
-        statusSub.textContent = `Последний ответ: ${ms} мс · ${new Date().toLocaleTimeString('ru-RU')}`;
+        statusSub.textContent = `Ответ за ${ms} мс · ${new Date().toLocaleTimeString('ru-RU')}`;
         addLog('up', `Доступен (${ms} мс)`);
       } else {
         countDown++;
         setStatus('down');
-        statusSub.textContent = `Ошибка · ${new Date().toLocaleTimeString('ru-RU')}`;
-        addLog('down', msg);
+        statusSub.textContent = `Нет ответа · ${new Date().toLocaleTimeString('ru-RU')}`;
+        addLog('down', 'Нет ответа: ' + msg);
       }
 
       elUp.textContent = countUp;
@@ -390,19 +367,15 @@
 
     function animateTimer() {
       cancelAnimationFrame(timerRAF);
-
       function frame() {
         const remaining = Math.max(0, nextCheck - Date.now());
         const pct = (remaining / INTERVAL) * 100;
         timerBar.style.transition = 'width 0.1s linear';
         timerBar.style.width = pct + '%';
         const sec = Math.ceil(remaining / 1000);
-        timerLabel.textContent = sec > 0
-          ? `Следующая проверка через ${sec} сек`
-          : 'Проверяем...';
+        timerLabel.textContent = sec > 0 ? `Следующая проверка через ${sec} сек` : 'Проверяем...';
         if (remaining > 0) timerRAF = requestAnimationFrame(frame);
       }
-
       timerRAF = requestAnimationFrame(frame);
     }
 
