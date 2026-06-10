@@ -2,10 +2,10 @@
   {
     "date": "2026-06-10",
     "max_available": 182,
-    "min_available": 182,
-    "peak_rented": 1817,
-    "offline": 1817,
+    "min_available": 181,
+    "peak_rented": 1818,
+    "offline": 1818,
     "total": 1999,
-    "scans": 2
+    "scans": 3
   }
 ]
