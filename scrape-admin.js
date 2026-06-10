@@ -27,11 +27,15 @@ function request(options, body = null, followRedirects = true) {
         if (followRedirects && [301, 302, 303].includes(res.statusCode) && res.headers.location) {
           const loc = res.headers.location;
           const url = new URL(loc.startsWith('http') ? loc : 'https://gw.bumerang.tech' + loc);
+          // Объединяем куки из запроса и нового set-cookie
+          const prevCookies = options.headers['Cookie'] || '';
+          const newCookies  = parseCookies(res.headers);
+          const mergedCookies = [prevCookies, newCookies].filter(Boolean).join('; ');
           const newOpts = {
             hostname: url.hostname,
             path: url.pathname + url.search,
             method: 'GET',
-            headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': options.headers['Cookie'] || '' },
+            headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': mergedCookies },
           };
           request(newOpts, null, true).then(resolve).catch(reject);
         } else {
@@ -87,7 +91,7 @@ async function login() {
       'Cookie':         cookies1,
       'Referer':        BASE + '/admin/login/username',
     },
-  }, body1);
+  }, body1, false);  // не следовать редиректу, нужны куки из 302
 
   const cookies2 = [cookies1, parseCookies(post1.headers)].filter(Boolean).join('; ');
 
@@ -119,9 +123,10 @@ async function login() {
       'Cookie':         cookies3,
       'Referer':        BASE + '/admin/login/password',
     },
-  }, body2);
+  }, body2, false);  // не следовать редиректу, нужны куки из 302
 
   if (post2.status !== 302 && post2.status !== 200) {
+    console.log('DEBUG post2 status:', post2.status, 'headers:', JSON.stringify(post2.headers).slice(0, 300));
     throw new Error(`Ошибка входа: HTTP ${post2.status}`);
   }
 
