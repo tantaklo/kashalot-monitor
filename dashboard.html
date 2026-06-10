@@ -318,6 +318,44 @@
     }
 
     .last-update { font-size: 12px; color: #4b5563; }
+
+    /* Manager ranking */
+    .mgr-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #1e1e2a;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .mgr-row:hover { background: #1e1e2a; border-radius: 6px; padding-left: 6px; }
+    .mgr-rank  { color: #4b5563; width: 24px; flex-shrink: 0; text-align: right; }
+    .mgr-medal { width: 20px; flex-shrink: 0; text-align: center; font-size: 15px; }
+    .mgr-name  { color: #e2e8f0; flex: 1; font-weight: 500; }
+    .mgr-locs  { font-size: 11px; color: #4b5563; width: 52px; text-align: center; flex-shrink: 0; }
+    .mgr-bar-wrap { flex: 1; max-width: 160px; height: 6px; background: #12121a; border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+    .mgr-bar   { height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa); border-radius: 3px; }
+    .mgr-sum   { color: #e2e8f0; font-weight: 600; width: 90px; text-align: right; flex-shrink: 0; }
+
+    .mgr-companies {
+      display: none;
+      margin: 0 8px 10px 54px;
+      padding: 8px 0;
+      border-left: 2px solid #2d2d3d;
+      padding-left: 12px;
+    }
+    .mgr-companies.open { display: block; }
+    .mgr-co-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #6b7280;
+      padding: 3px 0;
+    }
+    .mgr-co-name { flex: 1; }
+    .mgr-co-sum  { color: #94a3b8; text-align: right; }
   </style>
 </head>
 <body>
@@ -405,6 +443,21 @@
       </div>
       <div class="section-title" style="margin-top:8px">Топ-15 устройств</div>
       <div class="top-list" id="topList"></div>
+    </div>
+
+    <!-- Manager ranking -->
+    <div class="chart-card" id="managersSection" style="display:none">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Рейтинг управляющих</div>
+          <div class="chart-sub" id="managersUpdated">Суммарная выручка по всем локациям</div>
+        </div>
+      </div>
+      <div class="drop-zone" id="dropZoneMgr">
+        📂 Перетащи сюда CSV «Выручки по компаниям» — или нажми чтобы выбрать файл
+        <input type="file" id="csvMgrInput" accept=".csv" />
+      </div>
+      <div class="top-list" id="mgrList"></div>
     </div>
 
     <!-- Tariff analytics -->
@@ -786,8 +839,133 @@
       } catch(e) { console.error(e); }
     }
 
+    // --- Managers CSV parsing ---
+    function extractManager(companyName) {
+      const m = companyName.match(/\[([^\]]+)\]/);
+      if (!m) return null;
+      let b = m[1];
+      b = b.replace(/^АИ\s+/, '').replace(/^Неактив\s+/, '');
+      b = b.split(/\s+Агент\b/)[0];
+      b = b.split(/\s*\|\s*/)[0];
+      b = b.split(/\s*\/\s*/)[0];
+      b = b.trim();
+      if (b.startsWith('ИП ')) return b.slice(3).trim();
+      if (b.startsWith('СЗ ')) return b.slice(3).trim();
+      if (b.startsWith('ООО ')) return b.slice(4).trim();
+      return b || null;
+    }
+
+    function parseManagersCsv(text) {
+      const SKIP = new Set(['Тест кассы', 'Кашалот Шеринг']);
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      const mgrs = {};
+
+      for (let i = 1; i < lines.length; i++) {
+        // CSV may have quoted fields
+        const parts = lines[i].match(/^"?([^",]*)"?,("?[^"]*"?)/) ;
+        if (!parts) continue;
+        const name = parts[1].trim();
+        const revenue = parseInt(parts[2].replace(/[^\d]/g, ''));
+        if (!name || !revenue || revenue <= 0) continue;
+        if (SKIP.has(name)) continue;
+
+        const mgr = extractManager(name) || name;
+        if (!mgrs[mgr]) mgrs[mgr] = { total: 0, companies: [] };
+        mgrs[mgr].total += revenue;
+        mgrs[mgr].companies.push({ name, revenue });
+      }
+
+      const list = Object.entries(mgrs)
+        .map(([manager, d]) => ({ manager, total_revenue: d.total, locations: d.companies.length, companies: d.companies.sort((a,b) => b.revenue - a.revenue) }))
+        .sort((a, b) => b.total_revenue - a.total_revenue);
+
+      return { updated: new Date().toISOString().slice(0, 10), total_managers: list.length, managers: list };
+    }
+
+    const MEDALS = ['🥇', '🥈', '🥉'];
+
+    function renderManagers(data) {
+      const list = document.getElementById('mgrList');
+      list.innerHTML = '';
+      const top = data.managers;
+      if (!top.length) return;
+      const maxRev = top[0].total_revenue;
+
+      top.forEach((m, i) => {
+        const row = document.createElement('div');
+        row.className = 'mgr-row';
+        row.innerHTML = `
+          <span class="mgr-rank">${i + 1}</span>
+          <span class="mgr-medal">${MEDALS[i] || ''}</span>
+          <span class="mgr-name">${m.manager}</span>
+          <span class="mgr-locs">${m.locations} лок.</span>
+          <div class="mgr-bar-wrap"><div class="mgr-bar" style="width:${Math.round(m.total_revenue/maxRev*100)}%"></div></div>
+          <span class="mgr-sum">${fmt(m.total_revenue)}</span>`;
+
+        const detail = document.createElement('div');
+        detail.className = 'mgr-companies';
+        m.companies.forEach(c => {
+          const cr = document.createElement('div');
+          cr.className = 'mgr-co-row';
+          cr.innerHTML = `<span class="mgr-co-name">${c.name}</span><span class="mgr-co-sum">${fmt(c.revenue)}</span>`;
+          detail.appendChild(cr);
+        });
+
+        row.addEventListener('click', () => detail.classList.toggle('open'));
+        list.appendChild(row);
+        list.appendChild(detail);
+      });
+
+      document.getElementById('managersUpdated').textContent =
+        `${data.total_managers} управляющих · данные за всё время · обновлено ${data.updated}`;
+      document.getElementById('managersSection').style.display = 'block';
+    }
+
+    function handleMgrFile(file) {
+      if (!file || !file.name.endsWith('.csv')) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const data = parseManagersCsv(e.target.result);
+          localStorage.setItem('kashalot_managers', JSON.stringify(data));
+          renderManagers(data);
+          document.getElementById('dropZoneMgr').textContent = '✅ Загружено: ' + file.name;
+        } catch(err) {
+          document.getElementById('dropZoneMgr').textContent = '❌ Ошибка чтения файла';
+        }
+      };
+      reader.readAsText(file, 'utf-8');
+    }
+
+    async function loadManagers() {
+      const cached = localStorage.getItem('kashalot_managers');
+      if (cached) {
+        try { renderManagers(JSON.parse(cached)); return; } catch {}
+      }
+      try {
+        const res = await fetch('./data/managers.json?t=' + Date.now());
+        if (!res.ok) return;
+        renderManagers(await res.json());
+      } catch {}
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const zoneMgr = document.getElementById('dropZoneMgr');
+      const inputMgr = document.getElementById('csvMgrInput');
+      zoneMgr.addEventListener('click', () => inputMgr.click());
+      inputMgr.addEventListener('change', e => handleMgrFile(e.target.files[0]));
+      zoneMgr.addEventListener('dragover', e => { e.preventDefault(); zoneMgr.classList.add('drag-over'); });
+      zoneMgr.addEventListener('dragleave', () => zoneMgr.classList.remove('drag-over'));
+      zoneMgr.addEventListener('drop', e => {
+        e.preventDefault();
+        zoneMgr.classList.remove('drag-over');
+        handleMgrFile(e.dataTransfer.files[0]);
+      });
+    });
+
     loadHistory();
     loadRevenue();
+    loadManagers();
   </script>
 </body>
 </html>
