@@ -1,3 +1,8 @@
 [
-  { "date": "2026-06-10", "available": 192, "offline": 1234, "total": 1180 }
+  {
+    "date": "2026-06-10",
+    "available": 184,
+    "offline": 1807,
+    "total": 1991
+  }
 ]
