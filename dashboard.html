@@ -623,11 +623,8 @@
           const last = history[history.length - 1];
           document.getElementById('heroNumber').textContent = last.available;
           document.getElementById('heroNumber').className = 'hero-number';
-          document.getElementById('heroSub').textContent = last.total
-            ? `из ${last.total} устройств в парке`
-            : `данные за ${last.date}`;
-          document.getElementById('cntUp').textContent   = last.available;
-          document.getElementById('cntTotal').textContent = last.total || '—';
+          document.getElementById('heroSub').textContent = `данные за ${last.date}`;
+          document.getElementById('cntUp').textContent = last.available;
           updatePct(last.available);
           document.getElementById('lastUpdate').textContent = 'Данные за ' + last.date;
         }
@@ -718,7 +715,6 @@
 
       let up = 0, offline = 0, total = 0, done = 0;
       document.getElementById('cntUp').textContent    = '0';
-      document.getElementById('cntTotal').textContent = '0';
       updatePct(0);
 
       const upNums = [];
@@ -747,7 +743,6 @@
         document.getElementById('progressLabel').textContent = `Проверено ${done} из ${TOTAL} (${pct}%)`;
         document.getElementById('heroNumber').textContent = up;
         document.getElementById('cntUp').textContent    = up;
-        document.getElementById('cntTotal').textContent = total;
         updatePct(up);
       }
 
@@ -765,7 +760,7 @@
       renderTariffAnalytics(slotMap);
 
       document.getElementById('heroNumber').className = 'hero-number';
-      document.getElementById('heroSub').textContent = `из ${total} устройств в парке`;
+      document.getElementById('heroSub').textContent = fleetSize ? `из ${fleetSize} в парке` : '';
       document.getElementById('progressBar').className = 'progress-bar done';
       document.getElementById('progressBar').style.width = '100%';
       document.getElementById('progressLabel').textContent = `Сканирование завершено`;
