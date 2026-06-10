@@ -203,6 +203,71 @@
 
     .tag.up { background: #052e16; color: #4ade80; }
 
+    /* Tariff analytics */
+    .tariff-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .tariff-slot {
+      background: #1a1a24;
+      border: 1px solid #2d2d3d;
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .tariff-slot-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 4px;
+    }
+
+    .tariff-slot-meta {
+      font-size: 12px;
+      color: #4b5563;
+      margin-bottom: 18px;
+    }
+
+    .price-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .price-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #4ade80;
+      width: 56px;
+      flex-shrink: 0;
+    }
+
+    .price-bar-wrap {
+      flex: 1;
+      height: 8px;
+      background: #12121a;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .price-bar {
+      height: 100%;
+      background: #3b82f6;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    .price-count {
+      font-size: 12px;
+      color: #4b5563;
+      width: 52px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
     .last-update { font-size: 12px; color: #4b5563; }
   </style>
 </head>
@@ -258,6 +323,12 @@
         <div class="chart-empty" id="chartEmpty">Данные появятся после первого автоматического сканирования</div>
         <canvas id="chartCanvas" style="display:none" height="160"></canvas>
       </div>
+    </div>
+
+    <!-- Tariff analytics -->
+    <div id="tariffSection" style="display:none">
+      <div class="section-title" style="margin-bottom:12px">Тарифы по парку</div>
+      <div class="tariff-grid" id="tariffGrid"></div>
     </div>
 
     <!-- Found list -->
@@ -391,22 +462,68 @@
     }
 
     // --- Scan ---
-    function parseStatus(html) {
-      if (!html || html.includes('Нет Кашалота')) return 'notfound';
-      if (html.includes('устал') || html.includes('вернется') || html.includes('погода')) return 'offline';
-      if (html.includes('shadow-text')) return 'up';
-      return 'notfound';
+    function parseDevice(html) {
+      if (!html || html.includes('Нет Кашалота')) return { status: 'notfound', tariffs: [] };
+      if (html.includes('устал') || html.includes('вернется') || html.includes('погода')) return { status: 'offline', tariffs: [] };
+      if (!html.includes('shadow-text')) return { status: 'notfound', tariffs: [] };
+
+      const types     = [...html.matchAll(/class="box"><h3 class="white">([\s\S]*?)<\/h3>/g)].map(m => m[1].trim());
+      const durations = [...html.matchAll(/class="time"><h3 class="white">[\s\S]*?(\d+\s*мин)/g)].map(m => m[1].trim());
+      const speeds    = [...html.matchAll(/alt="(До \d+ км\/ч)"/g)].map(m => m[1]);
+      const prices    = [...html.matchAll(/<h1 class="white shadow-text[\s\S]*?">[\s\S]*?(\d+)\s*₽<\/h1>/g)].map(m => m[1] + ' ₽');
+
+      const count = Math.min(types.length, prices.length);
+      const tariffs = [];
+      for (let i = 0; i < count; i++) {
+        tariffs.push({ type: types[i] || '', duration: durations[i] || '', speed: speeds[i] || '', price: prices[i] || '' });
+      }
+      return { status: 'up', tariffs };
     }
 
     async function checkOne(num) {
       const url = PROXY + encodeURIComponent('https://k-s.app/qr/' + num);
       try {
         const res = await fetch(url, { cache: 'no-store' });
-        if (!res.ok) return { num, status: 'error' };
-        return { num, status: parseStatus(await res.text()) };
+        if (!res.ok) return { num, status: 'error', tariffs: [] };
+        return { num, ...parseDevice(await res.text()) };
       } catch {
-        return { num, status: 'error' };
+        return { num, status: 'error', tariffs: [] };
       }
+    }
+
+    // --- Tariff analytics ---
+    function renderTariffAnalytics(slotMap) {
+      const grid = document.getElementById('tariffGrid');
+      grid.innerHTML = '';
+
+      // Canonical slot order
+      const order = ['Детский|5 мин', 'Быстрый|5 мин', 'Детский|10 мин', 'Быстрый|10 мин'];
+      const slots = order.filter(k => slotMap[k]);
+
+      if (!slots.length) return;
+
+      slots.forEach(key => {
+        const [type, duration] = key.split('|');
+        const priceMap = slotMap[key];
+        const speed = type === 'Детский' ? 'До 7 км/ч' : 'До 14 км/ч';
+        const sorted = Object.entries(priceMap).sort((a, b) => b[1] - a[1]);
+        const maxCount = sorted[0][1];
+
+        const card = document.createElement('div');
+        card.className = 'tariff-slot';
+        card.innerHTML = `
+          <div class="tariff-slot-title">${type} · ${duration}</div>
+          <div class="tariff-slot-meta">${speed}</div>
+          ${sorted.map(([price, cnt]) => `
+            <div class="price-row">
+              <div class="price-label">${price}</div>
+              <div class="price-bar-wrap"><div class="price-bar" style="width:${Math.round(cnt/maxCount*100)}%"></div></div>
+              <div class="price-count">${cnt} уст.</div>
+            </div>`).join('')}`;
+        grid.appendChild(card);
+      });
+
+      document.getElementById('tariffSection').style.display = 'block';
     }
 
     async function startScan() {
@@ -431,14 +548,23 @@
       document.getElementById('cntTotal').textContent = '0';
 
       const upNums = [];
+      const slotMap = {}; // { "Детский|5 мин": { "150 ₽": 45, ... } }
 
       for (let i = 1; i <= TOTAL; i += CONCURRENCY) {
         const batch = Array.from({ length: Math.min(CONCURRENCY, TOTAL - i + 1) }, (_, j) => i + j);
         const results = await Promise.all(batch.map(n => checkOne(n)));
 
-        results.forEach(({ num, status }) => {
+        results.forEach(({ num, status, tariffs }) => {
           done++;
-          if (status === 'up')      { up++; total++; upNums.push(num); }
+          if (status === 'up') {
+            up++; total++; upNums.push(num);
+            tariffs.forEach(({ type, duration, price }) => {
+              if (!type || !duration || !price) return;
+              const key = `${type}|${duration}`;
+              if (!slotMap[key]) slotMap[key] = {};
+              slotMap[key][price] = (slotMap[key][price] || 0) + 1;
+            });
+          }
           if (status === 'offline') { offline++; total++; }
         });
 
@@ -462,6 +588,7 @@
         foundList.appendChild(a);
       });
       document.getElementById('foundSection').style.display = 'block';
+      renderTariffAnalytics(slotMap);
 
       document.getElementById('heroNumber').className = 'hero-number';
       document.getElementById('heroSub').textContent = `из ${total} устройств в парке`;
