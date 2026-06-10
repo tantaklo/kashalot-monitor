@@ -49,9 +49,19 @@ function request(options, body = null, followRedirects = true) {
   });
 }
 
-function parseCookies(headers) {
+// Cookie jar: объект {name: value}, обновляется при каждом ответе
+function updateJar(jar, headers) {
   const raw = headers['set-cookie'] || [];
-  return raw.map(c => c.split(';')[0]).join('; ');
+  raw.forEach(c => {
+    const part = c.split(';')[0];
+    const eq = part.indexOf('=');
+    if (eq > 0) jar[part.slice(0, eq).trim()] = part.slice(eq + 1);
+  });
+  return jar;
+}
+
+function jarToString(jar) {
+  return Object.entries(jar).map(([k, v]) => `${k}=${v}`).join('; ');
 }
 
 // --- Login flow ---
@@ -63,20 +73,23 @@ function extractCsrf(html) {
 }
 
 async function login() {
+  const jar = {};
+
   // Шаг 1: GET /admin/login/username — получаем CSRF токен
   const step1 = await request({
     hostname: 'gw.bumerang.tech',
     path: '/admin/login/username',
     method: 'GET',
     headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': '' },
-  });
+  }, null, false);
 
+  updateJar(jar, step1.headers);
   const csrf1 = extractCsrf(step1.body);
   if (!csrf1) {
-    console.log('DEBUG step1 status:', step1.status, 'body[:500]:', step1.body.slice(0, 500));
+    console.log('DEBUG step1 status:', step1.status, 'body[:300]:', step1.body.slice(0, 300));
     throw new Error('CSRF токен не найден на /admin/login/username');
   }
-  const cookies1 = parseCookies(step1.headers);
+  console.log('Шаг 1: CSRF получен, кукис:', Object.keys(jar).join(', '));
 
   // Шаг 2: POST email
   const body1 = new URLSearchParams({ _token: csrf1, email: EMAIL }).toString();
@@ -88,27 +101,29 @@ async function login() {
       'User-Agent':     'Mozilla/5.0',
       'Content-Type':   'application/x-www-form-urlencoded',
       'Content-Length': Buffer.byteLength(body1),
-      'Cookie':         cookies1,
+      'Cookie':         jarToString(jar),
       'Referer':        BASE + '/admin/login/username',
     },
-  }, body1, false);  // не следовать редиректу, нужны куки из 302
+  }, body1, false);
 
-  const cookies2 = [cookies1, parseCookies(post1.headers)].filter(Boolean).join('; ');
+  updateJar(jar, post1.headers);
+  console.log('Шаг 2: POST email статус:', post1.status, 'кукис:', Object.keys(jar).join(', '));
 
   // Шаг 3: GET /admin/login/password — новый CSRF
   const step3 = await request({
     hostname: 'gw.bumerang.tech',
     path: '/admin/login/password',
     method: 'GET',
-    headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': cookies2 },
-  });
+    headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': jarToString(jar) },
+  }, null, false);
 
+  updateJar(jar, step3.headers);
   const csrf3 = extractCsrf(step3.body);
   if (!csrf3) {
-    console.log('DEBUG step3 status:', step3.status, 'body[:500]:', step3.body.slice(0, 500));
+    console.log('DEBUG step3 status:', step3.status, 'body[:300]:', step3.body.slice(0, 300));
     throw new Error('CSRF токен не найден на /admin/login/password');
   }
-  const cookies3 = [cookies2, parseCookies(step3.headers)].filter(Boolean).join('; ');
+  console.log('Шаг 3: CSRF получен, кукис:', Object.keys(jar).join(', '));
 
   // Шаг 4: POST password
   const body2 = new URLSearchParams({ _token: csrf3, password: PASS }).toString();
@@ -120,38 +135,43 @@ async function login() {
       'User-Agent':     'Mozilla/5.0',
       'Content-Type':   'application/x-www-form-urlencoded',
       'Content-Length': Buffer.byteLength(body2),
-      'Cookie':         cookies3,
+      'Cookie':         jarToString(jar),
       'Referer':        BASE + '/admin/login/password',
     },
-  }, body2, false);  // не следовать редиректу, нужны куки из 302
+  }, body2, false);
+
+  updateJar(jar, post2.headers);
+  console.log('Шаг 4: POST пароль статус:', post2.status, 'Location:', post2.headers.location, 'кукис:', Object.keys(jar).join(', '));
 
   if (post2.status !== 302 && post2.status !== 200) {
-    console.log('DEBUG post2 status:', post2.status, 'headers:', JSON.stringify(post2.headers).slice(0, 300));
     throw new Error(`Ошибка входа: HTTP ${post2.status}`);
   }
 
-  const cookiesFinal = [cookies3, parseCookies(post2.headers)].filter(Boolean).join('; ');
-  return cookiesFinal;
+  return jar;
 }
 
 // --- Fetch dashboard ---
 
-async function fetchDashboard(cookies) {
+async function fetchDashboard(jar) {
   const res = await request({
     hostname: 'gw.bumerang.tech',
     path: '/admin/dashboard',
     method: 'GET',
     headers: {
       'User-Agent': 'Mozilla/5.0',
-      'Cookie': cookies,
+      'Cookie': jarToString(jar),
     },
-  });
+  }, null, false);  // не следовать редиректу — 302 значит не авторизованы
 
-  // Проверяем что это дашборд (admin/bill есть в первых 500 символах только при авторизации)
+  if (res.status === 302) {
+    console.log('DEBUG: дашборд вернул 302 →', res.headers.location);
+    throw new Error('Редирект на логин — сессия не активна');
+  }
+
   if (!res.body.includes('/admin/bill') && !res.body.includes('За сегодня')) {
     console.log('DEBUG dashboard status:', res.status);
-    console.log('DEBUG dashboard body[:1000]:', res.body.slice(0, 1000));
-    throw new Error('Дашборд не загрузился или сессия не активна');
+    console.log('DEBUG dashboard body[:500]:', res.body.slice(0, 500));
+    throw new Error('Дашборд не загрузился (нет признаков авторизованной страницы)');
   }
   return res.body;
 }
@@ -189,10 +209,10 @@ function parseTotalObjects(html) {
 
 async function main() {
   console.log('Логинимся...');
-  const cookies = await login();
+  const jar = await login();
 
   console.log('Загружаем дашборд...');
-  const html = await fetchDashboard(cookies);
+  const html = await fetchDashboard(jar);
 
   const revenue       = parseRevenue(html);
   const activeObjects = parseActiveObjects(html);
