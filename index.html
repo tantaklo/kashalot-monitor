@@ -167,6 +167,16 @@
     .tariff-price-now { font-size: 20px; font-weight: 700; color: #4ade80; }
     .tariff-price-old { font-size: 13px; color: #4b5563; text-decoration: line-through; }
 
+    .tariffs-empty {
+      background: #12121a;
+      border: 1px dashed #2d2d3d;
+      border-radius: 10px;
+      padding: 20px;
+      font-size: 13px;
+      color: #4b5563;
+      text-align: center;
+    }
+
     .divider { height: 1px; background: #2d2d3d; margin-bottom: 32px; }
 
     .stats {
@@ -260,8 +270,9 @@
     <div class="status-sub" id="statusSub">Ожидание первого ответа</div>
 
     <div class="tariffs-wrap" id="tariffsWrap" style="display:none">
-      <div class="tariffs-title">Тарифы на аренду</div>
+      <div class="tariffs-title" id="tariffsTitle">Тарифы на аренду</div>
       <div class="tariffs" id="tariffsGrid"></div>
+      <div class="tariffs-empty" id="tariffsEmpty" style="display:none"></div>
     </div>
 
     <div class="divider"></div>
@@ -349,7 +360,19 @@
       if (logList.children.length > 50) logList.removeChild(logList.lastChild);
     }
 
+    const tariffsEmpty = document.getElementById('tariffsEmpty');
+
+    function showTariffsPlaceholder(msg) {
+      tariffsGrid.innerHTML = '';
+      tariffsGrid.style.display = 'none';
+      tariffsEmpty.textContent = msg;
+      tariffsEmpty.style.display = 'block';
+      tariffsWrap.style.display = 'block';
+    }
+
     function renderTariffs(tariffs) {
+      tariffsEmpty.style.display = 'none';
+      tariffsGrid.style.display = 'grid';
       tariffsGrid.innerHTML = '';
       tariffs.forEach(t => {
         const card = document.createElement('div');
@@ -363,7 +386,7 @@
           </div>`;
         tariffsGrid.appendChild(card);
       });
-      tariffsWrap.style.display = tariffs.length ? 'block' : 'none';
+      tariffsWrap.style.display = 'block';
     }
 
     function parseTariffs(html) {
@@ -421,7 +444,7 @@
           setStatus('notfound', 'Не найден');
           statusSub.textContent = `Кашалот №${qrNum} не существует · ${new Date().toLocaleTimeString('ru-RU')}`;
           addLog('notfound', `Кашалот №${qrNum} не найден`);
-          tariffsWrap.style.display = 'none';
+          showTariffsPlaceholder('Кашалот с таким номером не существует — тарифы недоступны');
         } else {
           countUp++;
           setStatus('up', 'Доступен');
@@ -434,7 +457,7 @@
         setStatus('down', 'Сервер недоступен');
         statusSub.textContent = `Нет ответа · ${new Date().toLocaleTimeString('ru-RU')}`;
         addLog('down', 'Нет ответа: ' + (e.message || 'network error'));
-        tariffsWrap.style.display = 'none';
+        showTariffsPlaceholder('Сервер не отвечает — тарифы недоступны');
       }
 
       countTotal++;
