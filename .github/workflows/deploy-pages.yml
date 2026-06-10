@@ -38,6 +38,7 @@ jobs:
             --password "$DASHBOARD_PASSWORD" \
             --directory encrypted \
             --remember 30 \
+            --remember-default \
             --short
           cp encrypted/dashboard.html dashboard.html
           rm -rf encrypted
