@@ -75,76 +75,43 @@ function extractCsrf(html) {
 async function login() {
   const jar = {};
 
-  // Шаг 1: GET /admin/login/username — получаем CSRF токен
+  // Шаг 1: GET /admin/login/username — получаем CSRF и сессионные куки
   const step1 = await request({
     hostname: 'gw.bumerang.tech',
     path: '/admin/login/username',
     method: 'GET',
-    headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': '' },
+    headers: { 'User-Agent': 'Mozilla/5.0' },
   }, null, false);
 
   updateJar(jar, step1.headers);
-  const csrf1 = extractCsrf(step1.body);
-  if (!csrf1) {
+  const csrf = extractCsrf(step1.body);
+  if (!csrf) {
     console.log('DEBUG step1 status:', step1.status, 'body[:300]:', step1.body.slice(0, 300));
     throw new Error('CSRF токен не найден на /admin/login/username');
   }
   console.log('Шаг 1: CSRF получен, кукис:', Object.keys(jar).join(', '));
 
-  // Шаг 2: POST email
-  const body1 = new URLSearchParams({ _token: csrf1, email: EMAIL }).toString();
-  const post1 = await request({
+  // Шаг 2: POST username+password напрямую на /admin/login (action формы)
+  const body = new URLSearchParams({ _token: csrf, username: EMAIL, password: PASS }).toString();
+  const post = await request({
     hostname: 'gw.bumerang.tech',
-    path: '/admin/login/username',
+    path: '/admin/login',
     method: 'POST',
     headers: {
       'User-Agent':     'Mozilla/5.0',
       'Content-Type':   'application/x-www-form-urlencoded',
-      'Content-Length': Buffer.byteLength(body1),
+      'Content-Length': Buffer.byteLength(body),
       'Cookie':         jarToString(jar),
       'Referer':        BASE + '/admin/login/username',
     },
-  }, body1, false);
+  }, body, false);
 
-  updateJar(jar, post1.headers);
-  console.log('Шаг 2: POST email статус:', post1.status, 'кукис:', Object.keys(jar).join(', '));
+  updateJar(jar, post.headers);
+  console.log('Шаг 2: POST login статус:', post.status, 'Location:', post.headers.location, 'кукис:', Object.keys(jar).join(', '));
 
-  // Шаг 3: GET /admin/login/password — новый CSRF
-  const step3 = await request({
-    hostname: 'gw.bumerang.tech',
-    path: '/admin/login/password',
-    method: 'GET',
-    headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': jarToString(jar) },
-  }, null, false);
-
-  updateJar(jar, step3.headers);
-  const csrf3 = extractCsrf(step3.body);
-  if (!csrf3) {
-    console.log('DEBUG step3 status:', step3.status, 'body[:300]:', step3.body.slice(0, 300));
-    throw new Error('CSRF токен не найден на /admin/login/password');
-  }
-  console.log('Шаг 3: CSRF получен, кукис:', Object.keys(jar).join(', '));
-
-  // Шаг 4: POST password
-  const body2 = new URLSearchParams({ _token: csrf3, password: PASS }).toString();
-  const post2 = await request({
-    hostname: 'gw.bumerang.tech',
-    path: '/admin/login/password',
-    method: 'POST',
-    headers: {
-      'User-Agent':     'Mozilla/5.0',
-      'Content-Type':   'application/x-www-form-urlencoded',
-      'Content-Length': Buffer.byteLength(body2),
-      'Cookie':         jarToString(jar),
-      'Referer':        BASE + '/admin/login/password',
-    },
-  }, body2, false);
-
-  updateJar(jar, post2.headers);
-  console.log('Шаг 4: POST пароль статус:', post2.status, 'Location:', post2.headers.location, 'кукис:', Object.keys(jar).join(', '));
-
-  if (post2.status !== 302 && post2.status !== 200) {
-    throw new Error(`Ошибка входа: HTTP ${post2.status}`);
+  if (post.status !== 302 && post.status !== 200) {
+    console.log('DEBUG login body[:300]:', post.body.slice(0, 300));
+    throw new Error(`Ошибка входа: HTTP ${post.status}`);
   }
 
   return jar;
