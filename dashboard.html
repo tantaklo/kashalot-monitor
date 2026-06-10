@@ -387,9 +387,9 @@
         <div class="stat-label">Доступны</div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">🌙</div>
-        <div class="stat-num yellow" id="cntOffline">—</div>
-        <div class="stat-label">Не в сезоне</div>
+        <div class="stat-icon">📈</div>
+        <div class="stat-num yellow" id="cntPct">—</div>
+        <div class="stat-label">Доступность парка</div>
       </div>
       <div class="stat-card">
         <div class="stat-icon">🐋</div>
@@ -481,6 +481,17 @@
     const CONCURRENCY = 30;
 
     let scanning = false;
+    let fleetSize = 0;
+
+    function updatePct(available) {
+      const base = fleetSize || 0;
+      if (!base) {
+        document.getElementById('cntPct').textContent = '—';
+        return;
+      }
+      const pct = (available / base * 100).toFixed(1) + '%';
+      document.getElementById('cntPct').textContent = pct;
+    }
 
     // --- Chart ---
     function drawChart(history) {
@@ -587,9 +598,9 @@
           document.getElementById('heroSub').textContent = last.total
             ? `из ${last.total} устройств в парке`
             : `данные за ${last.date}`;
-          document.getElementById('cntUp').textContent     = last.available;
-          document.getElementById('cntOffline').textContent = last.offline || '—';
-          document.getElementById('cntTotal').textContent   = last.total   || '—';
+          document.getElementById('cntUp').textContent   = last.available;
+          document.getElementById('cntTotal').textContent = last.total || '—';
+          updatePct(last.available);
           document.getElementById('lastUpdate').textContent = 'Данные за ' + last.date;
         }
         drawChart(history);
@@ -678,9 +689,9 @@
       document.getElementById('foundSection').style.display = 'none';
 
       let up = 0, offline = 0, total = 0, done = 0;
-      document.getElementById('cntUp').textContent = '0';
-      document.getElementById('cntOffline').textContent = '0';
+      document.getElementById('cntUp').textContent    = '0';
       document.getElementById('cntTotal').textContent = '0';
+      updatePct(0);
 
       const upNums = [];
       const slotMap = {}; // { "Детский|5 мин": { "150 ₽": 45, ... } }
@@ -707,9 +718,9 @@
         document.getElementById('progressBar').style.width = pct + '%';
         document.getElementById('progressLabel').textContent = `Проверено ${done} из ${TOTAL} (${pct}%)`;
         document.getElementById('heroNumber').textContent = up;
-        document.getElementById('cntUp').textContent = up;
-        document.getElementById('cntOffline').textContent = offline;
+        document.getElementById('cntUp').textContent    = up;
         document.getElementById('cntTotal').textContent = total;
+        updatePct(up);
       }
 
       // Render found tags
@@ -802,6 +813,8 @@
     }
 
     function renderRevenue(data) {
+      fleetSize = data.fleet_size || 0;
+      document.getElementById('cntTotal').textContent = fleetSize || '—';
       document.getElementById('revTotal').textContent = fmt(data.total_revenue);
       document.getElementById('revFleet').textContent = data.fleet_size;
       document.getElementById('revAvg').textContent   = fmt(data.avg_revenue);
