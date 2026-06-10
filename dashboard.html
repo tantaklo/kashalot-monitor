@@ -953,9 +953,44 @@
       const today = new Date().toISOString().slice(0, 10);
       document.getElementById('lastUpdate').textContent = 'Данные за ' + today;
 
+      // Сохраняем результат — восстановится после F5
+      localStorage.setItem('kashalot_scan', JSON.stringify({
+        up, offline, total, upNums, slotMap,
+        scannedAt: new Date().toISOString(),
+      }));
+
       btn.disabled = false;
       btn.textContent = 'Обновить';
       scanning = false;
+    }
+
+    function restoreScan() {
+      const raw = localStorage.getItem('kashalot_scan');
+      if (!raw) return;
+      try {
+        const { up, total, upNums, slotMap, scannedAt } = JSON.parse(raw);
+        document.getElementById('heroNumber').className = 'hero-number';
+        document.getElementById('heroNumber').textContent = up;
+        document.getElementById('heroSub').textContent = total ? `из ${total} в парке` : '';
+        document.getElementById('cntUp').textContent = up;
+        updatePct(up);
+        document.getElementById('progressBar').className = 'progress-bar done';
+        document.getElementById('progressBar').style.width = '100%';
+        const date = scannedAt.slice(0, 10);
+        document.getElementById('progressLabel').textContent = `Последнее сканирование: ${date}`;
+        document.getElementById('lastUpdate').textContent   = 'Данные за ' + date;
+        const foundList = document.getElementById('foundList');
+        foundList.innerHTML = '';
+        upNums.forEach(num => {
+          const a = document.createElement('a');
+          a.className = 'tag up'; a.target = '_blank';
+          a.href = 'https://k-s.app/qr/' + num;
+          a.textContent = '№' + num;
+          foundList.appendChild(a);
+        });
+        document.getElementById('foundSection').style.display = 'block';
+        renderTariffAnalytics(slotMap);
+      } catch {}
     }
 
     // --- CSV parsing ---
@@ -1268,6 +1303,7 @@
       } catch {}
     }
 
+    restoreScan();
     loadHistory();
     loadRevenue();
     loadManagers();
