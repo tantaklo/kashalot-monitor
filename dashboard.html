@@ -16,31 +16,34 @@
     }
 
     header {
-      max-width: 760px;
+      max-width: 860px;
       margin: 0 auto 40px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
     }
 
-    .brand { font-size: 18px; font-weight: 700; color: #e2e8f0; }
+    .brand { font-size: 18px; font-weight: 700; }
     .brand span { color: #3b82f6; }
 
-    .last-update {
-      font-size: 12px;
+    .header-links { display: flex; gap: 16px; }
+    .header-links a {
+      font-size: 13px;
       color: #4b5563;
+      text-decoration: none;
+      transition: color 0.2s;
     }
+    .header-links a:hover { color: #94a3b8; }
 
     .main {
-      max-width: 760px;
+      max-width: 860px;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
       gap: 24px;
     }
 
-    /* Hero — большая цифра */
+    /* Hero */
     .hero {
       background: #1a1a24;
       border: 1px solid #2d2d3d;
@@ -63,7 +66,6 @@
       color: #4ade80;
       line-height: 1;
       margin-bottom: 12px;
-      transition: color 0.4s;
     }
 
     .hero-number.loading { color: #3b82f6; }
@@ -74,7 +76,6 @@
       margin-bottom: 40px;
     }
 
-    /* Progress */
     .progress-wrap {
       height: 6px;
       background: #2d2d3d;
@@ -93,11 +94,7 @@
 
     .progress-bar.done { background: linear-gradient(90deg, #16a34a, #4ade80); }
 
-    .progress-label {
-      font-size: 13px;
-      color: #4b5563;
-      margin-bottom: 32px;
-    }
+    .progress-label { font-size: 13px; color: #4b5563; margin-bottom: 32px; min-height: 18px; }
 
     .btn {
       background: #3b82f6;
@@ -114,7 +111,7 @@
     .btn:hover { background: #2563eb; }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* Stats grid */
+    /* Stats row */
     .stats {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -130,49 +127,70 @@
     }
 
     .stat-icon { font-size: 28px; margin-bottom: 12px; }
-
-    .stat-num {
-      font-size: 40px;
-      font-weight: 800;
-      margin-bottom: 6px;
-      transition: color 0.3s;
-    }
-
+    .stat-num { font-size: 40px; font-weight: 800; margin-bottom: 6px; }
     .stat-num.green  { color: #4ade80; }
     .stat-num.yellow { color: #fbbf24; }
     .stat-num.gray   { color: #4b5563; }
+    .stat-label { font-size: 13px; color: #6b7280; }
 
-    .stat-label {
+    /* Chart */
+    .chart-card {
+      background: #1a1a24;
+      border: 1px solid #2d2d3d;
+      border-radius: 16px;
+      padding: 28px 32px;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .chart-title { font-size: 15px; font-weight: 600; color: #e2e8f0; }
+    .chart-sub   { font-size: 12px; color: #4b5563; margin-top: 3px; }
+
+    .chart-wrap { position: relative; }
+
+    canvas { display: block; width: 100%; }
+
+    .chart-empty {
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 13px;
-      color: #6b7280;
-    }
-
-    /* Log */
-    .section-title {
-      font-size: 12px;
       color: #4b5563;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 12px;
+      border: 1px dashed #2d2d3d;
+      border-radius: 10px;
     }
 
-    .found-list-wrap {
+    /* Found tags */
+    .found-card {
       background: #1a1a24;
       border: 1px solid #2d2d3d;
       border-radius: 16px;
       padding: 24px;
     }
 
+    .section-title {
+      font-size: 12px;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 14px;
+    }
+
     .found-list {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      max-height: 200px;
+      max-height: 180px;
       overflow-y: auto;
     }
 
     .found-list::-webkit-scrollbar { width: 4px; }
-    .found-list::-webkit-scrollbar-track { background: transparent; }
     .found-list::-webkit-scrollbar-thumb { background: #2d2d3d; border-radius: 4px; }
 
     .tag {
@@ -180,16 +198,21 @@
       padding: 4px 10px;
       border-radius: 6px;
       font-weight: 600;
+      text-decoration: none;
     }
 
-    .tag.up       { background: #052e16; color: #4ade80; }
-    .tag.offline  { background: #1a1400; color: #fbbf24; }
+    .tag.up { background: #052e16; color: #4ade80; }
+
+    .last-update { font-size: 12px; color: #4b5563; }
   </style>
 </head>
 <body>
   <header>
     <div class="brand">Кашалот <span>Шеринг</span></div>
-    <div class="last-update" id="lastUpdate">Ещё не сканировалось</div>
+    <div class="header-links">
+      <a href="index.html">Мониторинг устройства</a>
+      <span class="last-update" id="lastUpdate"></span>
+    </div>
   </header>
 
   <div class="main">
@@ -198,13 +221,9 @@
     <div class="hero">
       <div class="hero-label">Доступны к аренде прямо сейчас</div>
       <div class="hero-number loading" id="heroNumber">—</div>
-      <div class="hero-sub" id="heroSub">Нажмите «Сканировать», чтобы проверить все устройства</div>
-
-      <div class="progress-wrap">
-        <div class="progress-bar" id="progressBar"></div>
-      </div>
+      <div class="hero-sub" id="heroSub">Нажмите «Сканировать», чтобы обновить данные</div>
+      <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
       <div class="progress-label" id="progressLabel"></div>
-
       <button class="btn" id="btnScan" onclick="startScan()">Сканировать</button>
     </div>
 
@@ -227,9 +246,23 @@
       </div>
     </div>
 
+    <!-- Chart -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Динамика доступности</div>
+          <div class="chart-sub">Доступные к аренде устройства по дням</div>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-empty" id="chartEmpty">Данные появятся после первого автоматического сканирования</div>
+        <canvas id="chartCanvas" style="display:none" height="160"></canvas>
+      </div>
+    </div>
+
     <!-- Found list -->
-    <div class="found-list-wrap" id="foundSection" style="display:none">
-      <div class="section-title">Доступные устройства</div>
+    <div class="found-card" id="foundSection" style="display:none">
+      <div class="section-title">Доступные устройства (последнее сканирование)</div>
       <div class="found-list" id="foundList"></div>
     </div>
 
@@ -237,11 +270,127 @@
 
   <script>
     const PROXY = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev/?url=';
-    const TOTAL_RANGE = 2000;
+    const HISTORY_URL = './data/history.json';
+    const TOTAL = 2000;
     const CONCURRENCY = 30;
 
     let scanning = false;
 
+    // --- Chart ---
+    function drawChart(history) {
+      const canvas = document.getElementById('chartCanvas');
+      const empty  = document.getElementById('chartEmpty');
+      if (!history || history.length < 2) return;
+
+      empty.style.display = 'none';
+      canvas.style.display = 'block';
+
+      const dpr = window.devicePixelRatio || 1;
+      const W = canvas.parentElement.offsetWidth;
+      const H = 160;
+      canvas.width  = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width  = W + 'px';
+      canvas.style.height = H + 'px';
+
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      const pad = { top: 16, right: 16, bottom: 36, left: 40 };
+      const cw = W - pad.left - pad.right;
+      const ch = H - pad.top - pad.bottom;
+
+      const vals = history.map(r => r.available);
+      const maxV = Math.max(...vals, 1);
+      const minV = Math.min(...vals);
+      const range = maxV - minV || 1;
+
+      const xOf = i => pad.left + (i / (history.length - 1)) * cw;
+      const yOf = v => pad.top + ch - ((v - minV) / range) * ch;
+
+      // Grid lines
+      ctx.strokeStyle = '#2d2d3d';
+      ctx.lineWidth = 1;
+      [0, 0.5, 1].forEach(t => {
+        const y = pad.top + ch * (1 - t);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(pad.left + cw, y);
+        ctx.stroke();
+        const label = Math.round(minV + range * t);
+        ctx.fillStyle = '#4b5563';
+        ctx.font = '11px system-ui';
+        ctx.textAlign = 'right';
+        ctx.fillText(label, pad.left - 6, y + 4);
+      });
+
+      // X labels — show up to 7 dates evenly
+      const step = Math.max(1, Math.floor(history.length / 7));
+      ctx.fillStyle = '#4b5563';
+      ctx.font = '11px system-ui';
+      ctx.textAlign = 'center';
+      history.forEach((r, i) => {
+        if (i % step === 0 || i === history.length - 1) {
+          const parts = r.date.split('-');
+          ctx.fillText(`${parts[2]}.${parts[1]}`, xOf(i), H - 8);
+        }
+      });
+
+      // Area fill
+      const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch);
+      grad.addColorStop(0, '#3b82f630');
+      grad.addColorStop(1, '#3b82f600');
+      ctx.beginPath();
+      history.forEach((r, i) => {
+        i === 0 ? ctx.moveTo(xOf(i), yOf(r.available)) : ctx.lineTo(xOf(i), yOf(r.available));
+      });
+      ctx.lineTo(xOf(history.length - 1), pad.top + ch);
+      ctx.lineTo(xOf(0), pad.top + ch);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Line
+      ctx.beginPath();
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      history.forEach((r, i) => {
+        i === 0 ? ctx.moveTo(xOf(i), yOf(r.available)) : ctx.lineTo(xOf(i), yOf(r.available));
+      });
+      ctx.stroke();
+
+      // Last dot
+      const last = history[history.length - 1];
+      ctx.beginPath();
+      ctx.arc(xOf(history.length - 1), yOf(last.available), 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#60a5fa';
+      ctx.fill();
+    }
+
+    // --- Load history and init chart ---
+    async function loadHistory() {
+      try {
+        const res = await fetch(HISTORY_URL + '?t=' + Date.now());
+        if (!res.ok) return;
+        const history = await res.json();
+        if (history.length > 0) {
+          const last = history[history.length - 1];
+          document.getElementById('heroNumber').textContent = last.available;
+          document.getElementById('heroNumber').className = 'hero-number';
+          document.getElementById('heroSub').textContent = last.total
+            ? `из ${last.total} устройств в парке`
+            : `данные за ${last.date}`;
+          document.getElementById('cntUp').textContent     = last.available;
+          document.getElementById('cntOffline').textContent = last.offline || '—';
+          document.getElementById('cntTotal').textContent   = last.total   || '—';
+          document.getElementById('lastUpdate').textContent = 'Данные за ' + last.date;
+        }
+        drawChart(history);
+      } catch {}
+    }
+
+    // --- Scan ---
     function parseStatus(html) {
       if (!html || html.includes('Нет Кашалота')) return 'notfound';
       if (html.includes('устал') || html.includes('вернется') || html.includes('погода')) return 'offline';
@@ -254,15 +403,10 @@
       try {
         const res = await fetch(url, { cache: 'no-store' });
         if (!res.ok) return { num, status: 'error' };
-        const html = await res.text();
-        return { num, status: parseStatus(html) };
+        return { num, status: parseStatus(await res.text()) };
       } catch {
         return { num, status: 'error' };
       }
-    }
-
-    async function runBatch(nums) {
-      return Promise.all(nums.map(n => checkOne(n)));
     }
 
     async function startScan() {
@@ -273,75 +417,67 @@
       btn.disabled = true;
       btn.textContent = 'Сканирование...';
 
-      const heroNumber  = document.getElementById('heroNumber');
-      const heroSub     = document.getElementById('heroSub');
-      const progressBar = document.getElementById('progressBar');
-      const progressLbl = document.getElementById('progressLabel');
-      const cntUp       = document.getElementById('cntUp');
-      const cntOffline  = document.getElementById('cntOffline');
-      const cntTotal    = document.getElementById('cntTotal');
-      const foundList   = document.getElementById('foundList');
-      const foundSection = document.getElementById('foundSection');
-      const lastUpdate  = document.getElementById('lastUpdate');
-
-      heroNumber.className = 'hero-number loading';
-      heroNumber.textContent = '...';
-      heroSub.textContent = 'Идёт проверка устройств...';
-      progressBar.className = 'progress-bar';
-      progressBar.style.width = '0%';
-      foundList.innerHTML = '';
-      foundSection.style.display = 'none';
+      document.getElementById('heroNumber').className = 'hero-number loading';
+      document.getElementById('heroNumber').textContent = '...';
+      document.getElementById('heroSub').textContent = 'Идёт проверка устройств...';
+      document.getElementById('progressBar').className = 'progress-bar';
+      document.getElementById('progressBar').style.width = '0%';
+      document.getElementById('foundList').innerHTML = '';
+      document.getElementById('foundSection').style.display = 'none';
 
       let up = 0, offline = 0, total = 0, done = 0;
+      document.getElementById('cntUp').textContent = '0';
+      document.getElementById('cntOffline').textContent = '0';
+      document.getElementById('cntTotal').textContent = '0';
 
-      cntUp.textContent = '0';
-      cntOffline.textContent = '0';
-      cntTotal.textContent = '0';
+      const upNums = [];
 
-      const nums = Array.from({ length: TOTAL_RANGE }, (_, i) => i + 1);
-
-      for (let i = 0; i < nums.length; i += CONCURRENCY) {
-        const batch = nums.slice(i, i + CONCURRENCY);
-        const results = await runBatch(batch);
+      for (let i = 1; i <= TOTAL; i += CONCURRENCY) {
+        const batch = Array.from({ length: Math.min(CONCURRENCY, TOTAL - i + 1) }, (_, j) => i + j);
+        const results = await Promise.all(batch.map(n => checkOne(n)));
 
         results.forEach(({ num, status }) => {
           done++;
-          if (status === 'up') {
-            up++;
-            total++;
-            const tag = document.createElement('a');
-            tag.className = 'tag up';
-            tag.href = 'https://k-s.app/qr/' + num;
-            tag.target = '_blank';
-            tag.textContent = '№' + num;
-            foundList.appendChild(tag);
-            if (foundSection.style.display === 'none') foundSection.style.display = 'block';
-          } else if (status === 'offline') {
-            offline++;
-            total++;
-          }
+          if (status === 'up')      { up++; total++; upNums.push(num); }
+          if (status === 'offline') { offline++; total++; }
         });
 
-        const pct = Math.round((done / TOTAL_RANGE) * 100);
-        progressBar.style.width = pct + '%';
-        progressLbl.textContent = `Проверено ${done} из ${TOTAL_RANGE} (${pct}%)`;
-        heroNumber.textContent = up;
-        cntUp.textContent = up;
-        cntOffline.textContent = offline;
-        cntTotal.textContent = total;
+        const pct = Math.round((done / TOTAL) * 100);
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('progressLabel').textContent = `Проверено ${done} из ${TOTAL} (${pct}%)`;
+        document.getElementById('heroNumber').textContent = up;
+        document.getElementById('cntUp').textContent = up;
+        document.getElementById('cntOffline').textContent = offline;
+        document.getElementById('cntTotal').textContent = total;
       }
 
-      heroNumber.className = 'hero-number';
-      heroSub.textContent = `из ${total} устройств в парке`;
-      progressBar.className = 'progress-bar done';
-      progressBar.style.width = '100%';
-      progressLbl.textContent = `Сканирование завершено · ${TOTAL_RANGE} адресов проверено`;
-      lastUpdate.textContent = 'Обновлено в ' + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      // Render found tags
+      const foundList = document.getElementById('foundList');
+      upNums.forEach(num => {
+        const a = document.createElement('a');
+        a.className = 'tag up';
+        a.href = 'https://k-s.app/qr/' + num;
+        a.target = '_blank';
+        a.textContent = '№' + num;
+        foundList.appendChild(a);
+      });
+      document.getElementById('foundSection').style.display = 'block';
+
+      document.getElementById('heroNumber').className = 'hero-number';
+      document.getElementById('heroSub').textContent = `из ${total} устройств в парке`;
+      document.getElementById('progressBar').className = 'progress-bar done';
+      document.getElementById('progressBar').style.width = '100%';
+      document.getElementById('progressLabel').textContent = `Сканирование завершено`;
+
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById('lastUpdate').textContent = 'Данные за ' + today;
 
       btn.disabled = false;
       btn.textContent = 'Обновить';
       scanning = false;
     }
+
+    loadHistory();
   </script>
 </body>
 </html>
