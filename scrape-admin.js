@@ -184,6 +184,88 @@ function parseAvgCheck(html) {
   return m ? parseInt(m[1].replace(/\D/g, '')) : null;
 }
 
+// --- Orders search (факт: реальные цены по тарифным слотам) ---
+
+async function fetchOrdersCsrf(jar) {
+  const res = await request({
+    hostname: 'gw.bumerang.tech',
+    path: '/admin/order',
+    method: 'GET',
+    headers: { 'User-Agent': 'Mozilla/5.0', 'Cookie': jarToString(jar) },
+  }, null, false);
+  updateJar(jar, res.headers);
+  const csrf = res.body.match(/name="csrf-token" content="([^"]+)"/)?.[1]
+            || extractCsrf(res.body);
+  return csrf;
+}
+
+async function fetchOrdersForDate(jar, csrf, date) {
+  const params = new URLSearchParams({
+    draw: '1', start: '0', length: '3000',
+    'search[value]': '', 'search[regex]': 'false',
+    'order[0][column]': '0', 'order[0][dir]': 'desc',
+    'columns[0][data]': 'id',
+    'columns[4][data]': 'abonement',
+    'columns[6][data]': 'payment',
+    'columns[7][data]': 'amount',
+    date_range_start: date,
+    date_range_finish: date,
+  }).toString();
+
+  const res = await request({
+    hostname: 'gw.bumerang.tech',
+    path: '/admin/order/search?',
+    method: 'POST',
+    headers: {
+      'User-Agent': 'Mozilla/5.0',
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Length': Buffer.byteLength(params),
+      'Cookie': jarToString(jar),
+      'Referer': BASE + '/admin/order',
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRF-TOKEN': csrf,
+    },
+  }, params, false);
+
+  if (res.status !== 200) throw new Error(`orders/search вернул ${res.status}`);
+  return JSON.parse(res.body);
+}
+
+function parseOrderStats(data) {
+  const slots = {};
+  (data.data || []).forEach(row => {
+    const status = String(row[6] || '').replace(/<[^>]+>/g, '').trim();
+    if (!status.includes('Оплачен')) return;
+
+    const tariff = String(row[4] || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    const amountRaw = String(row[7] || '').replace(/<[^>]+>/g, '').trim();
+    const amount = parseFloat(amountRaw.replace(/[^\d.]/g, ''));
+    if (!amount) return;
+
+    const speed = tariff.includes('Детский') ? 'Детский' : tariff.includes('Быстрый') ? 'Быстрый' : null;
+    const durM  = tariff.match(/(\d+)\s*мин/)?.[1];
+    if (!speed || !durM) return;
+
+    const key = `${speed}|${durM} мин`;
+    if (!slots[key]) slots[key] = { count: 0, total: 0, prices: {} };
+    slots[key].count++;
+    slots[key].total += amount;
+    const p = String(Math.round(amount));
+    slots[key].prices[p] = (slots[key].prices[p] || 0) + 1;
+  });
+
+  // Округляем avg
+  Object.values(slots).forEach(s => {
+    s.avg = Math.round(s.total / s.count);
+    delete s.total;
+    // Оставляем топ-10 цен
+    s.prices = Object.fromEntries(
+      Object.entries(s.prices).sort((a, b) => b[1] - a[1]).slice(0, 10)
+    );
+  });
+  return slots;
+}
+
 // --- Main ---
 
 async function main() {
@@ -206,28 +288,49 @@ async function main() {
   console.log(`Всего объектов: ${totalObjects}`);
 
   const today = new Date().toISOString().slice(0, 10);
-  const filePath = path.join(__dirname, 'data', 'revenue-daily.json');
 
-  let history = [];
-  if (fs.existsSync(filePath)) {
-    try { history = JSON.parse(fs.readFileSync(filePath, 'utf-8')); } catch {}
+  // --- revenue-daily.json ---
+  const revPath = path.join(__dirname, 'data', 'revenue-daily.json');
+  let revHistory = [];
+  if (fs.existsSync(revPath)) {
+    try { revHistory = JSON.parse(fs.readFileSync(revPath, 'utf-8')); } catch {}
   }
-
-  // Обновляем или добавляем запись за сегодня
-  const idx = history.findIndex(r => r.date === today);
   const entry = { date: today, revenue, orders, avgCheck, activeObjects, totalObjects };
-  if (idx >= 0) {
-    history[idx] = entry;
-  } else {
-    history.push(entry);
+  const ri = revHistory.findIndex(r => r.date === today);
+  if (ri >= 0) revHistory[ri] = entry; else revHistory.push(entry);
+  if (revHistory.length > 365) revHistory = revHistory.slice(-365);
+  revHistory.sort((a, b) => a.date.localeCompare(b.date));
+  fs.writeFileSync(revPath, JSON.stringify(revHistory, null, 2), 'utf-8');
+  console.log(`Сохранено revenue-daily.json (${revHistory.length} записей)`);
+
+  // --- orders-daily.json: фактические цены по слотам ---
+  console.log('Загружаем детальные заказы...');
+  try {
+    const csrf   = await fetchOrdersCsrf(jar);
+    const oData  = await fetchOrdersForDate(jar, csrf, today);
+    const slots  = parseOrderStats(oData);
+
+    const totalPaid = Object.values(slots).reduce((s, v) => s + v.count, 0);
+    console.log(`Заказов оплаченных: ${totalPaid} | слотов: ${Object.keys(slots).join(', ')}`);
+    Object.entries(slots).forEach(([k, v]) =>
+      console.log(`  ${k}: ${v.count} поездок, avg ${v.avg}₽`)
+    );
+
+    const ordPath = path.join(__dirname, 'data', 'orders-daily.json');
+    let ordHistory = [];
+    if (fs.existsSync(ordPath)) {
+      try { ordHistory = JSON.parse(fs.readFileSync(ordPath, 'utf-8')); } catch {}
+    }
+    const oe = { date: today, slots };
+    const oi = ordHistory.findIndex(r => r.date === today);
+    if (oi >= 0) ordHistory[oi] = oe; else ordHistory.push(oe);
+    ordHistory.sort((a, b) => a.date.localeCompare(b.date));
+    ordHistory = ordHistory.slice(-365);
+    fs.writeFileSync(ordPath, JSON.stringify(ordHistory, null, 2), 'utf-8');
+    console.log(`Сохранено orders-daily.json (${ordHistory.length} записей)`);
+  } catch (e) {
+    console.error('Ошибка orders:', e.message);
   }
-
-  // Храним последние 365 дней
-  if (history.length > 365) history = history.slice(-365);
-  history.sort((a, b) => a.date.localeCompare(b.date));
-
-  fs.writeFileSync(filePath, JSON.stringify(history, null, 2), 'utf-8');
-  console.log(`Сохранено в data/revenue-daily.json (${history.length} записей)`);
 }
 
 main().catch(err => {
