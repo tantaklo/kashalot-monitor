@@ -156,7 +156,7 @@
     <a class="back-link" href="index.html">← Мониторинг доступности</a>
   </div>
 
-  <!-- KPI -->
+  <!-- KPI Row 1: ключевые показатели -->
   <div class="kpi-row">
     <div class="kpi">
       <div class="kpi-label">Выручка / кашалот сегодня</div>
@@ -169,18 +169,37 @@
       <div class="kpi-sub" id="kpiRevenueDate">данных нет</div>
     </div>
     <div class="kpi">
-      <div class="kpi-label">Активных кашалотов</div>
-      <div class="kpi-value muted" id="kpiActive">—</div>
-      <div class="kpi-sub">из <span id="kpiTotal">—</span> всего</div>
+      <div class="kpi-label">Заказов за сегодня</div>
+      <div class="kpi-value muted" id="kpiOrders">—</div>
+      <div class="kpi-sub">поездок</div>
     </div>
     <div class="kpi">
-      <div class="kpi-label">Среднее за 7 дней</div>
-      <div class="kpi-value accent" id="kpiAvg7">—</div>
-      <div class="kpi-sub">₽ / кашалот</div>
+      <div class="kpi-label">Средний чек заказа</div>
+      <div class="kpi-value accent" id="kpiAvgCheck">—</div>
+      <div class="kpi-sub">₽ / поездка</div>
     </div>
   </div>
 
-  <!-- Chart 1: выручка на кашалот -->
+  <!-- KPI Row 2: доступность парка -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Доступность парка</div>
+      <div class="kpi-value green" id="kpiAvail">—</div>
+      <div class="kpi-sub"><span id="kpiActive">—</span> из <span id="kpiTotal">—</span> кашалотов активны</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Среднее выручка/кашалот 7д</div>
+      <div class="kpi-value accent" id="kpiAvg7">—</div>
+      <div class="kpi-sub">₽ / кашалот</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Средний чек объекта</div>
+      <div class="kpi-value muted" id="kpiAvgObj">—</div>
+      <div class="kpi-sub">₽ (выручка ÷ активных)</div>
+    </div>
+  </div>
+
+  <!-- Chart 1: выручка / кашалот -->
   <div class="chart-card">
     <div class="chart-title">Выручка на один активный кашалот, ₽/день</div>
     <div class="period-tabs" id="tabsPerUnit">
@@ -188,9 +207,7 @@
       <button class="tab" data-period="30">30 дней</button>
       <button class="tab" data-period="0">Всё время</button>
     </div>
-    <div class="chart-wrap">
-      <canvas id="chartPerUnit"></canvas>
-    </div>
+    <div class="chart-wrap"><canvas id="chartPerUnit"></canvas></div>
   </div>
 
   <!-- Chart 2: выручка итого -->
@@ -201,22 +218,40 @@
       <button class="tab" data-period="30">30 дней</button>
       <button class="tab" data-period="0">Всё время</button>
     </div>
-    <div class="chart-wrap">
-      <canvas id="chartRevenue"></canvas>
-    </div>
+    <div class="chart-wrap"><canvas id="chartRevenue"></canvas></div>
   </div>
 
-  <!-- Chart 3: активные кашалоты -->
+  <!-- Chart 3: заказы и средний чек (двойная ось) -->
   <div class="chart-card">
-    <div class="chart-title">Активных кашалотов в день</div>
-    <div class="period-tabs" id="tabsActive">
+    <div class="chart-title">Заказы в день</div>
+    <div class="period-tabs" id="tabsOrders">
       <button class="tab active" data-period="7">7 дней</button>
       <button class="tab" data-period="30">30 дней</button>
       <button class="tab" data-period="0">Всё время</button>
     </div>
-    <div class="chart-wrap">
-      <canvas id="chartActive"></canvas>
+    <div class="chart-wrap"><canvas id="chartOrders"></canvas></div>
+  </div>
+
+  <!-- Chart 4: средний чек -->
+  <div class="chart-card">
+    <div class="chart-title">Средний чек заказа, ₽</div>
+    <div class="period-tabs" id="tabsAvgCheck">
+      <button class="tab active" data-period="7">7 дней</button>
+      <button class="tab" data-period="30">30 дней</button>
+      <button class="tab" data-period="0">Всё время</button>
     </div>
+    <div class="chart-wrap"><canvas id="chartAvgCheck"></canvas></div>
+  </div>
+
+  <!-- Chart 5: % доступности парка -->
+  <div class="chart-card">
+    <div class="chart-title">Доступность парка, % (активных / всего)</div>
+    <div class="period-tabs" id="tabsAvail">
+      <button class="tab active" data-period="7">7 дней</button>
+      <button class="tab" data-period="30">30 дней</button>
+      <button class="tab" data-period="0">Всё время</button>
+    </div>
+    <div class="chart-wrap"><canvas id="chartAvail"></canvas></div>
   </div>
 
   <div class="updated" id="updatedAt"></div>
@@ -224,42 +259,40 @@
   <script>
     const DATA_URL = 'data/revenue-daily.json';
 
-    // Chart.js defaults
     Chart.defaults.color = '#4b5563';
     Chart.defaults.borderColor = '#1e1e2a';
     Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
-    const CHART_OPTS = (yLabel) => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#1a1a24',
-          borderColor: '#2d2d3d',
-          borderWidth: 1,
-          titleColor: '#94a3b8',
-          bodyColor: '#e2e8f0',
-          callbacks: {
-            label: ctx => ' ' + ctx.parsed.y.toLocaleString('ru-RU') + (yLabel ? ' ' + yLabel : ''),
+    function chartOpts(yLabel, yMax) {
+      const opts = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1a1a24',
+            borderColor: '#2d2d3d',
+            borderWidth: 1,
+            titleColor: '#94a3b8',
+            bodyColor: '#e2e8f0',
+            callbacks: {
+              label: ctx => ' ' + ctx.parsed.y.toLocaleString('ru-RU') + (yLabel ? ' ' + yLabel : ''),
+            }
           }
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: '#1a1a24' },
-          ticks: { maxTicksLimit: 8, maxRotation: 0 }
         },
-        y: {
-          grid: { color: '#1e1e2a' },
-          beginAtZero: false,
-          ticks: {
-            callback: v => v.toLocaleString('ru-RU'),
+        scales: {
+          x: { grid: { color: '#1a1a24' }, ticks: { maxTicksLimit: 8, maxRotation: 0 } },
+          y: {
+            grid: { color: '#1e1e2a' },
+            beginAtZero: false,
+            ticks: { callback: v => v.toLocaleString('ru-RU') },
           }
         }
-      }
-    });
+      };
+      if (yMax) opts.scales.y.max = yMax;
+      return opts;
+    }
 
     function makeDataset(data, color) {
       return {
@@ -274,17 +307,18 @@
       };
     }
 
-    function buildChart(canvasId, labels, data, color, yLabel) {
+    function buildChart(canvasId, labels, data, color, yLabel, yMax) {
       const ctx = document.getElementById(canvasId).getContext('2d');
-      // С одной точкой используем bar-тип, иначе line
-      const type = data.length <= 1 ? 'bar' : 'line';
+      const type = data.filter(v => v != null).length <= 1 ? 'bar' : 'line';
       const dataset = type === 'bar'
         ? { data, backgroundColor: color + '60', borderColor: color, borderWidth: 2, borderRadius: 6 }
         : makeDataset(data, color);
+      const opts = chartOpts(yLabel, yMax);
+      if (type === 'bar') opts.scales.y.beginAtZero = true;
       return new Chart(ctx, {
         type,
         data: { labels, datasets: [dataset] },
-        options: CHART_OPTS(yLabel),
+        options: opts,
       });
     }
 
@@ -294,26 +328,29 @@
     }
 
     function filterPeriod(rows, days) {
-      if (!days) return rows;
-      return rows.slice(-days);
+      return days ? rows.slice(-days) : rows;
     }
 
     let allData = [];
     const charts = {};
+    const CHART_KEYS = ['perUnit', 'revenue', 'orders', 'avgCheck', 'avail'];
 
     function renderCharts(days) {
       const rows = filterPeriod(allData, days);
-      const labels    = rows.map(r => formatDate(r.date));
-      const perUnit   = rows.map(r => r.activeObjects ? Math.round(r.revenue / r.activeObjects) : null);
-      const revenue   = rows.map(r => r.revenue);
-      const active    = rows.map(r => r.activeObjects);
+      const labels   = rows.map(r => formatDate(r.date));
+      const perUnit  = rows.map(r => r.activeObjects ? Math.round(r.revenue / r.activeObjects) : null);
+      const revenue  = rows.map(r => r.revenue);
+      const orders   = rows.map(r => r.orders ?? null);
+      const avgCheck = rows.map(r => r.avgCheck ?? null);
+      const avail    = rows.map(r => r.totalObjects ? Math.round(r.activeObjects / r.totalObjects * 100) : null);
 
-      ['perUnit', 'revenue', 'active'].forEach(key => {
-        if (charts[key]) { charts[key].destroy(); delete charts[key]; }
-      });
-      charts.perUnit  = buildChart('chartPerUnit', labels, perUnit,  '#60a5fa', '₽');
+      CHART_KEYS.forEach(k => { if (charts[k]) { charts[k].destroy(); delete charts[k]; } });
+
+      charts.perUnit  = buildChart('chartPerUnit',  labels, perUnit,  '#60a5fa', '₽');
       charts.revenue  = buildChart('chartRevenue',  labels, revenue,  '#4ade80', '₽');
-      charts.active   = buildChart('chartActive',   labels, active,   '#a78bfa', '');
+      charts.orders   = buildChart('chartOrders',   labels, orders,   '#f59e0b', '');
+      charts.avgCheck = buildChart('chartAvgCheck', labels, avgCheck, '#f472b6', '₽');
+      charts.avail    = buildChart('chartAvail',    labels, avail,    '#34d399', '%', 100);
     }
 
     function updateKPI(rows) {
@@ -321,11 +358,17 @@
       const last = rows[rows.length - 1];
 
       const perUnit = last.activeObjects ? Math.round(last.revenue / last.activeObjects) : null;
-      document.getElementById('kpiPerUnit').textContent = perUnit ? perUnit.toLocaleString('ru-RU') : '—';
-      document.getElementById('kpiRevenue').textContent = last.revenue.toLocaleString('ru-RU') + ' ₽';
+      const avail   = last.totalObjects  ? Math.round(last.activeObjects / last.totalObjects * 100) : null;
+
+      document.getElementById('kpiPerUnit').textContent  = perUnit ? perUnit.toLocaleString('ru-RU') : '—';
+      document.getElementById('kpiRevenue').textContent  = last.revenue.toLocaleString('ru-RU') + ' ₽';
       document.getElementById('kpiRevenueDate').textContent = last.date;
-      document.getElementById('kpiActive').textContent = last.activeObjects ?? '—';
-      document.getElementById('kpiTotal').textContent = last.totalObjects ?? '—';
+      document.getElementById('kpiOrders').textContent   = last.orders != null ? last.orders.toLocaleString('ru-RU') : '—';
+      document.getElementById('kpiAvgCheck').textContent = last.avgCheck != null ? last.avgCheck.toLocaleString('ru-RU') : '—';
+      document.getElementById('kpiAvail').textContent    = avail != null ? avail + '%' : '—';
+      document.getElementById('kpiActive').textContent   = last.activeObjects ?? '—';
+      document.getElementById('kpiTotal').textContent    = last.totalObjects ?? '—';
+      document.getElementById('kpiAvgObj').textContent   = perUnit ? perUnit.toLocaleString('ru-RU') : '—';
 
       const last7 = rows.slice(-7).filter(r => r.activeObjects);
       if (last7.length) {
@@ -335,10 +378,9 @@
     }
 
     function setupTabs(tabsId, onSelect) {
-      const container = document.getElementById(tabsId);
-      container.querySelectorAll('.tab').forEach(btn => {
+      document.getElementById(tabsId).querySelectorAll('.tab').forEach(btn => {
         btn.addEventListener('click', () => {
-          container.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+          document.getElementById(tabsId).querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           onSelect(parseInt(btn.dataset.period));
         });
@@ -346,10 +388,9 @@
     }
 
     let activePeriod = 7;
-
-    setupTabs('tabsPerUnit',  p => { activePeriod = p; renderCharts(p); });
-    setupTabs('tabsRevenue',  p => { activePeriod = p; renderCharts(p); });
-    setupTabs('tabsActive',   p => { activePeriod = p; renderCharts(p); });
+    ['tabsPerUnit','tabsRevenue','tabsOrders','tabsAvgCheck','tabsAvail'].forEach(id => {
+      setupTabs(id, p => { activePeriod = p; renderCharts(p); });
+    });
 
     async function load() {
       try {
@@ -357,15 +398,23 @@
         allData = await res.json();
         allData.sort((a, b) => a.date.localeCompare(b.date));
         updateKPI(allData);
-        renderCharts(activePeriod);
-
+        // Откладываем рендер до следующего кадра, чтобы canvas получил правильные размеры
+        requestAnimationFrame(() => renderCharts(activePeriod));
         const last = allData[allData.length - 1];
         document.getElementById('updatedAt').textContent = 'Обновлено: ' + last.date;
       } catch (e) {
-        document.getElementById('kpiPerUnit').textContent = '—';
         console.error('Не удалось загрузить данные:', e);
       }
     }
+
+    // Пересчитываем графики после скролла — Chart.js иногда не рендерит off-screen canvas
+    let resizeTimer;
+    window.addEventListener('scroll', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        Object.values(charts).forEach(c => c.resize());
+      }, 100);
+    }, { passive: true });
 
     load();
   </script>

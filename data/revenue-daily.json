@@ -2,6 +2,8 @@
   {
     "date": "2026-06-10",
     "revenue": 80090,
+    "orders": 239,
+    "avgCheck": 365,
     "activeObjects": 95,
     "totalObjects": 1248
   }

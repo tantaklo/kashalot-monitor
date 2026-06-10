@@ -172,6 +172,18 @@ function parseTotalObjects(html) {
   return m ? parseInt(m[1]) : null;
 }
 
+function parseOrders(html) {
+  // <b>239</b> ... Всего заказов (в пределах 150 символов)
+  const m = html.match(/<b[^>]*>(\d[\d\s]*)<\/b>[\s\S]{0,150}?Всего заказов/);
+  return m ? parseInt(m[1].replace(/\D/g, '')) : null;
+}
+
+function parseAvgCheck(html) {
+  // <b>365 Р</b> ... Средний чек заказа
+  const m = html.match(/<b[^>]*>([\d\s]+)\s*[РP]<\/b>[\s\S]{0,150}?Средний чек заказа/);
+  return m ? parseInt(m[1].replace(/\D/g, '')) : null;
+}
+
 // --- Main ---
 
 async function main() {
@@ -184,8 +196,12 @@ async function main() {
   const revenue       = parseRevenue(html);
   const activeObjects = parseActiveObjects(html);
   const totalObjects  = parseTotalObjects(html);
+  const orders        = parseOrders(html);
+  const avgCheck      = parseAvgCheck(html);
 
   console.log(`Выручка за сегодня: ${revenue.toLocaleString('ru-RU')} ₽`);
+  console.log(`Заказов: ${orders}`);
+  console.log(`Средний чек: ${avgCheck} ₽`);
   console.log(`Активных объектов: ${activeObjects}`);
   console.log(`Всего объектов: ${totalObjects}`);
 
@@ -199,7 +215,7 @@ async function main() {
 
   // Обновляем или добавляем запись за сегодня
   const idx = history.findIndex(r => r.date === today);
-  const entry = { date: today, revenue, activeObjects, totalObjects };
+  const entry = { date: today, revenue, orders, avgCheck, activeObjects, totalObjects };
   if (idx >= 0) {
     history[idx] = entry;
   } else {
