@@ -134,6 +134,22 @@ async function fetchOrdersStats(date) {
   return slots;
 }
 
+async function fetchTopCars(date) {
+  const ids = ALL_COMPANY_IDS.join(',');
+  const rows = await grafanaQuery(`
+    SELECT car_id, SUM(total_cost)/100 as revenue
+    FROM orders
+    WHERE company_id IN (${ids})
+    AND DATE(start_time) = '${date}'
+    AND status = 'FINISHED'
+    GROUP BY car_id
+    ORDER BY revenue DESC
+  `);
+  const cars = {};
+  rows.forEach(r => { cars[String(r.car_id)] = Math.round(r.revenue); });
+  return cars;
+}
+
 // --- Save helpers ---
 
 function saveJson(filePath, history, today, entry) {
@@ -194,6 +210,20 @@ async function main() {
   }
   const n2 = saveJson(ordPath, ordHistory, today, { date: today, slots });
   console.log(`Сохранено orders-daily.json (${n2} записей)`);
+
+  // --- top-cars-daily.json: выручка по устройствам ---
+  console.log('Запрашиваем топ устройств...');
+  const cars = await fetchTopCars(today);
+  const carsCount = Object.keys(cars).length;
+  console.log(`Активных устройств: ${carsCount}`);
+
+  const carsPath = path.join(__dirname, 'data', 'top-cars-daily.json');
+  let carsHistory = [];
+  if (fs.existsSync(carsPath)) {
+    try { carsHistory = JSON.parse(fs.readFileSync(carsPath, 'utf-8')); } catch {}
+  }
+  const n3 = saveJson(carsPath, carsHistory, today, { date: today, cars });
+  console.log(`Сохранено top-cars-daily.json (${n3} записей)`);
 }
 
 main().catch(err => {
