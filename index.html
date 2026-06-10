@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Мониторинг k-s.app</title>
+  <title>Мониторинг Кашалот</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -40,9 +40,56 @@
     .url {
       font-size: 15px;
       color: #94a3b8;
-      margin-bottom: 40px;
+      margin-bottom: 20px;
       word-break: break-all;
     }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+      align-items: center;
+    }
+
+    .input-prefix {
+      font-size: 13px;
+      color: #4b5563;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .input-num {
+      flex: 1;
+      background: #12121a;
+      border: 1px solid #2d2d3d;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #e2e8f0;
+      font-size: 16px;
+      font-family: inherit;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+      min-width: 0;
+    }
+
+    .input-num:focus { border-color: #3b82f6; }
+
+    .btn-check {
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+
+    .btn-check:hover { background: #2563eb; }
 
     .status-ring {
       width: 120px;
@@ -196,7 +243,13 @@
 <body>
   <div class="card">
     <div class="label">Мониторинг доступности</div>
-    <div class="url">https://k-s.app/qr/1057</div>
+    <div class="url" id="urlDisplay">https://k-s.app/qr/1057</div>
+
+    <div class="input-row">
+      <span class="input-prefix">k-s.app/qr/</span>
+      <input class="input-num" type="number" id="qrInput" value="1057" min="1" />
+      <button class="btn-check" id="btnApply">Проверить</button>
+    </div>
 
     <div class="status-ring checking" id="ring">🔄</div>
     <div class="status-text checking" id="statusText">Проверка...</div>
@@ -231,12 +284,12 @@
   </div>
 
   <script>
-    const TARGET = 'https://k-s.app/qr/1057';
     const INTERVAL = 10000;
 
+    let target = 'https://k-s.app/qr/1057';
     let countUp = 0, countDown = 0, countTotal = 0;
     let nextCheck = Date.now() + INTERVAL;
-    let timerRAF;
+    let timerRAF, checkInterval;
 
     const ring = document.getElementById('ring');
     const statusText = document.getElementById('statusText');
@@ -247,6 +300,25 @@
     const timerBar = document.getElementById('timerBar');
     const timerLabel = document.getElementById('timerLabel');
     const logList = document.getElementById('logList');
+    const qrInput = document.getElementById('qrInput');
+    const btnApply = document.getElementById('btnApply');
+    const urlDisplay = document.getElementById('urlDisplay');
+
+    function applyNewTarget() {
+      const num = qrInput.value.trim();
+      if (!num) return;
+      target = 'https://k-s.app/qr/' + num;
+      urlDisplay.textContent = target;
+      countUp = 0; countDown = 0; countTotal = 0;
+      elUp.textContent = 0; elDown.textContent = 0; elTotal.textContent = 0;
+      logList.innerHTML = '';
+      clearInterval(checkInterval);
+      check();
+      checkInterval = setInterval(check, INTERVAL);
+    }
+
+    btnApply.addEventListener('click', applyNewTarget);
+    qrInput.addEventListener('keydown', e => { if (e.key === 'Enter') applyNewTarget(); });
 
     function setStatus(state) {
       ring.className = 'status-ring ' + state;
@@ -284,7 +356,7 @@
       let msg = '';
 
       try {
-        const res = await fetch(TARGET, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' });
+        const res = await fetch(target, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' });
         // no-cors всегда возвращает opaque response (type='opaque'), это означает — сервер ответил
         ok = true;
         msg = 'Сервер ответил';
@@ -335,7 +407,7 @@
     }
 
     check();
-    setInterval(check, INTERVAL);
+    checkInterval = setInterval(check, INTERVAL);
   </script>
 </body>
 </html>
