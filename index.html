@@ -169,11 +169,11 @@
 
     .tariffs-empty {
       background: #12121a;
-      border: 1px dashed #2d2d3d;
+      border: 1px dashed #3d3d50;
       border-radius: 10px;
       padding: 20px;
       font-size: 13px;
-      color: #4b5563;
+      color: #6b7280;
       text-align: center;
     }
 
@@ -269,10 +269,10 @@
     <div class="status-text checking" id="statusText">Проверка...</div>
     <div class="status-sub" id="statusSub">Ожидание первого ответа</div>
 
-    <div class="tariffs-wrap" id="tariffsWrap" style="display:none">
-      <div class="tariffs-title" id="tariffsTitle">Тарифы на аренду</div>
-      <div class="tariffs" id="tariffsGrid"></div>
-      <div class="tariffs-empty" id="tariffsEmpty" style="display:none"></div>
+    <div class="tariffs-wrap" id="tariffsWrap">
+      <div class="tariffs-title">Тарифы на аренду</div>
+      <div class="tariffs" id="tariffsGrid" style="display:none"></div>
+      <div class="tariffs-empty" id="tariffsEmpty">Загружаем данные...</div>
     </div>
 
     <div class="divider"></div>
@@ -335,7 +335,9 @@
       countUp = 0; countDown = 0; countTotal = 0;
       elUp.textContent = 0; elDown.textContent = 0; elTotal.textContent = 0;
       logList.innerHTML = '';
-      tariffsWrap.style.display = 'none';
+      tariffsGrid.style.display = 'none';
+      tariffsEmpty.style.display = 'block';
+      tariffsEmpty.textContent = 'Загружаем данные...';
       clearInterval(checkInterval);
       check();
       checkInterval = setInterval(check, INTERVAL);
@@ -390,37 +392,30 @@
     }
 
     function parseTariffs(html) {
-      const doc = new DOMParser().parseFromString(html, 'text/html');
+      if (html.includes('Нет Кашалота')) return { state: 'notfound', tariffs: [] };
+      if (html.includes('устал') || html.includes('вернется') || html.includes('погода'))
+        return { state: 'offline', tariffs: [] };
 
-      const notFound = Array.from(doc.querySelectorAll('h3'))
-        .some(el => el.textContent.includes('Нет Кашалота'));
-      if (notFound) return { notFound: true, tariffs: [] };
+      const types     = [...html.matchAll(/class="box"><h3 class="white">([\s\S]*?)<\/h3>/g)].map(m => m[1].trim());
+      const durations = [...html.matchAll(/class="time"><h3 class="white">[\s\S]*?(\d+\s*мин)/g)].map(m => m[1].trim());
+      const speeds    = [...html.matchAll(/alt="(До \d+ км\/ч)"/g)].map(m => m[1]);
+      const prices    = [...html.matchAll(/<h1 class="white shadow-text[\s\S]*?">[\s\S]*?(\d+)\s*₽<\/h1>/g)].map(m => m[1] + ' ₽');
+      const oldPrices = [...html.matchAll(/class="anchor-price">\s*(\d+)\s*₽/g)].map(m => m[1] + ' ₽');
+
+      const count = Math.min(types.length, prices.length);
+      if (count === 0) return { state: 'offline', tariffs: [] };
 
       const tariffs = [];
-      doc.querySelectorAll('a').forEach(a => {
-        const typeEl     = a.querySelector('.box h3.white');
-        const timeEl     = a.querySelector('.time h3.white');
-        const imgEl      = a.querySelector('img[alt]');
-        const priceEl    = a.querySelector('h1.white');
-        const oldPriceEl = a.querySelector('.anchor-price');
-        if (!typeEl || !priceEl) return;
-
-        const clean = s => s.replace(/[^\d₽]/g, '').trim();
-        const priceRaw = priceEl.textContent.trim();
-        const price = priceRaw.match(/\d+/) ? priceRaw.match(/\d+/)[0] + ' ₽' : priceRaw;
-        const oldRaw = oldPriceEl ? oldPriceEl.childNodes[0]?.textContent.trim() : '';
-        const oldPrice = oldRaw && oldRaw.match(/\d+/) ? oldRaw.match(/\d+/)[0] + ' ₽' : '';
-
+      for (let i = 0; i < count; i++) {
         tariffs.push({
-          type:     typeEl.textContent.trim(),
-          duration: timeEl ? timeEl.textContent.trim() : '',
-          speed:    imgEl  ? imgEl.getAttribute('alt') : '',
-          price,
-          oldPrice,
+          type:     types[i]     || '',
+          duration: durations[i] || '',
+          speed:    speeds[i]    || '',
+          price:    prices[i]    || '',
+          oldPrice: oldPrices[i] || '',
         });
-      });
-
-      return { notFound: false, tariffs };
+      }
+      return { state: 'up', tariffs };
     }
 
     async function check() {
@@ -437,20 +432,27 @@
         if (!res.ok) throw new Error('ошибка прокси: ' + res.status);
         const html = await res.text();
         const ms = Date.now() - t0;
-        const { notFound, tariffs } = parseTariffs(html);
+        const { state, tariffs } = parseTariffs(html);
+        const timeStr = new Date().toLocaleTimeString('ru-RU');
 
-        if (notFound) {
-          countDown++;
-          setStatus('notfound', 'Не найден');
-          statusSub.textContent = `Кашалот №${qrNum} не существует · ${new Date().toLocaleTimeString('ru-RU')}`;
-          addLog('notfound', `Кашалот №${qrNum} не найден`);
-          showTariffsPlaceholder('Кашалот с таким номером не существует — тарифы недоступны');
-        } else {
+        if (state === 'up') {
           countUp++;
           setStatus('up', 'Доступен');
-          statusSub.textContent = `Ответ за ${ms} мс · ${new Date().toLocaleTimeString('ru-RU')}`;
+          statusSub.textContent = `Ответ за ${ms} мс · ${timeStr}`;
           addLog('up', `Доступен, ${tariffs.length} тарифов (${ms} мс)`);
           renderTariffs(tariffs);
+        } else if (state === 'offline') {
+          countDown++;
+          setStatus('notfound', 'Не в сезоне');
+          statusSub.textContent = `Кашалот №${qrNum} сейчас не работает · ${timeStr}`;
+          addLog('notfound', `Кашалот №${qrNum} не в сезоне`);
+          showTariffsPlaceholder('Кашалот сейчас не работает — тарифы временно недоступны');
+        } else {
+          countDown++;
+          setStatus('notfound', 'Не найден');
+          statusSub.textContent = `Кашалот №${qrNum} не существует · ${timeStr}`;
+          addLog('notfound', `Кашалот №${qrNum} не найден`);
+          showTariffsPlaceholder('Кашалот с таким номером не существует');
         }
       } catch (e) {
         countDown++;
