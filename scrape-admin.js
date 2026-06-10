@@ -241,7 +241,7 @@ async function fetchOrdersForDate(jar, csrf, date) {
   }, params, false);
 
   if (res.status !== 200) {
-    console.log('DEBUG orders/search body[:500]:', res.body.slice(0, 500));
+    console.log('DEBUG orders/search body[:500]:', res.body.replace(/\s+/g, ' ').slice(0, 500));
     throw new Error(`orders/search вернул ${res.status}`);
   }
   return JSON.parse(res.body);
