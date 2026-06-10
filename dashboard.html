@@ -230,6 +230,28 @@
     .top-bar  { height: 100%; background: #3b82f6; border-radius: 3px; }
     .top-sum  { color: #e2e8f0; font-weight: 600; width: 90px; text-align: right; flex-shrink: 0; }
 
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed #2d2d3d;
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+      font-size: 13px;
+      color: #4b5563;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 20px;
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #3b82f6;
+      background: #1e2a3a;
+      color: #94a3b8;
+    }
+
+    .drop-zone input { display: none; }
+    .drop-source { font-size: 11px; color: #4b5563; margin-top: 6px; }
+
     /* Tariff analytics */
     .tariff-grid {
       display: grid;
@@ -376,6 +398,10 @@
           <div class="stat-num yellow" id="revAvg">—</div>
           <div class="stat-label">Средняя на устройство</div>
         </div>
+      </div>
+      <div class="drop-zone" id="dropZone">
+        📂 Перетащи сюда CSV с выручкой — или нажми чтобы выбрать файл
+        <input type="file" id="csvInput" accept=".csv" />
       </div>
       <div class="section-title" style="margin-top:8px">Топ-15 устройств</div>
       <div class="top-list" id="topList"></div>
@@ -660,6 +686,61 @@
       scanning = false;
     }
 
+    // --- CSV parsing ---
+    function parseRevenueCsv(text) {
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      const rows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(',');
+        const company = parseInt(parts[0]);
+        const qr = parseInt(parts[1]);
+        const revenue = parseInt(parts[2]);
+        if (qr && revenue >= 10000) rows.push({ qr, company: isNaN(company) ? null : company, revenue });
+      }
+      rows.sort((a, b) => b.revenue - a.revenue);
+      const total = rows.reduce((s, r) => s + r.revenue, 0);
+      return {
+        updated: new Date().toISOString().slice(0, 10),
+        fleet_size: rows.length,
+        total_revenue: total,
+        avg_revenue: Math.round(total / rows.length),
+        devices: rows,
+      };
+    }
+
+    function handleCsvFile(file) {
+      if (!file || !file.name.endsWith('.csv')) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const data = parseRevenueCsv(e.target.result);
+          localStorage.setItem('kashalot_revenue', JSON.stringify(data));
+          renderRevenue(data);
+          document.getElementById('dropZone').textContent = '✅ Загружено: ' + file.name;
+        } catch(err) {
+          document.getElementById('dropZone').textContent = '❌ Ошибка чтения файла';
+        }
+      };
+      reader.readAsText(file, 'utf-8');
+    }
+
+    // Drop zone events
+    document.addEventListener('DOMContentLoaded', () => {
+      const zone = document.getElementById('dropZone');
+      const input = document.getElementById('csvInput');
+
+      zone.addEventListener('click', () => input.click());
+      input.addEventListener('change', e => handleCsvFile(e.target.files[0]));
+
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        handleCsvFile(e.dataTransfer.files[0]);
+      });
+    });
+
     // --- Revenue ---
     function fmt(n) {
       if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + ' млн ₽';
@@ -667,33 +748,41 @@
       return n + ' ₽';
     }
 
+    function renderRevenue(data) {
+      document.getElementById('revTotal').textContent = fmt(data.total_revenue);
+      document.getElementById('revFleet').textContent = data.fleet_size;
+      document.getElementById('revAvg').textContent   = fmt(data.avg_revenue);
+      document.getElementById('revenueUpdated').textContent = 'Данные за всё время · обновлено ' + data.updated;
+
+      const top = data.devices.slice(0, 15);
+      const maxRev = top[0].revenue;
+      const list = document.getElementById('topList');
+      list.innerHTML = '';
+      top.forEach((d, i) => {
+        const row = document.createElement('div');
+        row.className = 'top-row';
+        row.innerHTML = `
+          <span class="top-rank">${i + 1}</span>
+          <span class="top-qr">QR ${d.qr}</span>
+          <div class="top-bar-wrap"><div class="top-bar" style="width:${Math.round(d.revenue/maxRev*100)}%"></div></div>
+          <span class="top-sum">${fmt(d.revenue)}</span>`;
+        list.appendChild(row);
+      });
+
+      document.getElementById('revenueSection').style.display = 'block';
+    }
+
     async function loadRevenue() {
+      // Сначала проверяем localStorage (данные из drag-and-drop)
+      const cached = localStorage.getItem('kashalot_revenue');
+      if (cached) {
+        try { renderRevenue(JSON.parse(cached)); return; } catch {}
+      }
+      // Иначе загружаем из файла
       try {
         const res = await fetch('./data/revenue.json?t=' + Date.now());
         if (!res.ok) return;
-        const data = await res.json();
-
-        document.getElementById('revTotal').textContent  = fmt(data.total_revenue);
-        document.getElementById('revFleet').textContent  = data.fleet_size;
-        document.getElementById('revAvg').textContent    = fmt(data.avg_revenue);
-        document.getElementById('revenueUpdated').textContent = 'Данные за всё время · обновлено ' + data.updated;
-
-        const top = data.devices.slice(0, 15);
-        const maxRev = top[0].revenue;
-        const list = document.getElementById('topList');
-        list.innerHTML = '';
-        top.forEach((d, i) => {
-          const row = document.createElement('div');
-          row.className = 'top-row';
-          row.innerHTML = `
-            <span class="top-rank">${i + 1}</span>
-            <span class="top-qr">QR ${d.qr}</span>
-            <div class="top-bar-wrap"><div class="top-bar" style="width:${Math.round(d.revenue/maxRev*100)}%"></div></div>
-            <span class="top-sum">${fmt(d.revenue)}</span>`;
-          list.appendChild(row);
-        });
-
-        document.getElementById('revenueSection').style.display = 'block';
+        renderRevenue(await res.json());
       } catch(e) { console.error(e); }
     }
 
