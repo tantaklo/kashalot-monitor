@@ -30,16 +30,14 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Encrypt pages with staticrypt
+      - name: Encrypt analytics page with staticrypt
         env:
           DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
         run: |
-          npx staticrypt@3 index.html revenue.html \
+          npx staticrypt@3 revenue.html \
             --password "$DASHBOARD_PASSWORD" \
             --directory encrypted \
             --short
-          # Заменяем оригинальные файлы зашифрованными
-          cp encrypted/index.html index.html
           cp encrypted/revenue.html revenue.html
           rm -rf encrypted
 
