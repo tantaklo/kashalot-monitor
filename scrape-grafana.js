@@ -12,11 +12,11 @@ const GRAFANA_USER = process.env.GRAFANA_USER || 'ecoskat';
 const GRAFANA_PASS = process.env.GRAFANA_PASSWORD;
 const DS_UID       = 'bb52db42-4304-442c-91e1-09a5e558c574';
 
-// Известные company_id наших партнёров (АО КШ)
+// company_id наших партнёров (АО КШ, только активные)
+// Богатищев — компания ещё не создана в системе
 const PARTNER_COMPANIES = {
-  'Баранова':    [202, 241],
-  'Котовщикова': [39, 43, 79, 102, 242, 244],
-  'Богатищев':   [33],
+  'Баранова':         [202, 241],
+  'Котовщикова':      [39, 43, 79, 102, 242, 244],
   'ГородскиеРешения': [145],
 };
 const ALL_COMPANY_IDS = Object.values(PARTNER_COMPANIES).flat();
@@ -109,47 +109,26 @@ async function fetchActiveObjects(date) {
 
 async function fetchOrdersStats(date) {
   const ids = ALL_COMPANY_IDS.join(',');
-  // Факт: реальные цены по слотам (скорость × длительность)
+  // Группируем по полному названию тарифа (description = "База · Быстрый · Выходные · 5 мин")
   const rows = await grafanaQuery(`
     SELECT
-      a.kids,
-      a.prepaid_time,
-      a.cost as listed_price,
-      o.total_cost as paid_price,
+      a.description as tariff,
+      a.cost as listed_kopecks,
+      SUM(o.total_cost) as total_kopecks,
       COUNT(*) as cnt
     FROM orders o
     JOIN abonements a ON o.abonement_id = a.id
     WHERE o.company_id IN (${ids})
     AND DATE(o.start_time) = '${date}'
-    GROUP BY a.kids, a.prepaid_time, a.cost, o.total_cost
-    ORDER BY a.kids DESC, a.prepaid_time, o.total_cost
+    GROUP BY o.abonement_id, a.description, a.cost
+    ORDER BY cnt DESC
   `);
 
   const slots = {};
   rows.forEach(r => {
-    const speed = r.kids === 1 ? 'Детский' : 'Быстрый';
-    const mins  = r.prepaid_time <= 360 ? 5 : 10;
-    const key   = `${speed}|${mins} мин`;
-
-    if (!slots[key]) slots[key] = {
-      count: 0,
-      total_paid: 0,
-      listed_price: Math.round(r.listed_price / 100),
-      prices: {},
-    };
-    const paid = Math.round(r.paid_price / 100);
-    slots[key].count      += r.cnt;
-    slots[key].total_paid += paid * r.cnt;
-    slots[key].prices[String(paid)] = (slots[key].prices[String(paid)] || 0) + r.cnt;
-  });
-
-  Object.values(slots).forEach(s => {
-    s.avg = s.count > 0 ? Math.round(s.total_paid / s.count) : null;
-    delete s.total_paid;
-    // Топ-10 цен по популярности
-    s.prices = Object.fromEntries(
-      Object.entries(s.prices).sort((a, b) => b[1] - a[1]).slice(0, 10)
-    );
+    const listed = Math.round(r.listed_kopecks / 100);
+    const avg    = r.cnt > 0 ? Math.round(r.total_kopecks / r.cnt / 100) : null;
+    slots[r.tariff] = { count: r.cnt, listed_price: listed, avg_paid: avg };
   });
 
   return slots;
@@ -205,7 +184,7 @@ async function main() {
   const totalPaid = Object.values(slots).reduce((s, v) => s + v.count, 0);
   console.log(`Оплаченных поездок: ${totalPaid} | слотов: ${Object.keys(slots).join(', ')}`);
   Object.entries(slots).forEach(([k, v]) =>
-    console.log(`  ${k}: ${v.count} поездок, прайс ${v.listed_price}₽, avg факт ${v.avg}₽`)
+    console.log(`  ${k}: ${v.count} поездок, прайс ${v.listed_price}₽, avg факт ${v.avg_paid}₽`)
   );
 
   const ordPath = path.join(__dirname, 'data', 'orders-daily.json');
