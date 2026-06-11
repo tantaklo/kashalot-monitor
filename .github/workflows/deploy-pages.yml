@@ -36,6 +36,7 @@ jobs:
         run: |
           npx staticrypt@3 dashboard.html \
             --password "$DASHBOARD_PASSWORD" \
+            --salt e268cf96717b394b69bf90657815c690 \
             --directory encrypted \
             --remember 30 \
             --remember-default \
