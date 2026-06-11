@@ -13,9 +13,8 @@
     "max_available": 191,
     "min_available": 181,
     "peak_rented": 10,
-    "offline": 1812,
+    "offline": 1810,
     "total": 1993,
-    "scans": 2,
-    "active_objects": 18
+    "scans": 3
   }
 ]
