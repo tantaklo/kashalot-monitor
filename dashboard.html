@@ -465,6 +465,63 @@
       margin-bottom: 10px;
     }
     .rev-chart-wrap { position: relative; height: 180px; }
+
+    /* Global period bar */
+    .global-period-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .global-period-label {
+      font-size: 12px;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    /* Fleet section */
+    .fleet-section-kpi {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .fleet-kpi {
+      background: #12121a;
+      border: 1px solid #1e1e2a;
+      border-radius: 12px;
+      padding: 14px 18px;
+      text-align: center;
+    }
+    .fleet-kpi-val {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .fleet-kpi-val.avail  { color: #60a5fa; }
+    .fleet-kpi-val.active { color: #4ade80; }
+    .fleet-kpi-val.share  { color: #a78bfa; }
+    .fleet-kpi-label {
+      font-size: 11px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .fleet-share-bar {
+      height: 6px;
+      background: #2d2d3d;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .fleet-share-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #7c3aed, #a78bfa);
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
@@ -511,6 +568,16 @@
       </div>
     </div>
 
+    <!-- Global period selector -->
+    <div class="global-period-bar">
+      <span class="global-period-label">Период</span>
+      <div class="period-tabs" id="globalPeriodTabs">
+        <button class="period-tab active" data-period="7">7 дней</button>
+        <button class="period-tab" data-period="30">30 дней</button>
+        <button class="period-tab" data-period="0">Всё время</button>
+      </div>
+    </div>
+
     <!-- Chart -->
     <div class="chart-card">
       <div class="chart-header">
@@ -536,6 +603,39 @@
       <div class="chart-wrap">
         <div class="chart-empty" id="revenueDailyEmpty">Данные появятся после первого ночного сбора</div>
         <canvas id="revenueDailyCanvas" style="display:none" height="160"></canvas>
+      </div>
+    </div>
+
+    <!-- Fleet section -->
+    <div class="chart-card" id="fleetSection">
+      <div class="chart-header collapsible" onclick="toggleSection('fleetBody', 'fleetArrow')">
+        <div>
+          <div class="chart-title">Флот · доступность и активность <span class="toggle-arrow open" id="fleetArrow">▼</span></div>
+          <div class="chart-sub" id="fleetUpdated">из history.json</div>
+        </div>
+      </div>
+      <div class="section-body open" id="fleetBody">
+        <div class="fleet-section-kpi">
+          <div class="fleet-kpi">
+            <div class="fleet-kpi-val avail" id="fsAvail">—</div>
+            <div class="fleet-kpi-label">Доступность</div>
+          </div>
+          <div class="fleet-kpi">
+            <div class="fleet-kpi-val active" id="fsActive">—</div>
+            <div class="fleet-kpi-label">Активность</div>
+          </div>
+          <div class="fleet-kpi">
+            <div class="fleet-kpi-val share" id="fsShare">—</div>
+            <div class="fleet-kpi-label">Доля</div>
+          </div>
+        </div>
+        <div class="fleet-share-bar">
+          <div class="fleet-share-fill" id="fsShareBar" style="width:0%"></div>
+        </div>
+        <div class="rev-chart-block">
+          <div class="rev-chart-title">Доступность и активность по дням</div>
+          <div class="rev-chart-wrap"><canvas id="fsChart"></canvas></div>
+        </div>
       </div>
     </div>
 
@@ -580,12 +680,6 @@
             <div class="rev-kpi-value accent" id="raKpiAvg7">—</div>
             <div class="rev-kpi-sub">₽ · среднее за 7 дней</div>
           </div>
-        </div>
-
-        <div class="period-tabs" id="raPeriodTabs">
-          <button class="period-tab active" data-period="7">7 дней</button>
-          <button class="period-tab" data-period="30">30 дней</button>
-          <button class="period-tab" data-period="0">Всё время</button>
         </div>
 
         <div class="rev-chart-block">
@@ -1438,12 +1532,13 @@
     }
 
     let raActivePeriod = 7;
-    document.getElementById('raPeriodTabs').querySelectorAll('.period-tab').forEach(btn => {
+    document.getElementById('globalPeriodTabs').querySelectorAll('.period-tab').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.getElementById('raPeriodTabs').querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+        document.getElementById('globalPeriodTabs').querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         raActivePeriod = parseInt(btn.dataset.period);
         raRenderCharts(raActivePeriod);
+        if (fsAllData.length) fsRenderChart(raActivePeriod);
       });
     });
 
@@ -1452,6 +1547,68 @@
       clearTimeout(raResizeTimer);
       raResizeTimer = setTimeout(() => { Object.values(raCharts).forEach(c => c.resize()); }, 100);
     }, { passive: true });
+
+    // --- Fleet section ---
+    let fsAllData = [];
+    let fsChartInst = null;
+
+    function fsRenderChart(days) {
+      const rows = days ? fsAllData.slice(-days) : fsAllData;
+      const labels = rows.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
+      const avail  = rows.map(r => r.max_available ?? null);
+      const active = rows.map(r => r.active_objects ?? r.peak_rented ?? null);
+
+      if (fsChartInst) { fsChartInst.destroy(); fsChartInst = null; }
+
+      const ptRadius = rows.length < 15 ? 4 : 2;
+      fsChartInst = new Chart(document.getElementById('fsChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Доступность', data: avail,  borderColor: '#60a5fa', backgroundColor: '#60a5fa15', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#60a5fa', fill: true, tension: 0.35 },
+            { label: 'Активность',  data: active, borderColor: '#4ade80', backgroundColor: '#4ade8015', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#4ade80', fill: true, tension: 0.35 },
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, labels: { color: '#6b7280', boxWidth: 12, padding: 16, font: { size: 12 } } },
+            tooltip: {
+              backgroundColor: '#1a1a24', borderColor: '#2d2d3d', borderWidth: 1,
+              titleColor: '#94a3b8', bodyColor: '#e2e8f0',
+            }
+          },
+          scales: {
+            x: { grid: { color: '#1a1a24' }, ticks: { maxTicksLimit: 8, maxRotation: 0, color: '#4b5563' } },
+            y: { grid: { color: '#1e1e2a' }, beginAtZero: false, ticks: { color: '#4b5563', callback: v => v.toLocaleString('ru-RU') } }
+          }
+        }
+      });
+    }
+
+    async function loadFleetSection() {
+      try {
+        const res = await fetch('./data/history.json?t=' + Date.now());
+        if (!res.ok) return;
+        fsAllData = (await res.json()).sort((a, b) => a.date.localeCompare(b.date));
+        if (!fsAllData.length) return;
+
+        const last   = fsAllData[fsAllData.length - 1];
+        const avail  = last.max_available ?? null;
+        const active = last.active_objects ?? last.peak_rented ?? null;
+        const share  = (avail && active) ? Math.round(active / avail * 100) : null;
+
+        document.getElementById('fsAvail').textContent  = avail  != null ? avail  : '—';
+        document.getElementById('fsActive').textContent = active != null ? active : '—';
+        document.getElementById('fsShare').textContent  = share  != null ? share + '%' : '—';
+        document.getElementById('fsShareBar').style.width = (share ?? 0) + '%';
+        document.getElementById('fleetUpdated').textContent = 'последнее: ' + last.date;
+
+        requestAnimationFrame(() => fsRenderChart(raActivePeriod));
+      } catch (e) { console.error('Fleet section:', e); }
+    }
 
     async function loadRevAnalytics() {
       try {
@@ -1466,6 +1623,7 @@
       } catch (e) { console.error('Revenue analytics:', e); }
     }
 
+    loadFleetSection();
     loadRevAnalytics();
 
     // --- Договоры ---
