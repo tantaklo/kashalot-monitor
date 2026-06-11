@@ -792,7 +792,33 @@
 
   <script>
     const PROXY = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev/?url=';
+    const GRAFANA_PROXY = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev/grafana';
+    const GRAFANA_TOKEN = '8c76e677dcdedad18ee2a79eab8bfeff';
     const HISTORY_URL = './data/history.json';
+
+    // --- Grafana live query ---
+    async function grafanaQuery(sql) {
+      const res = await fetch(GRAFANA_PROXY, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Token': GRAFANA_TOKEN },
+        body: JSON.stringify({ sql }),
+      });
+      if (!res.ok) throw new Error('grafana ' + res.status);
+      const d = await res.json();
+      const frames = d?.results?.A?.frames || [];
+      if (!frames.length) return [];
+      const fields = frames[0].schema.fields.map(f => f.name);
+      const cols   = frames[0].data.values;
+      const rows   = [];
+      for (let i = 0; i < (cols[0]?.length || 0); i++) {
+        const row = {};
+        fields.forEach((f, j) => row[f] = cols[j][i]);
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    const COMPANY_IDS = [202, 241, 39, 43, 79, 102, 242, 244, 145];
     const TOTAL = 2000;
     const CONCURRENCY = 30;
 
@@ -840,7 +866,7 @@
       const cw = W - pad.left - pad.right;
       const ch = H - pad.top - pad.bottom;
 
-      const vals = history.map(r => r.available);
+      const vals = history.map(r => r.max_available ?? r.available);
       const maxV = Math.max(...vals, 1);
       const minV = Math.min(...vals);
       const range = maxV - minV || 1;
@@ -882,7 +908,8 @@
       grad.addColorStop(1, '#3b82f600');
       ctx.beginPath();
       history.forEach((r, i) => {
-        i === 0 ? ctx.moveTo(xOf(i), yOf(r.available)) : ctx.lineTo(xOf(i), yOf(r.available));
+        const v = r.max_available ?? r.available;
+        i === 0 ? ctx.moveTo(xOf(i), yOf(v)) : ctx.lineTo(xOf(i), yOf(v));
       });
       ctx.lineTo(xOf(history.length - 1), pad.top + ch);
       ctx.lineTo(xOf(0), pad.top + ch);
@@ -896,14 +923,15 @@
       ctx.lineWidth = 2;
       ctx.lineJoin = 'round';
       history.forEach((r, i) => {
-        i === 0 ? ctx.moveTo(xOf(i), yOf(r.available)) : ctx.lineTo(xOf(i), yOf(r.available));
+        const v = r.max_available ?? r.available;
+        i === 0 ? ctx.moveTo(xOf(i), yOf(v)) : ctx.lineTo(xOf(i), yOf(v));
       });
       ctx.stroke();
 
       // Last dot
       const last = history[history.length - 1];
       ctx.beginPath();
-      ctx.arc(xOf(history.length - 1), yOf(last.available), 5, 0, Math.PI * 2);
+      ctx.arc(xOf(history.length - 1), yOf(last.max_available ?? last.available), 5, 0, Math.PI * 2);
       ctx.fillStyle = '#60a5fa';
       ctx.fill();
     }
@@ -916,11 +944,14 @@
         const history = await res.json();
         if (history.length > 0) {
           const last = history[history.length - 1];
-          document.getElementById('heroNumber').textContent = last.available;
-          document.getElementById('heroNumber').className = 'hero-number';
-          document.getElementById('heroSub').textContent = `данные за ${last.date}`;
-          document.getElementById('cntUp').textContent = last.available;
-          updatePct(last.available);
+          const avail = last.max_available ?? last.available ?? null;
+          if (avail != null) {
+            document.getElementById('heroNumber').textContent = avail;
+            document.getElementById('heroNumber').className = 'hero-number';
+            document.getElementById('heroSub').textContent = `данные за ${last.date}`;
+            document.getElementById('cntUp').textContent = avail;
+            updatePct(avail);
+          }
           document.getElementById('lastUpdate').textContent = 'Данные за ' + last.date;
         }
         drawChart(history);
@@ -1623,8 +1654,44 @@
       } catch (e) { console.error('Revenue analytics:', e); }
     }
 
+    // --- Live KPI from Grafana ---
+    async function loadLiveKPI() {
+      const ids = COMPANY_IDS.join(',');
+      const today = new Date(Date.now() + 3*60*60*1000).toISOString().slice(0,10);
+      try {
+        const [rev, fleet] = await Promise.all([
+          grafanaQuery(`SELECT SUM(sum_card)/100 as revenue, COUNT(*) as orders, ROUND(AVG(sum_card)/100) as avg_check FROM bills WHERE company_id IN (${ids}) AND status='PAID' AND DATE(updated_at)='${today}'`),
+          grafanaQuery(`SELECT COUNT(DISTINCT car_id) as active FROM orders WHERE company_id IN (${ids}) AND DATE(start_time)='${today}'`),
+        ]);
+        const r = rev[0] || {};
+        const active = fleet[0]?.active ?? null;
+        const revenue = r.revenue ?? null;
+        const orders  = r.orders  ?? null;
+        const check   = r.avg_check ?? null;
+        const perUnit = (revenue && active) ? Math.round(revenue / active) : null;
+
+        document.getElementById('raKpiRevenue').textContent  = revenue != null ? revenue.toLocaleString('ru-RU') + ' ₽' : '—';
+        document.getElementById('raKpiRevenueDate').textContent = today + ' · live';
+        document.getElementById('raKpiOrders').textContent   = orders  != null ? orders  : '—';
+        document.getElementById('raKpiAvgCheck').textContent = check   != null ? check   : '—';
+        document.getElementById('raKpiPerUnit').textContent  = perUnit != null ? perUnit.toLocaleString('ru-RU') : '—';
+        document.getElementById('raKpiActive').textContent   = active  != null ? active  : '—';
+        if (active != null) {
+          document.getElementById('fsActive').textContent = active;
+          const avail = parseInt(document.getElementById('fsAvail').textContent);
+          if (avail) {
+            const share = Math.round(active / avail * 100);
+            document.getElementById('fsShare').textContent = share + '%';
+            document.getElementById('fsShareBar').style.width = share + '%';
+          }
+        }
+        document.getElementById('revAnalyticsUpdated').textContent = 'live · обновлено при загрузке';
+      } catch(e) { console.warn('Live KPI failed, using cached:', e.message); }
+    }
+
     loadFleetSection();
     loadRevAnalytics();
+    loadLiveKPI();
 
     // --- Договоры ---
     const PARTNERS = [
