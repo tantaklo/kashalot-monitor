@@ -2082,7 +2082,7 @@
         const rows = await grafanaQuery(`
           SELECT e1.order_id,
             SUM(TIMESTAMPDIFF(SECOND, e1.time, e2.time)) as out_sec,
-            COALESCE(b.status, o.status) as bill_status,
+            (SELECT status FROM bills WHERE order_id=o.id ORDER BY id DESC LIMIT 1) as pay_status,
             c.name as company,
             TIMESTAMPDIFF(SECOND, o.start_time, o.finish_time) as total_sec
           FROM order_events e1
@@ -2090,10 +2090,9 @@
             AND e2.id=(SELECT MIN(id) FROM order_events WHERE order_id=e1.order_id AND id>e1.id AND reason='GEO')
           JOIN orders o ON e1.order_id=o.id
           JOIN companies c ON o.company_id=c.id
-          LEFT JOIN bills b ON b.order_id=o.id
           WHERE e1.reason='GEO' AND e1.geo_id=1
             AND DATE(o.start_time)='${today}'
-          GROUP BY e1.order_id, bill_status, c.name, o.start_time, o.finish_time
+          GROUP BY e1.order_id, pay_status, c.name, o.start_time, o.finish_time
           HAVING out_sec >= 10
           ORDER BY out_sec DESC
         `);
@@ -2136,7 +2135,7 @@
                 const pct = r.total_sec > 0 ? Math.round(r.out_sec / r.total_sec * 100) : 0;
                 const pctColor = pct >= 50 ? '#f87171' : pct >= 20 ? '#fbbf24' : '#94a3b8';
                 const adminUrl = `https://ecoskat.bumerang.tech/admin/order/${r.order_id}`;
-                const [sLabel, sColor] = statusLabel(r.bill_status);
+                const [sLabel, sColor] = statusLabel(r.pay_status);
                 return `<tr style="border-bottom:1px solid #1e1e2a;${i%2===1?'background:#111118':''}">
                   <td style="padding:8px 12px"><a href="${adminUrl}" target="_blank" style="color:#60a5fa;text-decoration:none;font-weight:600">#${r.order_id}</a></td>
                   <td style="padding:8px 12px;font-size:12px;font-weight:600;color:${sColor}">${sLabel}</td>
