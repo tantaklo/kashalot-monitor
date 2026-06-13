@@ -738,9 +738,8 @@
           <div class="rev-chart-wrap"><canvas id="tpChartShare"></canvas></div>
         </div>
         <div class="rev-chart-block">
-          <div class="rev-chart-title" style="margin-bottom:12px">Доступность vs спрос по тарифам · <span style="color:#6b7280;font-size:11px">device-дни в предложении vs реальные поездки</span></div>
-          <div id="tpConvInsights" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
-          <div class="rev-chart-wrap"><canvas id="tpChartConv"></canvas></div>
+          <div class="rev-chart-title" style="margin-bottom:16px">Отклонение факта от предложения · <span style="color:#6b7280;font-size:11px">насколько клиенты платят меньше или больше заявленной цены</span></div>
+          <div id="tpGapCards" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
         </div>
       </div>
     </div>
@@ -1971,86 +1970,87 @@
           });
         }
 
-        // Доступность vs спрос: device-дни в предложении vs поездки за период
+        // Отклонение факта от предложения по каждому тарифу
         {
-          // Supply: sum device counts per slot across filtered days
-          const supplyBySlot = {};
+          // Offer: weighted avg price/min per slot (from QR scan, filtered days)
+          const offerBySlot = {};
           filtered.forEach(r => {
             TP_SLOTS.forEach(slot => {
               const slotData = r.slots?.[slot.key];
               if (!slotData) return;
-              let cnt = 0;
-              Object.entries(slotData).forEach(([, c]) => { cnt += Number(c) || 0; });
-              supplyBySlot[slot.key] = (supplyBySlot[slot.key] ?? 0) + cnt;
+              if (!offerBySlot[slot.key]) offerBySlot[slot.key] = { totalKop: 0, cnt: 0 };
+              Object.entries(slotData).forEach(([priceStr, devCnt]) => {
+                const priceRub = parseInt(priceStr);
+                if (!isNaN(priceRub)) {
+                  const pricePerMin = priceRub / slot.min;
+                  offerBySlot[slot.key].totalKop += pricePerMin * Number(devCnt);
+                  offerBySlot[slot.key].cnt      += Number(devCnt);
+                }
+              });
             });
           });
 
-          // Demand: sum orders per slot across filtered days (from factRows)
-          const demandBySlot = {};
+          // Fact: weighted avg price/min per slot (from Grafana orders, filtered period)
+          const factBySlot = {};
           factRows.forEach(r => {
-            if (!r.slot) return;
-            if (!cutoff || r.date >= cutoff) {
-              demandBySlot[r.slot] = (demandBySlot[r.slot] ?? 0) + Number(r.cnt);
-            }
+            if (!r.slot || (cutoff && r.date < cutoff)) return;
+            if (!factBySlot[r.slot]) factBySlot[r.slot] = { totalKop: 0, cnt: 0 };
+            factBySlot[r.slot].totalKop += Number(r.total_kopecks);
+            factBySlot[r.slot].cnt      += Number(r.cnt);
           });
 
-          const slotLabels = TP_SLOTS.map(s => s.label);
-          const supplyVals  = TP_SLOTS.map(s => supplyBySlot[s.key] ?? 0);
-          const demandVals  = TP_SLOTS.map(s => demandBySlot[s.key] ?? 0);
-          const colors      = TP_SLOTS.map(s => s.color);
+          const gapCards = document.getElementById('tpGapCards');
+          gapCards.innerHTML = TP_SLOTS.map(slot => {
+            const off = offerBySlot[slot.key];
+            const fct = factBySlot[slot.key];
+            if (!off?.cnt || !fct?.cnt) return '';
 
-          // Insights: conversion rate per slot
-          const insightsEl = document.getElementById('tpConvInsights');
-          insightsEl.innerHTML = TP_SLOTS.map((slot, i) => {
-            const sup = supplyVals[i], dem = demandVals[i];
-            const conv = sup > 0 ? (dem / sup * 100).toFixed(1) : '—';
-            const convNum = sup > 0 ? dem / sup * 100 : null;
-            // Compare to avg conversion
-            const avgConv = supplyVals.reduce((s,v)=>s+v,0) > 0
-              ? demandVals.reduce((s,v)=>s+v,0) / supplyVals.reduce((s,v)=>s+v,0) * 100 : null;
-            let signal = '🟡', hint = '';
-            if (convNum !== null && avgConv !== null) {
-              if (convNum > avgConv * 1.3) { signal = '🟢'; hint = 'выше среднего — тариф востребован'; }
-              else if (convNum < avgConv * 0.7) { signal = '🔴'; hint = 'ниже среднего — возможно цена завышена'; }
-              else { hint = 'в норме'; }
+            const offerPM = off.totalKop / off.cnt;             // ₽/мин предложение
+            const factPM  = (fct.totalKop / fct.cnt / 100) / slot.min; // ₽/мин факт (kopecks→rub/min)
+            const deltaRub = +(factPM - offerPM).toFixed(1);
+            const deltaPct = +((factPM - offerPM) / offerPM * 100).toFixed(1);
+            const orders = fct.cnt;
+
+            // Signal
+            let borderColor, badge, advice;
+            if (deltaPct <= -10) {
+              borderColor = '#ef4444'; badge = '🔴 Переплачивают меньше';
+              advice = `Клиенты платят на ${Math.abs(deltaPct)}% меньше заявленного. Внутри локаций выбирают более дешёвые варианты — возможно, цена завышена.`;
+            } else if (deltaPct >= 5) {
+              borderColor = '#22c55e'; badge = '🟢 Платят выше предложения';
+              advice = `Факт выше предложения на ${deltaPct}% — редкая ситуация, стоит проверить данные.`;
+            } else if (deltaPct <= -3) {
+              borderColor = '#f59e0b'; badge = '🟡 Лёгкое отклонение';
+              advice = `Небольшое расхождение ${deltaPct}% — в пределах нормы, но стоит наблюдать.`;
+            } else {
+              borderColor = '#4ade80'; badge = '🟢 Цена в рынке';
+              advice = `Факт практически совпадает с предложением (${deltaPct}%). Цена хорошо принимается.`;
             }
-            return `<div style="flex:1;min-width:140px;background:#111118;border:1px solid #2d2d3d;border-radius:10px;padding:10px 12px">
-              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-                <span style="width:8px;height:8px;border-radius:50%;background:${slot.color};display:inline-block"></span>
-                <span style="font-size:12px;font-weight:600;color:#e2e8f0">${slot.label}</span>
-                <span style="margin-left:auto;font-size:11px">${signal}</span>
+
+            return `<div style="background:#111118;border:1px solid ${borderColor}40;border-left:3px solid ${borderColor};border-radius:12px;padding:16px 18px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                <span style="width:9px;height:9px;border-radius:50%;background:${slot.color};display:inline-block"></span>
+                <span style="font-size:13px;font-weight:700;color:#e2e8f0">${slot.label}</span>
+                <span style="margin-left:auto;font-size:11px;color:#6b7280">${orders.toLocaleString('ru-RU')} заказов</span>
               </div>
-              <div style="font-size:22px;font-weight:700;color:${slot.color}">${conv}%</div>
-              <div style="font-size:11px;color:#6b7280;margin-top:2px">конверсия · ${hint}</div>
-              <div style="font-size:11px;color:#4b5563;margin-top:4px">${dem.toLocaleString('ru-RU')} поездок / ${sup.toLocaleString('ru-RU')} device-дней</div>
+              <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:10px">
+                <div>
+                  <div style="font-size:11px;color:#6b7280;margin-bottom:2px">Предложение</div>
+                  <div style="font-size:22px;font-weight:700;color:#94a3b8">${offerPM.toFixed(1)} <span style="font-size:13px;font-weight:400">₽/мин</span></div>
+                </div>
+                <div style="font-size:20px;color:#4b5563;margin-bottom:4px">→</div>
+                <div>
+                  <div style="font-size:11px;color:#6b7280;margin-bottom:2px">Факт</div>
+                  <div style="font-size:22px;font-weight:700;color:${slot.color}">${factPM.toFixed(1)} <span style="font-size:13px;font-weight:400">₽/мин</span></div>
+                </div>
+                <div style="margin-left:auto;text-align:right">
+                  <div style="font-size:20px;font-weight:800;color:${borderColor}">${deltaPct > 0 ? '+' : ''}${deltaPct}%</div>
+                  <div style="font-size:12px;color:${borderColor};opacity:0.8">${deltaRub > 0 ? '+' : ''}${deltaRub} ₽/мин</div>
+                </div>
+              </div>
+              <div style="font-size:11px;color:#6b7280;line-height:1.5">${badge} · ${advice}</div>
             </div>`;
           }).join('');
-
-          // Bar chart
-          const canvasEl = document.getElementById('tpChartConv');
-          const existing = Chart.getChart(canvasEl); if (existing) existing.destroy();
-          new Chart(canvasEl.getContext('2d'), {
-            type: 'bar',
-            data: {
-              labels: slotLabels,
-              datasets: [
-                { label: 'Доступность (device-дни)', data: supplyVals, backgroundColor: colors.map(c => c + '55'), borderColor: colors, borderWidth: 1.5, borderRadius: 4 },
-                { label: 'Поездки', data: demandVals, backgroundColor: colors.map(c => c + 'cc'), borderColor: colors, borderWidth: 1.5, borderRadius: 4 },
-              ]
-            },
-            options: {
-              responsive: true, maintainAspectRatio: false,
-              interaction: { mode: 'index', intersect: false },
-              plugins: {
-                legend: { display: true, labels: { color: '#6b7280', boxWidth: 12, padding: 14, font: { size: 11 } } },
-                tooltip: { backgroundColor: '#1a1a24', borderColor: '#2d2d3d', borderWidth: 1, titleColor: '#94a3b8', bodyColor: '#e2e8f0' },
-              },
-              scales: {
-                x: { grid: { color: '#1a1a24' }, ticks: { color: '#4b5563' } },
-                y: { grid: { color: '#1e1e2a' }, beginAtZero: true, ticks: { color: '#4b5563' } },
-              }
-            }
-          });
         }
 
         if (filtered.length) {
