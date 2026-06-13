@@ -683,7 +683,7 @@
         </div>
 
         <div class="rev-chart-block">
-          <div class="rev-chart-title">Выручка на один активный кашалот, ₽/день</div>
+          <div class="rev-chart-title">Выручка на кашалот: активный vs доступный, ₽/день</div>
           <div class="rev-chart-wrap"><canvas id="raChartPerUnit"></canvas></div>
         </div>
         <div class="rev-chart-block">
@@ -704,6 +704,26 @@
         </div>
 
         <div style="font-size:12px;color:#374151;text-align:right;margin-top:-8px" id="raUpdatedAt"></div>
+      </div>
+    </div>
+
+    <!-- Tariff price chart -->
+    <div class="chart-card" id="tariffPriceSection">
+      <div class="chart-header collapsible" onclick="toggleSection('tariffPriceBody', 'tariffPriceArrow')">
+        <div>
+          <div class="chart-title">Цена минуты по тарифам <span class="toggle-arrow open" id="tariffPriceArrow">▼</span></div>
+          <div class="chart-sub" id="tariffPriceUpdated">предложение клиентам · из тарифной истории</div>
+        </div>
+      </div>
+      <div class="section-body open" id="tariffPriceBody">
+        <div class="rev-chart-block">
+          <div class="rev-chart-title">Предложение: цена минуты по тарифам, ₽/мин</div>
+          <div class="rev-chart-wrap"><canvas id="tpChartOffer"></canvas></div>
+        </div>
+        <div class="rev-chart-block">
+          <div class="rev-chart-title">Факт: цена минуты из заказов, ₽/мин</div>
+          <div class="rev-chart-wrap"><canvas id="tpChartFact"></canvas></div>
+        </div>
       </div>
     </div>
 
@@ -1519,27 +1539,44 @@
       return new Chart(ctx, { type, data: { labels, datasets: [dataset] }, options: opts });
     }
 
+    function raBuildDualChart(canvasId, labels, data1, data2, color1, color2, label1, label2, yLabel) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      const ptR = labels.length < 15 ? 4 : 2;
+      const opts = raChartOpts(yLabel);
+      opts.plugins.legend = { display: true, labels: { color: '#6b7280', boxWidth: 12, padding: 14, font: { size: 11 } } };
+      return new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets: [
+          { label: label1, data: data1, borderColor: color1, backgroundColor: color1 + '18', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: color1, fill: false, tension: 0.35 },
+          { label: label2, data: data2, borderColor: color2, backgroundColor: color2 + '18', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: color2, fill: false, tension: 0.35 },
+        ]},
+        options: opts,
+      });
+    }
+
     let raAllData = [];
     const raCharts = {};
 
     function raRenderCharts(days) {
       const rows = days ? raAllData.slice(-days) : raAllData;
-      const labels   = rows.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
-      const perUnit  = rows.map(r => r.activeObjects ? Math.round(r.revenue / r.activeObjects) : null);
-      const revenue  = rows.map(r => r.revenue);
-      const orders   = rows.map(r => r.orders ?? null);
-      const avgCheck = rows.map(r => r.avgCheck ?? null);
-      const avail    = rows.map(r => r.totalObjects ? Math.round(r.activeObjects / r.totalObjects * 100) : null);
+      const labels    = rows.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
+      const perUnit   = rows.map(r => r.activeObjects ? Math.round(r.revenue / r.activeObjects) : null);
+      const perAvail  = rows.map(r => r.totalObjects  ? Math.round(r.revenue / r.totalObjects)  : null);
+      const revenue   = rows.map(r => r.revenue);
+      const orders    = rows.map(r => r.orders ?? null);
+      const avgCheck  = rows.map(r => r.avgCheck ?? null);
+      const avail     = rows.map(r => r.totalObjects ? Math.round(r.activeObjects / r.totalObjects * 100) : null);
 
       ['perUnit','revenue','orders','avgCheck','avail'].forEach(k => {
         if (raCharts[k]) { raCharts[k].destroy(); delete raCharts[k]; }
       });
 
-      raCharts.perUnit  = raBuildChart('raChartPerUnit',  labels, perUnit,  '#60a5fa', '₽');
-      raCharts.revenue  = raBuildChart('raChartRevenue',  labels, revenue,  '#4ade80', '₽');
-      raCharts.orders   = raBuildChart('raChartOrders',   labels, orders,   '#f59e0b', '');
-      raCharts.avgCheck = raBuildChart('raChartAvgCheck', labels, avgCheck, '#f472b6', '₽');
-      raCharts.avail    = raBuildChart('raChartAvail',    labels, avail,    '#34d399', '%', 100);
+      raCharts.perUnit  = raBuildDualChart('raChartPerUnit', labels, perUnit, perAvail,
+        '#60a5fa', '#f472b6', 'На активный', 'На доступный', '₽');
+      raCharts.revenue  = raBuildChart('raChartRevenue',  labels, revenue,   '#4ade80', '₽');
+      raCharts.orders   = raBuildChart('raChartOrders',   labels, orders,    '#f59e0b', '');
+      raCharts.avgCheck = raBuildChart('raChartAvgCheck', labels, avgCheck,  '#f472b6', '₽');
+      raCharts.avail    = raBuildChart('raChartAvail',    labels, avail,     '#34d399', '%', 100);
     }
 
     function raUpdateKPI(rows) {
@@ -1570,6 +1607,7 @@
         raActivePeriod = parseInt(btn.dataset.period);
         raRenderCharts(raActivePeriod);
         if (fsAllData.length) fsRenderChart(raActivePeriod);
+        loadTariffPriceChart();
       });
     });
 
@@ -1588,6 +1626,10 @@
       const labels = rows.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
       const avail  = rows.map(r => r.max_available ?? null);
       const active = rows.map(r => r.active_objects ?? r.peak_rented ?? null);
+      const share  = rows.map((r, i) => {
+        const a = active[i], v = avail[i];
+        return (a != null && v) ? Math.round(a / v * 100) : null;
+      });
 
       if (fsChartInst) { fsChartInst.destroy(); fsChartInst = null; }
 
@@ -1597,8 +1639,9 @@
         data: {
           labels,
           datasets: [
-            { label: 'Доступность', data: avail,  borderColor: '#60a5fa', backgroundColor: '#60a5fa15', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#60a5fa', fill: true, tension: 0.35 },
-            { label: 'Активность',  data: active, borderColor: '#4ade80', backgroundColor: '#4ade8015', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#4ade80', fill: true, tension: 0.35 },
+            { label: 'Доступность', data: avail,  borderColor: '#60a5fa', backgroundColor: '#60a5fa15', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#60a5fa', fill: true, tension: 0.35, yAxisID: 'y' },
+            { label: 'Активность',  data: active, borderColor: '#4ade80', backgroundColor: '#4ade8015', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#4ade80', fill: true, tension: 0.35, yAxisID: 'y' },
+            { label: 'Доля, %',     data: share,  borderColor: '#f59e0b', backgroundColor: 'transparent', borderWidth: 2, borderDash: [4,3], pointRadius: ptRadius, pointBackgroundColor: '#f59e0b', fill: false, tension: 0.35, yAxisID: 'y2' },
           ]
         },
         options: {
@@ -1612,8 +1655,9 @@
             }
           },
           scales: {
-            x: { grid: { color: '#1a1a24' }, ticks: { maxTicksLimit: 8, maxRotation: 0, color: '#4b5563' } },
-            y: { grid: { color: '#1e1e2a' }, beginAtZero: false, ticks: { color: '#4b5563', callback: v => v.toLocaleString('ru-RU') } }
+            x:  { grid: { color: '#1a1a24' }, ticks: { maxTicksLimit: 8, maxRotation: 0, color: '#4b5563' } },
+            y:  { grid: { color: '#1e1e2a' }, beginAtZero: false, position: 'left',  ticks: { color: '#4b5563', callback: v => v.toLocaleString('ru-RU') } },
+            y2: { grid: { display: false },   beginAtZero: true,  position: 'right', max: 100, ticks: { color: '#f59e0b', callback: v => v + '%' } },
           }
         }
       });
@@ -1641,17 +1685,43 @@
       } catch (e) { console.error('Fleet section:', e); }
     }
 
-    async function loadRevAnalytics() {
+    async function loadGrafanaAnalytics() {
+      const ids = COMPANY_IDS.join(',');
       try {
-        const res = await fetch('./data/revenue-daily.json?t=' + Date.now());
-        if (!res.ok) return;
-        raAllData = await res.json();
+        const [revRows, histRes] = await Promise.all([
+          grafanaQuery(`SELECT DATE(updated_at) as date, ROUND(SUM(sum_card)/100) as revenue, COUNT(*) as orders, ROUND(AVG(sum_card)/100) as avg_check FROM bills WHERE company_id IN (${ids}) AND status='PAID' GROUP BY DATE(updated_at) ORDER BY date`),
+          fetch('./data/history.json?t=' + Date.now()).then(r => r.ok ? r.json() : []),
+        ]);
+
+        const histMap = {};
+        histRes.forEach(r => { histMap[r.date] = r; });
+
+        raAllData = revRows.map(r => ({
+          date: r.date,
+          revenue: r.revenue ?? 0,
+          orders: r.orders ?? null,
+          avgCheck: r.avg_check ?? null,
+          activeObjects: histMap[r.date]?.active_objects ?? null,
+          totalObjects: histMap[r.date]?.max_available ?? null,
+        }));
         raAllData.sort((a, b) => a.date.localeCompare(b.date));
         raUpdateKPI(raAllData);
         requestAnimationFrame(() => raRenderCharts(raActivePeriod));
         const last = raAllData[raAllData.length - 1];
         document.getElementById('raUpdatedAt').textContent = 'Обновлено: ' + last.date;
-      } catch (e) { console.error('Revenue analytics:', e); }
+        document.getElementById('revAnalyticsUpdated').textContent = 'из Grafana · ' + last.date;
+      } catch (e) {
+        console.error('Grafana analytics failed, fallback to JSON:', e);
+        try {
+          const res = await fetch('./data/revenue-daily.json?t=' + Date.now());
+          if (!res.ok) return;
+          raAllData = (await res.json()).sort((a, b) => a.date.localeCompare(b.date));
+          raUpdateKPI(raAllData);
+          requestAnimationFrame(() => raRenderCharts(raActivePeriod));
+          const last = raAllData[raAllData.length - 1];
+          document.getElementById('raUpdatedAt').textContent = 'Обновлено: ' + last.date + ' (кэш)';
+        } catch(e2) { console.error('Revenue analytics fallback:', e2); }
+      }
     }
 
     // --- Live KPI from Grafana ---
@@ -1689,9 +1759,116 @@
       } catch(e) { console.warn('Live KPI failed, using cached:', e.message); }
     }
 
+    // --- Tariff price chart ---
+    const TP_SLOTS = [
+      { key: 'Детский|5 мин',  label: 'Детский 5 мин',  min: 5,  color: '#60a5fa' },
+      { key: 'Детский|10 мин', label: 'Детский 10 мин', min: 10, color: '#93c5fd' },
+      { key: 'Быстрый|5 мин',  label: 'Быстрый 5 мин',  min: 5,  color: '#4ade80' },
+      { key: 'Быстрый|10 мин', label: 'Быстрый 10 мин', min: 10, color: '#86efac' },
+    ];
+    const tpCharts = {};
+
+    function tpBuildChart(canvasId, labels, datasets) {
+      const ctx = document.getElementById(canvasId)?.getContext('2d');
+      if (!ctx) return;
+      if (tpCharts[canvasId]) { tpCharts[canvasId].destroy(); }
+      const ptR = labels.length < 15 ? 4 : 2;
+      tpCharts[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets: datasets.map(ds => ({
+          label: ds.label, data: ds.data, borderColor: ds.color,
+          backgroundColor: ds.color + '20', borderWidth: 2,
+          pointRadius: ptR, pointBackgroundColor: ds.color,
+          fill: false, tension: 0.35, spanGaps: true,
+        })) },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, labels: { color: '#6b7280', boxWidth: 12, padding: 14, font: { size: 11 } } },
+            tooltip: {
+              backgroundColor: '#1a1a24', borderColor: '#2d2d3d', borderWidth: 1,
+              titleColor: '#94a3b8', bodyColor: '#e2e8f0',
+              callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + ' ₽/мин' : '—'}` },
+            }
+          },
+          scales: {
+            x: { grid: { color: '#1a1a24' }, ticks: { maxTicksLimit: 10, maxRotation: 0, color: '#4b5563' } },
+            y: { grid: { color: '#1e1e2a' }, beginAtZero: false, ticks: { color: '#4b5563', callback: v => v.toFixed(1) } },
+          },
+        },
+      });
+    }
+
+    async function loadTariffPriceChart() {
+      const ids = COMPANY_IDS.join(',');
+      try {
+        const [tariffRes, factRows] = await Promise.all([
+          fetch('./data/tariff-history.json?t=' + Date.now()).then(r => r.ok ? r.json() : []),
+          grafanaQuery(`SELECT DATE(b.updated_at) as date, AVG(b.sum_card)/100 as avg_price, AVG(o.tariff_duration) as avg_min, o.tariff_type as tariff_type FROM bills b JOIN orders o ON b.order_id = o.id WHERE b.company_id IN (${ids}) AND b.status='PAID' GROUP BY date, o.tariff_type ORDER BY date`).catch(() => []),
+        ]);
+
+        const filtered = tariffRes.filter(r => {
+          const d = r.date;
+          if (raActivePeriod && raActivePeriod > 0) {
+            const cutoff = new Date(Date.now() + 3*60*60*1000);
+            cutoff.setDate(cutoff.getDate() - raActivePeriod);
+            return d >= cutoff.toISOString().slice(0,10);
+          }
+          return true;
+        });
+
+        const labels = filtered.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
+
+        // Предложение: weighted avg price/min per slot per day
+        const offerDatasets = TP_SLOTS.map(slot => ({
+          label: slot.label, color: slot.color,
+          data: filtered.map(r => {
+            const slotData = r.slots?.[slot.key];
+            if (!slotData) return null;
+            let total = 0, count = 0;
+            Object.entries(slotData).forEach(([priceStr, cnt]) => {
+              const price = parseInt(priceStr);
+              if (!isNaN(price)) { total += price * cnt; count += cnt; }
+            });
+            return count ? +(total / count / slot.min).toFixed(1) : null;
+          }),
+        }));
+
+        tpBuildChart('tpChartOffer', labels, offerDatasets);
+
+        // Факт: из Grafana, если есть данные
+        if (factRows.length) {
+          const factMap = {};
+          factRows.forEach(r => {
+            if (!factMap[r.date]) factMap[r.date] = {};
+            factMap[r.date][r.tariff_type] = r;
+          });
+          const factDatasets = TP_SLOTS.map(slot => ({
+            label: slot.label, color: slot.color,
+            data: filtered.map(r => {
+              const row = factMap[r.date]?.[slot.label];
+              if (!row || !row.avg_min) return null;
+              return +((row.avg_price / row.avg_min) || 0).toFixed(1) || null;
+            }),
+          }));
+          tpBuildChart('tpChartFact', labels, factDatasets);
+        } else {
+          // Факт = предложение (цены фиксированы)
+          tpBuildChart('tpChartFact', labels, offerDatasets);
+        }
+
+        if (filtered.length) {
+          const last = filtered[filtered.length - 1];
+          document.getElementById('tariffPriceUpdated').textContent = 'из тарифной истории · ' + last.date;
+        }
+      } catch(e) { console.error('Tariff price chart:', e); }
+    }
+
     loadFleetSection();
-    loadRevAnalytics();
+    loadGrafanaAnalytics();
     loadLiveKPI();
+    loadTariffPriceChart();
 
     // --- Договоры ---
     const PARTNERS = [
