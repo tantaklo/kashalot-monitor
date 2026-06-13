@@ -1689,7 +1689,7 @@
       const ids = COMPANY_IDS.join(',');
       try {
         const [revRows, histRes] = await Promise.all([
-          grafanaQuery(`SELECT DATE(updated_at) as date, ROUND(SUM(sum_card)/100) as revenue, COUNT(*) as orders, ROUND(AVG(sum_card)/100) as avg_check FROM bills WHERE company_id IN (${ids}) AND status='PAID' GROUP BY DATE(updated_at) ORDER BY date`),
+          grafanaQuery(`SELECT DATE_FORMAT(updated_at, '%Y-%m-%d') as date, ROUND(SUM(sum_card)/100) as revenue, COUNT(*) as orders, ROUND(AVG(sum_card)/100) as avg_check FROM bills WHERE company_id IN (${ids}) AND status='PAID' GROUP BY DATE_FORMAT(updated_at, '%Y-%m-%d') ORDER BY date`),
           fetch('./data/history.json?t=' + Date.now()).then(r => r.ok ? r.json() : []),
         ]);
 
