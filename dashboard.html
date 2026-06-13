@@ -802,6 +802,19 @@
       <div class="tariff-grid" id="tariffGrid"></div>
     </div>
 
+    <!-- Out-of-zone orders -->
+    <div class="chart-card" id="ozCard">
+      <div class="chart-header collapsible" onclick="toggleSection('ozBody', 'ozArrow')">
+        <div>
+          <div class="chart-title">⚠️ Выезды за зону <span class="toggle-arrow" id="ozArrow">▼</span></div>
+          <div class="chart-sub" id="ozSub">Загрузка...</div>
+        </div>
+      </div>
+      <div class="section-body open" id="ozBody">
+        <div id="ozTable" style="overflow-x:auto"></div>
+      </div>
+    </div>
+
     <!-- Found list -->
     <div class="found-card" id="foundSection" style="display:none">
       <div class="section-title">Доступные устройства (последнее сканирование)</div>
@@ -1871,10 +1884,73 @@
       } catch(e) { console.error('Tariff price chart:', e); }
     }
 
+    // --- Out-of-zone orders ---
+    async function loadOutOfZone() {
+      const today = new Date(Date.now() + 3*60*60*1000).toISOString().slice(0,10);
+      try {
+        const rows = await grafanaQuery(`
+          SELECT oe.order_id, SUM(oe.time_unit) as out_sec,
+            c.name as company,
+            TIMESTAMPDIFF(SECOND, o.start_time, o.finish_time) as total_sec
+          FROM order_events oe
+          JOIN orders o ON oe.order_id=o.id
+          JOIN companies c ON o.company_id=c.id
+          WHERE oe.reason='GEO' AND oe.geo_id=1
+            AND DATE(o.start_time)='${today}'
+          GROUP BY oe.order_id, c.name, o.start_time, o.finish_time
+          HAVING SUM(oe.time_unit) >= 10
+          ORDER BY out_sec DESC
+        `);
+
+        const sub = document.getElementById('ozSub');
+        const tbl = document.getElementById('ozTable');
+
+        if (!rows.length) {
+          sub.textContent = `Сегодня (${today}) — выездов нет`;
+          tbl.innerHTML = '<div style="padding:16px;color:#6b7280;font-size:14px">Заказов с выездом за зону не обнаружено</div>';
+          return;
+        }
+
+        sub.textContent = `Сегодня (${today}) — ${rows.length} заказ${rows.length===1?'':rows.length<5?'а':'ов'} с выездом за зону`;
+
+        const html = `
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="border-bottom:1px solid #2d2d3d;color:#6b7280">
+                <th style="padding:8px 12px;text-align:left;white-space:nowrap">Заказ</th>
+                <th style="padding:8px 12px;text-align:left">Компания</th>
+                <th style="padding:8px 12px;text-align:right;white-space:nowrap">За зоной</th>
+                <th style="padding:8px 12px;text-align:right;white-space:nowrap">Весь заказ</th>
+                <th style="padding:8px 12px;text-align:right;white-space:nowrap">% за зоной</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map((r,i) => {
+                const pct = r.total_sec > 0 ? Math.round(r.out_sec / r.total_sec * 100) : 0;
+                const pctColor = pct >= 50 ? '#f87171' : pct >= 20 ? '#fbbf24' : '#94a3b8';
+                const adminUrl = `https://ecoskat.bumerang.tech/admin/order/${r.order_id}`;
+                return `<tr style="border-bottom:1px solid #1e1e2a;${i%2===1?'background:#111118':''}">
+                  <td style="padding:8px 12px"><a href="${adminUrl}" target="_blank" style="color:#60a5fa;text-decoration:none;font-weight:600">#${r.order_id}</a></td>
+                  <td style="padding:8px 12px;color:#cbd5e1">${r.company}</td>
+                  <td style="padding:8px 12px;text-align:right;color:#fbbf24;font-weight:600">${r.out_sec} с</td>
+                  <td style="padding:8px 12px;text-align:right;color:#94a3b8">${r.total_sec} с</td>
+                  <td style="padding:8px 12px;text-align:right;font-weight:700;color:${pctColor}">${pct}%</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>`;
+        tbl.innerHTML = html;
+      } catch(e) {
+        document.getElementById('ozSub').textContent = 'Ошибка загрузки';
+        console.error('loadOutOfZone:', e);
+      }
+    }
+
     loadFleetSection();
     loadGrafanaAnalytics();
     loadLiveKPI();
     loadTariffPriceChart();
+    loadOutOfZone();
 
     // --- Договоры ---
     const PARTNERS = [
