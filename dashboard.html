@@ -885,6 +885,7 @@
       <div class="section-body open" id="insightsBody">
         <div id="insightsBadges" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px"></div>
         <div id="insightsRecs"></div>
+        <div id="insightsTariffGrid" style="margin-top:20px"></div>
         <div style="margin-top:16px">
           <div style="font-size:11px;color:#4b5563;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;cursor:pointer;user-select:none" onclick="toggleSection('insightsArchiveBody','insightsArchiveArrow')">
             Архив инсайтов <span id="insightsArchiveArrow">▶</span>
@@ -2279,6 +2280,76 @@
       `).join('');
     }
 
+    function renderTariffGridRec() {
+      const el = document.getElementById('insightsTariffGrid');
+      const slots = TP_SLOTS.map(s => ({ ...s, gap: tpGapData[s.key] })).filter(s => s.gap);
+      if (!slots.length) { el.innerHTML = ''; return; }
+
+      // Рекомендация по цене: если факт < предложения >10% — снизить до factPM*min, округлить до 10 ₽
+      // Если разрыв 3–10% — предложить середину
+      // Если <3% — держать
+      function recPrice(offerPM, factPM, min) {
+        const gap = (factPM - offerPM) / offerPM * 100;
+        if (gap <= -10) {
+          return { price: Math.round(factPM * min / 10) * 10, action: 'down', label: 'Снизить' };
+        } else if (gap <= -3) {
+          const mid = (offerPM + factPM) / 2;
+          return { price: Math.round(mid * min / 10) * 10, action: 'maybe', label: 'Скорректировать' };
+        } else {
+          return { price: Math.round(offerPM * min / 10) * 10, action: 'hold', label: 'Держать' };
+        }
+      }
+
+      const actionColor = { down: '#f87171', maybe: '#fbbf24', hold: '#4ade80' };
+      const actionBg    = { down: '#7f1d1d18', maybe: '#78350f18', hold: '#14532d18' };
+      const actionArrow = { down: '↓', maybe: '↕', hold: '✓' };
+
+      el.innerHTML = `
+        <div style="font-size:11px;color:#4b5563;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px">Рекомендуемая тарифная сетка</div>
+        <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="border-bottom:1px solid #2d2d3d">
+              <th style="padding:8px 12px;text-align:left;color:#4b5563;font-weight:500">Тариф</th>
+              <th style="padding:8px 12px;text-align:right;color:#4b5563;font-weight:500">Предложение</th>
+              <th style="padding:8px 12px;text-align:right;color:#4b5563;font-weight:500">Факт покупки</th>
+              <th style="padding:8px 12px;text-align:right;color:#4b5563;font-weight:500">Разрыв</th>
+              <th style="padding:8px 12px;text-align:right;color:#4b5563;font-weight:500">Заказов</th>
+              <th style="padding:8px 12px;text-align:center;color:#4b5563;font-weight:500">Рекомендация</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${slots.map((s, i) => {
+              const { offerPM, factPM, deltaPct } = s.gap;
+              const rec = recPrice(offerPM, factPM, s.min);
+              const offerRub  = Math.round(offerPM * s.min);
+              const factRub   = Math.round(factPM  * s.min);
+              const gapColor  = deltaPct <= -10 ? '#f87171' : deltaPct <= -3 ? '#fbbf24' : '#4ade80';
+              return `<tr style="border-bottom:1px solid #1e1e2a;${i%2===1?'background:#111118':''}">
+                <td style="padding:10px 12px">
+                  <span style="width:8px;height:8px;border-radius:50%;background:${s.color};display:inline-block;margin-right:8px;vertical-align:middle"></span>
+                  <span style="color:#e2e8f0;font-weight:500">${s.label}</span>
+                </td>
+                <td style="padding:10px 12px;text-align:right;color:#94a3b8">${offerRub} ₽ <span style="font-size:11px;color:#4b5563">(${offerPM.toFixed(1)} ₽/мин)</span></td>
+                <td style="padding:10px 12px;text-align:right;color:${s.color}">${factRub} ₽ <span style="font-size:11px;color:#4b5563">(${factPM.toFixed(1)} ₽/мин)</span></td>
+                <td style="padding:10px 12px;text-align:right;font-weight:700;color:${gapColor}">${deltaPct > 0 ? '+' : ''}${deltaPct}%</td>
+                <td style="padding:10px 12px;text-align:right;color:#6b7280">${s.gap.orders.toLocaleString('ru-RU')}</td>
+                <td style="padding:10px 12px;text-align:center">
+                  <span style="display:inline-block;background:${actionBg[rec.action]};border:1px solid ${actionColor[rec.action]}40;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;color:${actionColor[rec.action]}">
+                    ${actionArrow[rec.action]} ${rec.action !== 'hold' ? rec.price + ' ₽' : rec.label}
+                  </span>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        </div>
+        <div style="font-size:11px;color:#374151;margin-top:10px;line-height:1.6">
+          Логика: если клиенты платят &gt;10% меньше заявленного — они систематически берут самый дешёвый вариант. Рекомендуем установить цену на уровне факта покупки. При разрыве 3–10% — скорректировать вниз до середины. При &lt;3% — цена принимается, держать.
+        </div>
+      `;
+    }
+
     const INSIGHTS_WORKER = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev/insights';
 
     async function renderAndSaveInsights() {
@@ -2286,6 +2357,7 @@
       if (!insights.length) return;
 
       renderInsightBadges(insights);
+      renderTariffGridRec();
       document.getElementById('insightsSub').textContent = `${insights.length} инсайт${insights.length===1?'':'ов'} · обновлено при загрузке`;
 
       try {
