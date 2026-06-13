@@ -1527,7 +1527,15 @@
       return opts;
     }
 
+    function raDestroyCanvas(canvasId) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const existing = Chart.getChart(canvas);
+      if (existing) existing.destroy();
+    }
+
     function raBuildChart(canvasId, labels, data, color, yLabel, yMax) {
+      raDestroyCanvas(canvasId);
       const ctx = document.getElementById(canvasId).getContext('2d');
       const type = data.filter(v => v != null).length <= 1 ? 'bar' : 'line';
       const dataset = type === 'bar'
@@ -1540,6 +1548,7 @@
     }
 
     function raBuildDualChart(canvasId, labels, data1, data2, color1, color2, label1, label2, yLabel) {
+      raDestroyCanvas(canvasId);
       const ctx = document.getElementById(canvasId).getContext('2d');
       const ptR = labels.length < 15 ? 4 : 2;
       const opts = raChartOpts(yLabel);
@@ -1558,8 +1567,10 @@
     const raCharts = {};
 
     function raRenderCharts(days) {
+      try {
+      if (!raAllData.length) return;
       const rows = days ? raAllData.slice(-days) : raAllData;
-      const labels    = rows.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
+      const labels    = rows.map(r => { const [,m,d] = String(r.date).split('-'); return d+'.'+m; });
       const perUnit   = rows.map(r => r.activeObjects ? Math.round(r.revenue / r.activeObjects) : null);
       const perAvail  = rows.map(r => r.totalObjects  ? Math.round(r.revenue / r.totalObjects)  : null);
       const revenue   = rows.map(r => r.revenue);
@@ -1577,6 +1588,7 @@
       raCharts.orders   = raBuildChart('raChartOrders',   labels, orders,    '#f59e0b', '');
       raCharts.avgCheck = raBuildChart('raChartAvgCheck', labels, avgCheck,  '#f472b6', '₽');
       raCharts.avail    = raBuildChart('raChartAvail',    labels, avail,     '#34d399', '%', 100);
+      } catch(e) { console.error('raRenderCharts error:', e); }
     }
 
     function raUpdateKPI(rows) {
