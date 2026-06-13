@@ -1,34 +1,2578 @@
 [
   {
-    "date": "2026-06-10",
-    "revenue": 151960,
-    "orders": 392,
+    "date": "2025-01-24",
+    "revenue": 31,
+    "orders": 11,
+    "avgCheck": 3,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-01-25",
+    "revenue": 1440,
+    "orders": 20,
+    "avgCheck": 72,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-01-26",
+    "revenue": 20,
+    "orders": 6,
+    "avgCheck": 3,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-01-27",
+    "revenue": 22,
+    "orders": 7,
+    "avgCheck": 3,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-01-28",
+    "revenue": 13,
+    "orders": 5,
+    "avgCheck": 3,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-01-29",
+    "revenue": 519,
+    "orders": 9,
+    "avgCheck": 58,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-01-30",
+    "revenue": 1286,
+    "orders": 5,
+    "avgCheck": 257,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-01-31",
+    "revenue": 2174,
+    "orders": 12,
+    "avgCheck": 181,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-01",
+    "revenue": 8792,
+    "orders": 25,
+    "avgCheck": 352,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-02",
+    "revenue": 8006,
+    "orders": 27,
+    "avgCheck": 297,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-03",
+    "revenue": 1090,
+    "orders": 5,
+    "avgCheck": 218,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-04",
+    "revenue": 3720,
+    "orders": 12,
+    "avgCheck": 310,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-05",
+    "revenue": 490,
+    "orders": 1,
+    "avgCheck": 490,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-06",
+    "revenue": 500,
+    "orders": 2,
+    "avgCheck": 250,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-07",
+    "revenue": 890,
+    "orders": 2,
+    "avgCheck": 445,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-08",
+    "revenue": 4560,
+    "orders": 13,
+    "avgCheck": 351,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-09",
+    "revenue": 12120,
+    "orders": 26,
+    "avgCheck": 466,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-10",
+    "revenue": 2160,
+    "orders": 6,
+    "avgCheck": 360,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-11",
+    "revenue": 39110,
+    "orders": 78,
+    "avgCheck": 501,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-12",
+    "revenue": 39340,
+    "orders": 88,
+    "avgCheck": 447,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-13",
+    "revenue": 28640,
+    "orders": 60,
+    "avgCheck": 477,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-14",
+    "revenue": 23600,
+    "orders": 51,
+    "avgCheck": 463,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-15",
+    "revenue": 106910,
+    "orders": 242,
+    "avgCheck": 442,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-16",
+    "revenue": 106230,
+    "orders": 243,
+    "avgCheck": 437,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-17",
+    "revenue": 10590,
+    "orders": 25,
+    "avgCheck": 424,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-18",
+    "revenue": 10800,
+    "orders": 31,
+    "avgCheck": 348,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-19",
+    "revenue": 21060,
+    "orders": 45,
+    "avgCheck": 468,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-20",
+    "revenue": 19410,
+    "orders": 36,
+    "avgCheck": 539,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-21",
+    "revenue": 18750,
+    "orders": 44,
+    "avgCheck": 426,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-22",
+    "revenue": 41600,
+    "orders": 105,
+    "avgCheck": 396,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-23",
+    "revenue": 80000,
+    "orders": 193,
+    "avgCheck": 415,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-24",
+    "revenue": 7430,
+    "orders": 22,
+    "avgCheck": 338,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-25",
+    "revenue": 32030,
+    "orders": 60,
+    "avgCheck": 534,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-26",
+    "revenue": 35670,
+    "orders": 70,
+    "avgCheck": 510,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-27",
+    "revenue": 9350,
+    "orders": 24,
+    "avgCheck": 390,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-02-28",
+    "revenue": 13890,
+    "orders": 39,
+    "avgCheck": 356,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-01",
+    "revenue": 87050,
+    "orders": 220,
+    "avgCheck": 396,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-02",
+    "revenue": 96440,
+    "orders": 222,
+    "avgCheck": 434,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-03",
+    "revenue": 19920,
+    "orders": 42,
+    "avgCheck": 474,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-04",
+    "revenue": 22420,
+    "orders": 50,
+    "avgCheck": 448,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-05",
+    "revenue": 19670,
+    "orders": 44,
+    "avgCheck": 447,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-06",
+    "revenue": 11890,
+    "orders": 28,
+    "avgCheck": 425,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-07",
+    "revenue": 25660,
+    "orders": 59,
+    "avgCheck": 435,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-08",
+    "revenue": 77180,
+    "orders": 185,
+    "avgCheck": 417,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-09",
+    "revenue": 95960,
+    "orders": 217,
+    "avgCheck": 442,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-10",
+    "revenue": 24230,
+    "orders": 51,
+    "avgCheck": 475,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-11",
+    "revenue": 7920,
+    "orders": 21,
+    "avgCheck": 377,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-12",
+    "revenue": 15140,
+    "orders": 32,
+    "avgCheck": 473,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-13",
+    "revenue": 7570,
+    "orders": 15,
+    "avgCheck": 505,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-14",
+    "revenue": 17370,
+    "orders": 34,
+    "avgCheck": 511,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-15",
+    "revenue": 77280,
+    "orders": 176,
+    "avgCheck": 439,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-16",
+    "revenue": 114680,
+    "orders": 260,
+    "avgCheck": 441,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-17",
+    "revenue": 17750,
+    "orders": 37,
+    "avgCheck": 480,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-18",
+    "revenue": 49850,
+    "orders": 89,
+    "avgCheck": 560,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-19",
+    "revenue": 31400,
+    "orders": 54,
+    "avgCheck": 581,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-20",
+    "revenue": 46600,
+    "orders": 75,
+    "avgCheck": 621,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-21",
+    "revenue": 70400,
+    "orders": 113,
+    "avgCheck": 623,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-22",
+    "revenue": 114500,
+    "orders": 201,
+    "avgCheck": 570,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-23",
+    "revenue": 36650,
+    "orders": 64,
+    "avgCheck": 573,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-03-24",
+    "revenue": 31100,
+    "orders": 52,
+    "avgCheck": 598,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-08-04",
+    "revenue": 3000,
+    "orders": 3,
+    "avgCheck": 1000,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-08-05",
+    "revenue": 5000,
+    "orders": 5,
+    "avgCheck": 1000,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-08-23",
+    "revenue": 3138,
+    "orders": 12,
+    "avgCheck": 262,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-08-24",
+    "revenue": 7869,
+    "orders": 31,
+    "avgCheck": 254,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-08-25",
+    "revenue": 4684,
+    "orders": 16,
+    "avgCheck": 293,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-08-26",
+    "revenue": 5231,
+    "orders": 19,
+    "avgCheck": 275,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-08-27",
+    "revenue": 3887,
+    "orders": 13,
+    "avgCheck": 299,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-08-28",
+    "revenue": 3391,
+    "orders": 9,
+    "avgCheck": 377,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-08-29",
+    "revenue": 8670,
+    "orders": 30,
+    "avgCheck": 289,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-08-30",
+    "revenue": 3788,
+    "orders": 12,
+    "avgCheck": 316,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-08-31",
+    "revenue": 8921,
+    "orders": 29,
+    "avgCheck": 308,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-01",
+    "revenue": 2941,
+    "orders": 9,
+    "avgCheck": 327,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-02",
+    "revenue": 2193,
+    "orders": 7,
+    "avgCheck": 313,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-03",
+    "revenue": 6932,
+    "orders": 18,
+    "avgCheck": 385,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-04",
+    "revenue": 449,
+    "orders": 1,
+    "avgCheck": 449,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-05",
+    "revenue": 3393,
+    "orders": 7,
+    "avgCheck": 485,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-06",
+    "revenue": 1048,
+    "orders": 2,
+    "avgCheck": 524,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-07",
+    "revenue": 1097,
+    "orders": 3,
+    "avgCheck": 366,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-09",
+    "revenue": 598,
+    "orders": 2,
+    "avgCheck": 299,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-10",
+    "revenue": 299,
+    "orders": 1,
+    "avgCheck": 299,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-11",
+    "revenue": 1196,
+    "orders": 4,
+    "avgCheck": 299,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-13",
+    "revenue": 10823,
+    "orders": 27,
+    "avgCheck": 401,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-14",
+    "revenue": 5785,
+    "orders": 15,
+    "avgCheck": 386,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-15",
+    "revenue": 5285,
+    "orders": 15,
+    "avgCheck": 352,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-16",
+    "revenue": 6234,
+    "orders": 16,
+    "avgCheck": 390,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-17",
+    "revenue": 3591,
+    "orders": 9,
+    "avgCheck": 399,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-18",
+    "revenue": 1994,
+    "orders": 6,
+    "avgCheck": 332,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-19",
+    "revenue": 1646,
+    "orders": 4,
+    "avgCheck": 412,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-20",
+    "revenue": 7633,
+    "orders": 17,
+    "avgCheck": 449,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-21",
+    "revenue": 4037,
+    "orders": 13,
+    "avgCheck": 311,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-22",
+    "revenue": 2693,
+    "orders": 7,
+    "avgCheck": 385,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-23",
+    "revenue": 2243,
+    "orders": 7,
+    "avgCheck": 320,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-24",
+    "revenue": 3791,
+    "orders": 9,
+    "avgCheck": 421,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-25",
+    "revenue": 4638,
+    "orders": 12,
+    "avgCheck": 387,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-26",
+    "revenue": 4936,
+    "orders": 14,
+    "avgCheck": 353,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-27",
+    "revenue": 23791,
+    "orders": 59,
+    "avgCheck": 403,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-28",
+    "revenue": 11074,
+    "orders": 26,
+    "avgCheck": 426,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-09-29",
+    "revenue": 1197,
+    "orders": 3,
+    "avgCheck": 399,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-03",
+    "revenue": 299,
+    "orders": 1,
+    "avgCheck": 299,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-04",
+    "revenue": 4587,
+    "orders": 13,
+    "avgCheck": 353,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-05",
+    "revenue": 5686,
+    "orders": 14,
+    "avgCheck": 406,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-07",
+    "revenue": 998,
+    "orders": 2,
+    "avgCheck": 499,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-08",
+    "revenue": 449,
+    "orders": 1,
+    "avgCheck": 449,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-09",
+    "revenue": 299,
+    "orders": 1,
+    "avgCheck": 299,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-10",
+    "revenue": 897,
+    "orders": 3,
+    "avgCheck": 299,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-11",
+    "revenue": 1695,
+    "orders": 5,
+    "avgCheck": 339,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-12",
+    "revenue": 3092,
+    "orders": 8,
+    "avgCheck": 387,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-14",
+    "revenue": 599,
+    "orders": 1,
+    "avgCheck": 599,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-15",
+    "revenue": 399,
+    "orders": 1,
+    "avgCheck": 399,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-16",
+    "revenue": 399,
+    "orders": 1,
+    "avgCheck": 399,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-17",
+    "revenue": 4941,
+    "orders": 9,
+    "avgCheck": 549,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-18",
+    "revenue": 11277,
+    "orders": 23,
+    "avgCheck": 490,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-19",
+    "revenue": 3938,
+    "orders": 12,
+    "avgCheck": 328,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-20",
+    "revenue": 7536,
+    "orders": 14,
+    "avgCheck": 538,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-21",
+    "revenue": 1400,
+    "orders": 4,
+    "avgCheck": 350,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-22",
+    "revenue": 1450,
+    "orders": 4,
+    "avgCheck": 363,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-23",
+    "revenue": 1700,
+    "orders": 5,
+    "avgCheck": 340,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-24",
+    "revenue": 2650,
+    "orders": 7,
+    "avgCheck": 379,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-25",
+    "revenue": 2290,
+    "orders": 5,
+    "avgCheck": 458,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-26",
+    "revenue": 4730,
+    "orders": 11,
+    "avgCheck": 430,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-27",
+    "revenue": 1200,
+    "orders": 4,
+    "avgCheck": 300,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-28",
+    "revenue": 2650,
+    "orders": 7,
+    "avgCheck": 379,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-29",
+    "revenue": 2900,
+    "orders": 8,
+    "avgCheck": 363,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-30",
+    "revenue": 550,
+    "orders": 1,
+    "avgCheck": 550,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-10-31",
+    "revenue": 1000,
+    "orders": 3,
+    "avgCheck": 333,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-01",
+    "revenue": 6300,
+    "orders": 18,
+    "avgCheck": 350,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-02",
+    "revenue": 17880,
+    "orders": 34,
+    "avgCheck": 526,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-03",
+    "revenue": 7050,
+    "orders": 20,
+    "avgCheck": 353,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-04",
+    "revenue": 9480,
+    "orders": 22,
+    "avgCheck": 431,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-05",
+    "revenue": 1900,
+    "orders": 6,
+    "avgCheck": 317,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-06",
+    "revenue": 1350,
+    "orders": 3,
+    "avgCheck": 450,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-07",
+    "revenue": 17100,
+    "orders": 24,
+    "avgCheck": 713,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-08",
+    "revenue": 2240,
+    "orders": 6,
+    "avgCheck": 373,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-09",
+    "revenue": 2240,
+    "orders": 6,
+    "avgCheck": 373,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-10",
+    "revenue": 1800,
+    "orders": 6,
+    "avgCheck": 300,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-13",
+    "revenue": 950,
+    "orders": 2,
+    "avgCheck": 475,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-15",
+    "revenue": 1190,
+    "orders": 3,
+    "avgCheck": 397,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-16",
+    "revenue": 8940,
+    "orders": 20,
+    "avgCheck": 447,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-17",
+    "revenue": 5550,
+    "orders": 16,
+    "avgCheck": 347,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-18",
+    "revenue": 9300,
+    "orders": 25,
+    "avgCheck": 372,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-19",
+    "revenue": 9600,
+    "orders": 25,
+    "avgCheck": 384,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-20",
+    "revenue": 5950,
+    "orders": 16,
+    "avgCheck": 372,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-21",
+    "revenue": 11750,
+    "orders": 25,
+    "avgCheck": 470,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-22",
+    "revenue": 32270,
+    "orders": 71,
+    "avgCheck": 455,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-23",
+    "revenue": 21110,
+    "orders": 49,
+    "avgCheck": 431,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-24",
+    "revenue": 12230,
+    "orders": 25,
+    "avgCheck": 489,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-25",
+    "revenue": 7630,
+    "orders": 26,
+    "avgCheck": 293,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-26",
+    "revenue": 950,
+    "orders": 4,
+    "avgCheck": 238,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-27",
+    "revenue": 9420,
+    "orders": 25,
+    "avgCheck": 377,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-28",
+    "revenue": 2650,
+    "orders": 6,
+    "avgCheck": 442,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-29",
+    "revenue": 10900,
+    "orders": 24,
+    "avgCheck": 454,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-11-30",
+    "revenue": 3900,
+    "orders": 8,
+    "avgCheck": 488,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-01",
+    "revenue": 1750,
+    "orders": 4,
+    "avgCheck": 438,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-02",
+    "revenue": 4100,
+    "orders": 9,
+    "avgCheck": 456,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-03",
+    "revenue": 2250,
+    "orders": 6,
+    "avgCheck": 375,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-04",
+    "revenue": 2000,
+    "orders": 6,
+    "avgCheck": 333,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-05",
+    "revenue": 14050,
+    "orders": 36,
+    "avgCheck": 390,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-06",
+    "revenue": 26910,
+    "orders": 51,
+    "avgCheck": 528,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-07",
+    "revenue": 16480,
+    "orders": 40,
+    "avgCheck": 412,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-08",
+    "revenue": 3800,
+    "orders": 9,
+    "avgCheck": 422,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-09",
+    "revenue": 3350,
+    "orders": 8,
+    "avgCheck": 419,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-10",
+    "revenue": 3500,
+    "orders": 9,
+    "avgCheck": 389,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-11",
+    "revenue": 2600,
+    "orders": 4,
+    "avgCheck": 650,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-12",
+    "revenue": 14480,
+    "orders": 28,
+    "avgCheck": 517,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-13",
+    "revenue": 40570,
+    "orders": 83,
+    "avgCheck": 489,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-14",
+    "revenue": 30940,
+    "orders": 74,
+    "avgCheck": 418,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-15",
+    "revenue": 17850,
+    "orders": 37,
+    "avgCheck": 482,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-16",
+    "revenue": 13700,
+    "orders": 34,
+    "avgCheck": 403,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-17",
+    "revenue": 11250,
+    "orders": 29,
     "avgCheck": 388,
-    "activeObjects": 128,
-    "totalObjects": 1248
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-18",
+    "revenue": 2450,
+    "orders": 6,
+    "avgCheck": 408,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-19",
+    "revenue": 6020,
+    "orders": 14,
+    "avgCheck": 430,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-20",
+    "revenue": 26560,
+    "orders": 60,
+    "avgCheck": 443,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-21",
+    "revenue": 22550,
+    "orders": 51,
+    "avgCheck": 442,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-22",
+    "revenue": 12450,
+    "orders": 33,
+    "avgCheck": 377,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-23",
+    "revenue": 5650,
+    "orders": 13,
+    "avgCheck": 435,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-24",
+    "revenue": 5900,
+    "orders": 15,
+    "avgCheck": 393,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-25",
+    "revenue": 13800,
+    "orders": 33,
+    "avgCheck": 418,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-26",
+    "revenue": 15540,
+    "orders": 32,
+    "avgCheck": 486,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-27",
+    "revenue": 29100,
+    "orders": 65,
+    "avgCheck": 448,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-28",
+    "revenue": 60210,
+    "orders": 133,
+    "avgCheck": 453,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-29",
+    "revenue": 33400,
+    "orders": 76,
+    "avgCheck": 439,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-30",
+    "revenue": 34460,
+    "orders": 85,
+    "avgCheck": 405,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2025-12-31",
+    "revenue": 142450,
+    "orders": 280,
+    "avgCheck": 509,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-01",
+    "revenue": 306330,
+    "orders": 562,
+    "avgCheck": 545,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-02",
+    "revenue": 345860,
+    "orders": 643,
+    "avgCheck": 538,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-03",
+    "revenue": 339760,
+    "orders": 595,
+    "avgCheck": 571,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-04",
+    "revenue": 293990,
+    "orders": 517,
+    "avgCheck": 569,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-05",
+    "revenue": 286780,
+    "orders": 526,
+    "avgCheck": 545,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-06",
+    "revenue": 281430,
+    "orders": 499,
+    "avgCheck": 564,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-07",
+    "revenue": 291740,
+    "orders": 524,
+    "avgCheck": 557,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-08",
+    "revenue": 253210,
+    "orders": 441,
+    "avgCheck": 574,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-09",
+    "revenue": 108720,
+    "orders": 194,
+    "avgCheck": 560,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-10",
+    "revenue": 118640,
+    "orders": 218,
+    "avgCheck": 544,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-11",
+    "revenue": 86650,
+    "orders": 152,
+    "avgCheck": 570,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-12",
+    "revenue": 13950,
+    "orders": 25,
+    "avgCheck": 558,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-13",
+    "revenue": 32450,
+    "orders": 63,
+    "avgCheck": 515,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-14",
+    "revenue": 15300,
+    "orders": 29,
+    "avgCheck": 528,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-15",
+    "revenue": 28900,
+    "orders": 55,
+    "avgCheck": 525,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-16",
+    "revenue": 31790,
+    "orders": 63,
+    "avgCheck": 505,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-17",
+    "revenue": 91490,
+    "orders": 169,
+    "avgCheck": 541,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-18",
+    "revenue": 136620,
+    "orders": 262,
+    "avgCheck": 521,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-19",
+    "revenue": 33250,
+    "orders": 72,
+    "avgCheck": 462,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-20",
+    "revenue": 35210,
+    "orders": 72,
+    "avgCheck": 489,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-21",
+    "revenue": 27730,
+    "orders": 60,
+    "avgCheck": 462,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-22",
+    "revenue": 34060,
+    "orders": 69,
+    "avgCheck": 494,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-23",
+    "revenue": 69740,
+    "orders": 138,
+    "avgCheck": 505,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-24",
+    "revenue": 130140,
+    "orders": 255,
+    "avgCheck": 510,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-25",
+    "revenue": 179220,
+    "orders": 335,
+    "avgCheck": 535,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-26",
+    "revenue": 35690,
+    "orders": 64,
+    "avgCheck": 558,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-27",
+    "revenue": 66130,
+    "orders": 131,
+    "avgCheck": 505,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-28",
+    "revenue": 59600,
+    "orders": 109,
+    "avgCheck": 547,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-29",
+    "revenue": 38750,
+    "orders": 71,
+    "avgCheck": 546,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-30",
+    "revenue": 47080,
+    "orders": 90,
+    "avgCheck": 523,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-01-31",
+    "revenue": 108680,
+    "orders": 198,
+    "avgCheck": 549,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-01",
+    "revenue": 108530,
+    "orders": 211,
+    "avgCheck": 514,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-02",
+    "revenue": 21090,
+    "orders": 41,
+    "avgCheck": 514,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-03",
+    "revenue": 18060,
+    "orders": 37,
+    "avgCheck": 488,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-04",
+    "revenue": 36450,
+    "orders": 72,
+    "avgCheck": 506,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-05",
+    "revenue": 29760,
+    "orders": 59,
+    "avgCheck": 504,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-06",
+    "revenue": 57450,
+    "orders": 125,
+    "avgCheck": 460,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-07",
+    "revenue": 279960,
+    "orders": 516,
+    "avgCheck": 543,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-08",
+    "revenue": 277600,
+    "orders": 505,
+    "avgCheck": 550,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-09",
+    "revenue": 86720,
+    "orders": 171,
+    "avgCheck": 507,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-10",
+    "revenue": 70460,
+    "orders": 147,
+    "avgCheck": 479,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-11",
+    "revenue": 78230,
+    "orders": 162,
+    "avgCheck": 483,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-12",
+    "revenue": 131690,
+    "orders": 264,
+    "avgCheck": 499,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-13",
+    "revenue": 107590,
+    "orders": 202,
+    "avgCheck": 533,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-14",
+    "revenue": 223350,
+    "orders": 409,
+    "avgCheck": 546,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-15",
+    "revenue": 232200,
+    "orders": 442,
+    "avgCheck": 525,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-16",
+    "revenue": 47200,
+    "orders": 98,
+    "avgCheck": 482,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-17",
+    "revenue": 66300,
+    "orders": 135,
+    "avgCheck": 491,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-18",
+    "revenue": 72580,
+    "orders": 156,
+    "avgCheck": 465,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-19",
+    "revenue": 100700,
+    "orders": 195,
+    "avgCheck": 516,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-20",
+    "revenue": 82290,
+    "orders": 152,
+    "avgCheck": 541,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-21",
+    "revenue": 286110,
+    "orders": 527,
+    "avgCheck": 543,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-22",
+    "revenue": 355520,
+    "orders": 620,
+    "avgCheck": 573,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-23",
+    "revenue": 388480,
+    "orders": 629,
+    "avgCheck": 618,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-24",
+    "revenue": 103050,
+    "orders": 214,
+    "avgCheck": 482,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-25",
+    "revenue": 98200,
+    "orders": 202,
+    "avgCheck": 486,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-26",
+    "revenue": 87250,
+    "orders": 188,
+    "avgCheck": 464,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-27",
+    "revenue": 120300,
+    "orders": 219,
+    "avgCheck": 549,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-02-28",
+    "revenue": 190060,
+    "orders": 354,
+    "avgCheck": 537,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-01",
+    "revenue": 185240,
+    "orders": 341,
+    "avgCheck": 543,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-02",
+    "revenue": 58550,
+    "orders": 124,
+    "avgCheck": 472,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-03",
+    "revenue": 56450,
+    "orders": 118,
+    "avgCheck": 478,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-04",
+    "revenue": 48400,
+    "orders": 111,
+    "avgCheck": 436,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-05",
+    "revenue": 55850,
+    "orders": 126,
+    "avgCheck": 443,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-06",
+    "revenue": 81630,
+    "orders": 154,
+    "avgCheck": 530,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-07",
+    "revenue": 263950,
+    "orders": 495,
+    "avgCheck": 533,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-08",
+    "revenue": 289590,
+    "orders": 542,
+    "avgCheck": 534,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-09",
+    "revenue": 177410,
+    "orders": 349,
+    "avgCheck": 508,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-10",
+    "revenue": 50750,
+    "orders": 111,
+    "avgCheck": 457,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-11",
+    "revenue": 71750,
+    "orders": 164,
+    "avgCheck": 438,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-12",
+    "revenue": 47050,
+    "orders": 112,
+    "avgCheck": 420,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-13",
+    "revenue": 49660,
+    "orders": 95,
+    "avgCheck": 523,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-14",
+    "revenue": 118100,
+    "orders": 235,
+    "avgCheck": 503,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-15",
+    "revenue": 85760,
+    "orders": 158,
+    "avgCheck": 543,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-16",
+    "revenue": 13900,
+    "orders": 37,
+    "avgCheck": 376,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-17",
+    "revenue": 19150,
+    "orders": 49,
+    "avgCheck": 391,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-18",
+    "revenue": 31800,
+    "orders": 74,
+    "avgCheck": 430,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-19",
+    "revenue": 11550,
+    "orders": 26,
+    "avgCheck": 444,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-20",
+    "revenue": 29180,
+    "orders": 60,
+    "avgCheck": 486,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-21",
+    "revenue": 60670,
+    "orders": 135,
+    "avgCheck": 449,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-22",
+    "revenue": 65000,
+    "orders": 132,
+    "avgCheck": 492,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-23",
+    "revenue": 16100,
+    "orders": 34,
+    "avgCheck": 474,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-24",
+    "revenue": 6200,
+    "orders": 13,
+    "avgCheck": 477,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-25",
+    "revenue": 3700,
+    "orders": 8,
+    "avgCheck": 463,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-03-26",
+    "revenue": 5000,
+    "orders": 10,
+    "avgCheck": 500,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-04-20",
+    "revenue": 3150,
+    "orders": 6,
+    "avgCheck": 525,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-04-21",
+    "revenue": 9500,
+    "orders": 26,
+    "avgCheck": 365,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-04-22",
+    "revenue": 13950,
+    "orders": 38,
+    "avgCheck": 367,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-04-23",
+    "revenue": 5600,
+    "orders": 16,
+    "avgCheck": 350,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-04-24",
+    "revenue": 4820,
+    "orders": 10,
+    "avgCheck": 482,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-04-25",
+    "revenue": 28300,
+    "orders": 63,
+    "avgCheck": 449,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-04-26",
+    "revenue": 12250,
+    "orders": 30,
+    "avgCheck": 408,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-04-28",
+    "revenue": 2900,
+    "orders": 7,
+    "avgCheck": 414,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-04-29",
+    "revenue": 2700,
+    "orders": 8,
+    "avgCheck": 338,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-04-30",
+    "revenue": 10150,
+    "orders": 21,
+    "avgCheck": 483,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-01",
+    "revenue": 33900,
+    "orders": 71,
+    "avgCheck": 477,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-02",
+    "revenue": 110900,
+    "orders": 230,
+    "avgCheck": 482,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-03",
+    "revenue": 73200,
+    "orders": 151,
+    "avgCheck": 485,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-04",
+    "revenue": 29100,
+    "orders": 68,
+    "avgCheck": 428,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-05",
+    "revenue": 28300,
+    "orders": 67,
+    "avgCheck": 422,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-06",
+    "revenue": 23800,
+    "orders": 54,
+    "avgCheck": 441,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-07",
+    "revenue": 26800,
+    "orders": 57,
+    "avgCheck": 470,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-08",
+    "revenue": 9850,
+    "orders": 25,
+    "avgCheck": 394,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-09",
+    "revenue": 111250,
+    "orders": 255,
+    "avgCheck": 436,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-10",
+    "revenue": 96900,
+    "orders": 207,
+    "avgCheck": 468,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-11",
+    "revenue": 73300,
+    "orders": 167,
+    "avgCheck": 439,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-12",
+    "revenue": 30800,
+    "orders": 70,
+    "avgCheck": 440,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-13",
+    "revenue": 39400,
+    "orders": 96,
+    "avgCheck": 410,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-14",
+    "revenue": 48890,
+    "orders": 104,
+    "avgCheck": 470,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-15",
+    "revenue": 40410,
+    "orders": 87,
+    "avgCheck": 464,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-16",
+    "revenue": 109260,
+    "orders": 233,
+    "avgCheck": 469,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-17",
+    "revenue": 86000,
+    "orders": 194,
+    "avgCheck": 443,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-18",
+    "revenue": 39220,
+    "orders": 93,
+    "avgCheck": 422,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-19",
+    "revenue": 32350,
+    "orders": 77,
+    "avgCheck": 420,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-20",
+    "revenue": 41000,
+    "orders": 99,
+    "avgCheck": 414,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-21",
+    "revenue": 35400,
+    "orders": 68,
+    "avgCheck": 521,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-22",
+    "revenue": 54650,
+    "orders": 105,
+    "avgCheck": 520,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-23",
+    "revenue": 75770,
+    "orders": 145,
+    "avgCheck": 523,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-24",
+    "revenue": 75280,
+    "orders": 141,
+    "avgCheck": 534,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-25",
+    "revenue": 24600,
+    "orders": 58,
+    "avgCheck": 424,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-26",
+    "revenue": 26350,
+    "orders": 60,
+    "avgCheck": 439,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-27",
+    "revenue": 37250,
+    "orders": 93,
+    "avgCheck": 401,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-28",
+    "revenue": 42200,
+    "orders": 97,
+    "avgCheck": 435,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-29",
+    "revenue": 25560,
+    "orders": 58,
+    "avgCheck": 441,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-30",
+    "revenue": 98010,
+    "orders": 210,
+    "avgCheck": 467,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-05-31",
+    "revenue": 91910,
+    "orders": 213,
+    "avgCheck": 432,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-06-01",
+    "revenue": 57800,
+    "orders": 144,
+    "avgCheck": 401,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-06-02",
+    "revenue": 46190,
+    "orders": 131,
+    "avgCheck": 353,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-06-03",
+    "revenue": 68420,
+    "orders": 183,
+    "avgCheck": 374,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-06-04",
+    "revenue": 45105,
+    "orders": 130,
+    "avgCheck": 347,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-06-05",
+    "revenue": 61155,
+    "orders": 160,
+    "avgCheck": 382,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-06-06",
+    "revenue": 110810,
+    "orders": 268,
+    "avgCheck": 413,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-06-07",
+    "revenue": 67845,
+    "orders": 183,
+    "avgCheck": 371,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-06-08",
+    "revenue": 46380,
+    "orders": 126,
+    "avgCheck": 368,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-06-09",
+    "revenue": 45510,
+    "orders": 109,
+    "avgCheck": 418,
+    "activeObjects": null,
+    "totalObjects": null
+  },
+  {
+    "date": "2026-06-10",
+    "revenue": 51100,
+    "orders": 123,
+    "avgCheck": 415,
+    "activeObjects": null,
+    "totalObjects": null
   },
   {
     "date": "2026-06-11",
-    "revenue": 11930,
-    "orders": 31,
-    "avgCheck": 385,
-    "activeObjects": 18,
+    "revenue": 54800,
+    "orders": 145,
+    "avgCheck": 378,
+    "activeObjects": null,
     "totalObjects": null
   },
   {
     "date": "2026-06-12",
-    "revenue": 4550,
-    "orders": 10,
-    "avgCheck": 455,
-    "activeObjects": 6,
+    "revenue": 133850,
+    "orders": 291,
+    "avgCheck": 460,
+    "activeObjects": null,
     "totalObjects": null
   },
   {
     "date": "2026-06-13",
-    "revenue": 3250,
-    "orders": 8,
-    "avgCheck": 406,
-    "activeObjects": 4,
+    "revenue": 59130,
+    "orders": 121,
+    "avgCheck": 489,
+    "activeObjects": null,
     "totalObjects": null
   }
 ]
