@@ -28,11 +28,11 @@
   },
   {
     "date": "2026-06-13",
-    "max_available": 198,
+    "max_available": 200,
     "min_available": 196,
-    "peak_rented": 2,
-    "offline": 1794,
-    "total": 1990,
-    "scans": 2
+    "peak_rented": 4,
+    "offline": 1795,
+    "total": 1995,
+    "scans": 3
   }
 ]
