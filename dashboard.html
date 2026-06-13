@@ -1699,20 +1699,23 @@
 
     async function loadGrafanaAnalytics() {
       try {
-        const [revRows, histRes] = await Promise.all([
+        const [revRows, activeRows, histRes] = await Promise.all([
           grafanaQuery(`SELECT DATE_FORMAT(updated_at, '%Y-%m-%d') as date, ROUND(SUM(sum_card)/100) as revenue, COUNT(*) as orders, ROUND(AVG(sum_card)/100) as avg_check FROM bills WHERE status='PAID' GROUP BY DATE_FORMAT(updated_at, '%Y-%m-%d') ORDER BY date`),
+          grafanaQuery(`SELECT DATE_FORMAT(start_time, '%Y-%m-%d') as date, COUNT(DISTINCT car_id) as active_objects FROM orders WHERE status='FINISHED' GROUP BY DATE_FORMAT(start_time, '%Y-%m-%d') ORDER BY date`),
           fetch('./data/history.json?t=' + Date.now()).then(r => r.ok ? r.json() : []),
         ]);
 
         const histMap = {};
         histRes.forEach(r => { histMap[r.date] = r; });
+        const activeMap = {};
+        activeRows.forEach(r => { activeMap[r.date] = r.active_objects; });
 
         raAllData = revRows.map(r => ({
           date: r.date,
           revenue: r.revenue ?? 0,
           orders: r.orders ?? null,
           avgCheck: r.avg_check ?? null,
-          activeObjects: histMap[r.date]?.active_objects ?? null,
+          activeObjects: activeMap[r.date] ?? histMap[r.date]?.active_objects ?? null,
           totalObjects: histMap[r.date]?.max_available ?? null,
         }));
         raAllData.sort((a, b) => a.date.localeCompare(b.date));
@@ -1772,9 +1775,9 @@
     // --- Tariff price chart ---
     const TP_SLOTS = [
       { key: 'Детский|5 мин',  label: 'Детский 5 мин',  min: 5,  color: '#60a5fa' },
-      { key: 'Детский|10 мин', label: 'Детский 10 мин', min: 10, color: '#93c5fd' },
+      { key: 'Детский|10 мин', label: 'Детский 10 мин', min: 10, color: '#a78bfa' },
       { key: 'Быстрый|5 мин',  label: 'Быстрый 5 мин',  min: 5,  color: '#4ade80' },
-      { key: 'Быстрый|10 мин', label: 'Быстрый 10 мин', min: 10, color: '#86efac' },
+      { key: 'Быстрый|10 мин', label: 'Быстрый 10 мин', min: 10, color: '#fb923c' },
     ];
     const tpCharts = {};
 
@@ -1811,26 +1814,19 @@
     }
 
     async function loadTariffPriceChart() {
-      const ids = COMPANY_IDS.join(',');
       try {
         const [tariffRes, factRows] = await Promise.all([
           fetch('./data/tariff-history.json?t=' + Date.now()).then(r => r.ok ? r.json() : []),
-          grafanaQuery(`SELECT DATE(b.updated_at) as date, AVG(b.sum_card)/100 as avg_price, AVG(o.tariff_duration) as avg_min, o.tariff_type as tariff_type FROM bills b JOIN orders o ON b.order_id = o.id WHERE b.company_id IN (${ids}) AND b.status='PAID' GROUP BY date, o.tariff_type ORDER BY date`).catch(() => []),
+          grafanaQuery(`SELECT DATE_FORMAT(o.start_time,'%Y-%m-%d') as date, CASE WHEN a.description LIKE '%Детский%' AND a.description LIKE '%5 мин%' THEN 'Детский|5 мин' WHEN a.description LIKE '%Детский%' AND a.description LIKE '%10 мин%' THEN 'Детский|10 мин' WHEN a.description LIKE '%Быстрый%' AND a.description LIKE '%5 мин%' THEN 'Быстрый|5 мин' WHEN a.description LIKE '%Быстрый%' AND a.description LIKE '%10 мин%' THEN 'Быстрый|10 мин' END as slot, CASE WHEN a.description LIKE '%5 мин%' THEN 5 ELSE 10 END as slot_min, SUM(o.total_cost) as total_kopecks, COUNT(*) as cnt FROM orders o JOIN abonements a ON o.abonement_id=a.id WHERE o.status='FINISHED' AND (a.description LIKE '%Детский%' OR a.description LIKE '%Быстрый%') AND (a.description LIKE '%5 мин%' OR a.description LIKE '%10 мин%') GROUP BY date,slot,slot_min ORDER BY date,slot`).catch(() => []),
         ]);
 
-        const filtered = tariffRes.filter(r => {
-          const d = r.date;
-          if (raActivePeriod && raActivePeriod > 0) {
-            const cutoff = new Date(Date.now() + 3*60*60*1000);
-            cutoff.setDate(cutoff.getDate() - raActivePeriod);
-            return d >= cutoff.toISOString().slice(0,10);
-          }
-          return true;
-        });
-
+        const cutoff = raActivePeriod > 0
+          ? (() => { const d = new Date(Date.now()+3*60*60*1000); d.setDate(d.getDate()-raActivePeriod); return d.toISOString().slice(0,10); })()
+          : null;
+        const filtered = tariffRes.filter(r => !cutoff || r.date >= cutoff);
         const labels = filtered.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
 
-        // Предложение: weighted avg price/min per slot per day
+        // Предложение: weighted avg price/min per slot per day (from QR scan)
         const offerDatasets = TP_SLOTS.map(slot => ({
           label: slot.label, color: slot.color,
           data: filtered.map(r => {
@@ -1844,27 +1840,27 @@
             return count ? +(total / count / slot.min).toFixed(1) : null;
           }),
         }));
-
         tpBuildChart('tpChartOffer', labels, offerDatasets);
 
-        // Факт: из Grafana, если есть данные
+        // Факт: из Grafana — взвешенная средняя цена/мин по реальным заказам
         if (factRows.length) {
+          // Build map: date → slot → { total_kopecks, cnt, slot_min }
           const factMap = {};
           factRows.forEach(r => {
+            if (!r.slot) return;
             if (!factMap[r.date]) factMap[r.date] = {};
-            factMap[r.date][r.tariff_type] = r;
+            factMap[r.date][r.slot] = { total: r.total_kopecks, cnt: r.cnt, min: r.slot_min };
           });
           const factDatasets = TP_SLOTS.map(slot => ({
             label: slot.label, color: slot.color,
             data: filtered.map(r => {
-              const row = factMap[r.date]?.[slot.label];
-              if (!row || !row.avg_min) return null;
-              return +((row.avg_price / row.avg_min) || 0).toFixed(1) || null;
+              const d = factMap[r.date]?.[slot.key];
+              if (!d || !d.cnt) return null;
+              return +((d.total / d.cnt / 100) / d.min).toFixed(1);
             }),
           }));
           tpBuildChart('tpChartFact', labels, factDatasets);
         } else {
-          // Факт = предложение (цены фиксированы)
           tpBuildChart('tpChartFact', labels, offerDatasets);
         }
 
