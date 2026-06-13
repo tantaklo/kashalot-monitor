@@ -737,6 +737,11 @@
           <div class="rev-chart-title">Доля выборов тарифа, % от заказов · <span style="color:#6b7280;font-size:11px">сигнал: если цена растёт, а доля падает — тариф перегрет</span></div>
           <div class="rev-chart-wrap"><canvas id="tpChartShare"></canvas></div>
         </div>
+        <div class="rev-chart-block">
+          <div class="rev-chart-title" style="margin-bottom:12px">Доступность vs спрос по тарифам · <span style="color:#6b7280;font-size:11px">device-дни в предложении vs реальные поездки</span></div>
+          <div id="tpConvInsights" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
+          <div class="rev-chart-wrap"><canvas id="tpChartConv"></canvas></div>
+        </div>
       </div>
     </div>
 
@@ -1981,6 +1986,88 @@
           });
         }
 
+        // Доступность vs спрос: device-дни в предложении vs поездки за период
+        {
+          // Supply: sum device counts per slot across filtered days
+          const supplyBySlot = {};
+          filtered.forEach(r => {
+            TP_SLOTS.forEach(slot => {
+              const slotData = r.slots?.[slot.key];
+              if (!slotData) return;
+              let cnt = 0;
+              Object.entries(slotData).forEach(([, c]) => { cnt += Number(c) || 0; });
+              supplyBySlot[slot.key] = (supplyBySlot[slot.key] ?? 0) + cnt;
+            });
+          });
+
+          // Demand: sum orders per slot across filtered days (from factRows)
+          const demandBySlot = {};
+          factRows.forEach(r => {
+            if (!r.slot) return;
+            if (!cutoff || r.date >= cutoff) {
+              demandBySlot[r.slot] = (demandBySlot[r.slot] ?? 0) + Number(r.cnt);
+            }
+          });
+
+          const slotLabels = TP_SLOTS.map(s => s.label);
+          const supplyVals  = TP_SLOTS.map(s => supplyBySlot[s.key] ?? 0);
+          const demandVals  = TP_SLOTS.map(s => demandBySlot[s.key] ?? 0);
+          const colors      = TP_SLOTS.map(s => s.color);
+
+          // Insights: conversion rate per slot
+          const insightsEl = document.getElementById('tpConvInsights');
+          insightsEl.innerHTML = TP_SLOTS.map((slot, i) => {
+            const sup = supplyVals[i], dem = demandVals[i];
+            const conv = sup > 0 ? (dem / sup * 100).toFixed(1) : '—';
+            const convNum = sup > 0 ? dem / sup * 100 : null;
+            // Compare to avg conversion
+            const avgConv = supplyVals.reduce((s,v)=>s+v,0) > 0
+              ? demandVals.reduce((s,v)=>s+v,0) / supplyVals.reduce((s,v)=>s+v,0) * 100 : null;
+            let signal = '🟡', hint = '';
+            if (convNum !== null && avgConv !== null) {
+              if (convNum > avgConv * 1.3) { signal = '🟢'; hint = 'выше среднего — тариф востребован'; }
+              else if (convNum < avgConv * 0.7) { signal = '🔴'; hint = 'ниже среднего — возможно цена завышена'; }
+              else { hint = 'в норме'; }
+            }
+            return `<div style="flex:1;min-width:140px;background:#111118;border:1px solid #2d2d3d;border-radius:10px;padding:10px 12px">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                <span style="width:8px;height:8px;border-radius:50%;background:${slot.color};display:inline-block"></span>
+                <span style="font-size:12px;font-weight:600;color:#e2e8f0">${slot.label}</span>
+                <span style="margin-left:auto;font-size:11px">${signal}</span>
+              </div>
+              <div style="font-size:22px;font-weight:700;color:${slot.color}">${conv}%</div>
+              <div style="font-size:11px;color:#6b7280;margin-top:2px">конверсия · ${hint}</div>
+              <div style="font-size:11px;color:#4b5563;margin-top:4px">${dem.toLocaleString('ru-RU')} поездок / ${sup.toLocaleString('ru-RU')} device-дней</div>
+            </div>`;
+          }).join('');
+
+          // Bar chart
+          const canvasEl = document.getElementById('tpChartConv');
+          const existing = Chart.getChart(canvasEl); if (existing) existing.destroy();
+          new Chart(canvasEl.getContext('2d'), {
+            type: 'bar',
+            data: {
+              labels: slotLabels,
+              datasets: [
+                { label: 'Доступность (device-дни)', data: supplyVals, backgroundColor: colors.map(c => c + '55'), borderColor: colors, borderWidth: 1.5, borderRadius: 4 },
+                { label: 'Поездки', data: demandVals, backgroundColor: colors.map(c => c + 'cc'), borderColor: colors, borderWidth: 1.5, borderRadius: 4 },
+              ]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: {
+                legend: { display: true, labels: { color: '#6b7280', boxWidth: 12, padding: 14, font: { size: 11 } } },
+                tooltip: { backgroundColor: '#1a1a24', borderColor: '#2d2d3d', borderWidth: 1, titleColor: '#94a3b8', bodyColor: '#e2e8f0' },
+              },
+              scales: {
+                x: { grid: { color: '#1a1a24' }, ticks: { color: '#4b5563' } },
+                y: { grid: { color: '#1e1e2a' }, beginAtZero: true, ticks: { color: '#4b5563' } },
+              }
+            }
+          });
+        }
+
         if (filtered.length) {
           const last = filtered[filtered.length - 1];
           document.getElementById('tariffPriceUpdated').textContent = 'из тарифной истории · ' + last.date;
@@ -1995,7 +2082,7 @@
         const rows = await grafanaQuery(`
           SELECT e1.order_id,
             SUM(TIMESTAMPDIFF(SECOND, e1.time, e2.time)) as out_sec,
-            o.status,
+            COALESCE(b.status, o.status) as bill_status,
             c.name as company,
             TIMESTAMPDIFF(SECOND, o.start_time, o.finish_time) as total_sec
           FROM order_events e1
@@ -2003,9 +2090,10 @@
             AND e2.id=(SELECT MIN(id) FROM order_events WHERE order_id=e1.order_id AND id>e1.id AND reason='GEO')
           JOIN orders o ON e1.order_id=o.id
           JOIN companies c ON o.company_id=c.id
+          LEFT JOIN bills b ON b.order_id=o.id
           WHERE e1.reason='GEO' AND e1.geo_id=1
             AND DATE(o.start_time)='${today}'
-          GROUP BY e1.order_id, o.status, c.name, o.start_time, o.finish_time
+          GROUP BY e1.order_id, bill_status, c.name, o.start_time, o.finish_time
           HAVING out_sec >= 10
           ORDER BY out_sec DESC
         `);
@@ -2024,9 +2112,11 @@
         sub.textContent = `Сегодня (${today}) — ${rows.length} заказ${rows.length===1?'':rows.length<5?'а':'ов'} с выездом за зону · данные на ${ts} (нажмите ⟳ для обновления)`;
 
         const statusLabel = s => {
-          if (s === 'FINISHED') return ['Оплачен', '#4ade80'];
-          if (s === 'CANCELED') return ['Отменён', '#f87171'];
-          return [s, '#94a3b8'];
+          if (s === 'PAID')      return ['Оплачен',  '#4ade80'];
+          if (s === 'CANCELLED') return ['Отменён',  '#f87171'];
+          if (s === 'FINISHED')  return ['Завершён', '#94a3b8'];
+          if (s === 'CANCELED')  return ['Отменён',  '#f87171'];
+          return [s ?? '—', '#6b7280'];
         };
 
         const html = `
@@ -2046,7 +2136,7 @@
                 const pct = r.total_sec > 0 ? Math.round(r.out_sec / r.total_sec * 100) : 0;
                 const pctColor = pct >= 50 ? '#f87171' : pct >= 20 ? '#fbbf24' : '#94a3b8';
                 const adminUrl = `https://ecoskat.bumerang.tech/admin/order/${r.order_id}`;
-                const [sLabel, sColor] = statusLabel(r.status);
+                const [sLabel, sColor] = statusLabel(r.bill_status);
                 return `<tr style="border-bottom:1px solid #1e1e2a;${i%2===1?'background:#111118':''}">
                   <td style="padding:8px 12px"><a href="${adminUrl}" target="_blank" style="color:#60a5fa;text-decoration:none;font-weight:600">#${r.order_id}</a></td>
                   <td style="padding:8px 12px;font-size:12px;font-weight:600;color:${sColor}">${sLabel}</td>
