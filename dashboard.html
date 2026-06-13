@@ -592,12 +592,12 @@
       <div class="chart-header">
         <div>
           <div class="chart-title">Динамика доступности</div>
-          <div class="chart-sub">Доступные к аренде устройства по дням</div>
+          <div class="chart-sub">Доступные к аренде · всего в парке · % доступности</div>
         </div>
       </div>
       <div class="chart-wrap">
         <div class="chart-empty" id="chartEmpty">Данные появятся после первого автоматического сканирования</div>
-        <canvas id="chartCanvas" style="display:none" height="160"></canvas>
+        <canvas id="chartCanvas" style="display:none;height:200px"></canvas>
       </div>
     </div>
 
@@ -931,6 +931,7 @@
     }
 
     // --- Chart ---
+    let availChartInst = null;
     function drawChart(history) {
       const canvas = document.getElementById('chartCanvas');
       const empty  = document.getElementById('chartEmpty');
@@ -939,89 +940,69 @@
       empty.style.display = 'none';
       canvas.style.display = 'block';
 
-      const dpr = window.devicePixelRatio || 1;
-      const W = canvas.parentElement.offsetWidth;
-      const H = 160;
-      canvas.width  = W * dpr;
-      canvas.height = H * dpr;
-      canvas.style.width  = W + 'px';
-      canvas.style.height = H + 'px';
-
-      const ctx = canvas.getContext('2d');
-      ctx.scale(dpr, dpr);
-
-      const pad = { top: 16, right: 16, bottom: 36, left: 40 };
-      const cw = W - pad.left - pad.right;
-      const ch = H - pad.top - pad.bottom;
-
-      const vals = history.map(r => r.max_available ?? r.available);
-      const maxV = Math.max(...vals, 1);
-      const minV = Math.min(...vals);
-      const range = maxV - minV || 1;
-
-      const xOf = i => pad.left + (i / (history.length - 1)) * cw;
-      const yOf = v => pad.top + ch - ((v - minV) / range) * ch;
-
-      // Grid lines
-      ctx.strokeStyle = '#2d2d3d';
-      ctx.lineWidth = 1;
-      [0, 0.5, 1].forEach(t => {
-        const y = pad.top + ch * (1 - t);
-        ctx.beginPath();
-        ctx.moveTo(pad.left, y);
-        ctx.lineTo(pad.left + cw, y);
-        ctx.stroke();
-        const label = Math.round(minV + range * t);
-        ctx.fillStyle = '#4b5563';
-        ctx.font = '11px system-ui';
-        ctx.textAlign = 'right';
-        ctx.fillText(label, pad.left - 6, y + 4);
+      const labels   = history.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
+      const avail    = history.map(r => r.max_available ?? r.available ?? null);
+      const total    = history.map(r => r.total ?? null);
+      const pct      = history.map((r, i) => {
+        const a = avail[i], t = total[i];
+        return (a != null && t) ? +(a / t * 100).toFixed(1) : null;
       });
 
-      // X labels — show up to 7 dates evenly
-      const step = Math.max(1, Math.floor(history.length / 7));
-      ctx.fillStyle = '#4b5563';
-      ctx.font = '11px system-ui';
-      ctx.textAlign = 'center';
-      history.forEach((r, i) => {
-        if (i % step === 0 || i === history.length - 1) {
-          const parts = r.date.split('-');
-          ctx.fillText(`${parts[2]}.${parts[1]}`, xOf(i), H - 8);
-        }
-      });
+      const ptR = history.length < 15 ? 4 : 2;
 
-      // Area fill
-      const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch);
-      grad.addColorStop(0, '#3b82f630');
-      grad.addColorStop(1, '#3b82f600');
-      ctx.beginPath();
-      history.forEach((r, i) => {
-        const v = r.max_available ?? r.available;
-        i === 0 ? ctx.moveTo(xOf(i), yOf(v)) : ctx.lineTo(xOf(i), yOf(v));
-      });
-      ctx.lineTo(xOf(history.length - 1), pad.top + ch);
-      ctx.lineTo(xOf(0), pad.top + ch);
-      ctx.closePath();
-      ctx.fillStyle = grad;
-      ctx.fill();
+      if (availChartInst) { availChartInst.destroy(); availChartInst = null; }
 
-      // Line
-      ctx.beginPath();
-      ctx.strokeStyle = '#3b82f6';
-      ctx.lineWidth = 2;
-      ctx.lineJoin = 'round';
-      history.forEach((r, i) => {
-        const v = r.max_available ?? r.available;
-        i === 0 ? ctx.moveTo(xOf(i), yOf(v)) : ctx.lineTo(xOf(i), yOf(v));
+      availChartInst = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Доступно', data: avail,
+              borderColor: '#3b82f6', backgroundColor: '#3b82f620',
+              borderWidth: 2, pointRadius: ptR, pointBackgroundColor: '#60a5fa',
+              fill: true, tension: 0.35, spanGaps: true, yAxisID: 'y',
+            },
+            {
+              label: 'Всего КШ', data: total,
+              borderColor: '#6b7280', backgroundColor: 'transparent',
+              borderWidth: 1.5, borderDash: [5,3],
+              pointRadius: ptR, pointBackgroundColor: '#6b7280',
+              fill: false, tension: 0.35, spanGaps: true, yAxisID: 'y',
+            },
+            {
+              label: 'Доступность, %', data: pct,
+              borderColor: '#f59e0b', backgroundColor: 'transparent',
+              borderWidth: 2, borderDash: [4,3],
+              pointRadius: ptR, pointBackgroundColor: '#f59e0b',
+              fill: false, tension: 0.35, spanGaps: true, yAxisID: 'y2',
+            },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, labels: { color: '#6b7280', boxWidth: 12, padding: 14, font: { size: 11 } } },
+            tooltip: {
+              backgroundColor: '#1a1a24', borderColor: '#2d2d3d', borderWidth: 1,
+              titleColor: '#94a3b8', bodyColor: '#e2e8f0',
+              callbacks: {
+                label: ctx => {
+                  if (ctx.datasetIndex === 2) return ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y + '%' : '—'}`;
+                  return ` ${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toLocaleString('ru-RU') : '—'}`;
+                }
+              }
+            },
+          },
+          scales: {
+            x:  { grid: { color: '#1a1a24' }, ticks: { maxTicksLimit: 8, maxRotation: 0, color: '#4b5563', font: { size: 11 } } },
+            y:  { grid: { color: '#1e1e2a' }, position: 'left',  beginAtZero: false, ticks: { color: '#4b5563', font: { size: 11 } } },
+            y2: { grid: { display: false },   position: 'right', beginAtZero: true, max: 100,
+                  ticks: { color: '#f59e0b', font: { size: 11 }, callback: v => v + '%' } },
+          },
+        },
       });
-      ctx.stroke();
-
-      // Last dot
-      const last = history[history.length - 1];
-      ctx.beginPath();
-      ctx.arc(xOf(history.length - 1), yOf(last.max_available ?? last.available), 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#60a5fa';
-      ctx.fill();
     }
 
     // --- Load history and init chart ---
