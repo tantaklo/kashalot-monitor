@@ -1686,10 +1686,9 @@
     }
 
     async function loadGrafanaAnalytics() {
-      const ids = COMPANY_IDS.join(',');
       try {
         const [revRows, histRes] = await Promise.all([
-          grafanaQuery(`SELECT DATE_FORMAT(updated_at, '%Y-%m-%d') as date, ROUND(SUM(sum_card)/100) as revenue, COUNT(*) as orders, ROUND(AVG(sum_card)/100) as avg_check FROM bills WHERE company_id IN (${ids}) AND status='PAID' GROUP BY DATE_FORMAT(updated_at, '%Y-%m-%d') ORDER BY date`),
+          grafanaQuery(`SELECT DATE_FORMAT(updated_at, '%Y-%m-%d') as date, ROUND(SUM(sum_card)/100) as revenue, COUNT(*) as orders, ROUND(AVG(sum_card)/100) as avg_check FROM bills WHERE status='PAID' GROUP BY DATE_FORMAT(updated_at, '%Y-%m-%d') ORDER BY date`),
           fetch('./data/history.json?t=' + Date.now()).then(r => r.ok ? r.json() : []),
         ]);
 
@@ -1726,12 +1725,11 @@
 
     // --- Live KPI from Grafana ---
     async function loadLiveKPI() {
-      const ids = COMPANY_IDS.join(',');
       const today = new Date(Date.now() + 3*60*60*1000).toISOString().slice(0,10);
       try {
         const [rev, fleet] = await Promise.all([
-          grafanaQuery(`SELECT SUM(sum_card)/100 as revenue, COUNT(*) as orders, ROUND(AVG(sum_card)/100) as avg_check FROM bills WHERE company_id IN (${ids}) AND status='PAID' AND DATE(updated_at)='${today}'`),
-          grafanaQuery(`SELECT COUNT(DISTINCT car_id) as active FROM orders WHERE company_id IN (${ids}) AND DATE(start_time)='${today}'`),
+          grafanaQuery(`SELECT SUM(sum_card)/100 as revenue, COUNT(*) as orders, ROUND(AVG(sum_card)/100) as avg_check FROM bills WHERE status='PAID' AND DATE(updated_at)='${today}'`),
+          grafanaQuery(`SELECT COUNT(DISTINCT car_id) as active FROM orders WHERE DATE(start_time)='${today}'`),
         ]);
         const r = rev[0] || {};
         const active = fleet[0]?.active ?? null;
