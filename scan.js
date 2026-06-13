@@ -89,7 +89,8 @@ async function scan() {
   const peakRented = maxAvail - minAvail;
   const scans      = (prev?.scans ?? 0) + 1;
 
-  const entry = { date: today, max_available: maxAvail, min_available: minAvail, peak_rented: peakRented, offline, total, scans };
+  // Мержим в существующую запись, чтобы не затирать active_objects от scrape-grafana.js
+  const entry = { ...(prev || {}), date: today, max_available: maxAvail, min_available: minAvail, peak_rented: peakRented, offline, total, scans };
   if (idx >= 0) history[idx] = entry; else history.push(entry);
   history.sort((a, b) => a.date.localeCompare(b.date));
   saveJson('./data/history.json', history.slice(-365));
