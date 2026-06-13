@@ -727,6 +727,29 @@
       </div>
     </div>
 
+    <!-- Tariff demand structure -->
+    <div class="chart-card" id="tariffDemandSection">
+      <div class="chart-header collapsible" onclick="toggleSection('tariffDemandBody', 'tariffDemandArrow')">
+        <div>
+          <div class="chart-title">Структура спроса по тарифам <span class="toggle-arrow open" id="tariffDemandArrow">▼</span></div>
+          <div class="chart-sub" id="tariffDemandSub">доля в выручке vs. доля в штуках</div>
+        </div>
+      </div>
+      <div class="section-body open" id="tariffDemandBody">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+          <div>
+            <div class="rev-chart-title" style="text-align:center">Выручка, %</div>
+            <div style="max-width:260px;margin:0 auto"><canvas id="tdChartRevenue"></canvas></div>
+          </div>
+          <div>
+            <div class="rev-chart-title" style="text-align:center">Поездки, %</div>
+            <div style="max-width:260px;margin:0 auto"><canvas id="tdChartOrders"></canvas></div>
+          </div>
+        </div>
+        <div id="tdInsights" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
+      </div>
+    </div>
+
     <!-- Revenue analytics (CSV) -->
     <div class="chart-card" id="revenueSection">
       <div class="chart-header collapsible" onclick="toggleSection('revenueBody', 'revenueArrow')">
@@ -1946,10 +1969,116 @@
       }
     }
 
+    // --- Tariff demand structure (donut charts) ---
+    async function loadTariffDemand() {
+      try {
+        const rows = await grafanaQuery(`
+          SELECT
+            CASE
+              WHEN a.description LIKE '%Детский%' AND a.description LIKE '%5 мин%' THEN 'Детский 5 мин'
+              WHEN a.description LIKE '%Детский%' AND a.description LIKE '%10 мин%' THEN 'Детский 10 мин'
+              WHEN a.description LIKE '%Быстрый%' AND a.description LIKE '%5 мин%' THEN 'Быстрый 5 мин'
+              WHEN a.description LIKE '%Быстрый%' AND a.description LIKE '%10 мин%' THEN 'Быстрый 10 мин'
+            END as slot,
+            CASE WHEN a.description LIKE '%5 мин%' THEN 5 ELSE 10 END as slot_min,
+            SUM(o.total_cost) as total_kopecks,
+            COUNT(*) as cnt
+          FROM orders o
+          JOIN abonements a ON o.abonement_id=a.id
+          WHERE o.status='FINISHED'
+            AND (a.description LIKE '%Детский%' OR a.description LIKE '%Быстрый%')
+            AND (a.description LIKE '%5 мин%' OR a.description LIKE '%10 мин%')
+          GROUP BY slot, slot_min
+        `);
+
+        const validRows = rows.filter(r => r.slot);
+        if (!validRows.length) return;
+
+        const COLORS = {
+          'Детский 5 мин':  '#60a5fa',
+          'Детский 10 мин': '#a78bfa',
+          'Быстрый 5 мин':  '#4ade80',
+          'Быстрый 10 мин': '#fb923c',
+        };
+        const ORDER = ['Детский 5 мин','Детский 10 мин','Быстрый 5 мин','Быстрый 10 мин'];
+        const sorted = ORDER.map(name => validRows.find(r => r.slot === name)).filter(Boolean);
+
+        const totalRev = sorted.reduce((s,r) => s + r.total_kopecks, 0);
+        const totalCnt = sorted.reduce((s,r) => s + r.cnt, 0);
+
+        const labels  = sorted.map(r => r.slot);
+        const revPct  = sorted.map(r => Math.round(r.total_kopecks / totalRev * 100));
+        const cntPct  = sorted.map(r => Math.round(r.cnt / totalCnt * 100));
+        const colors  = sorted.map(r => COLORS[r.slot] || '#94a3b8');
+
+        const donutOpts = (title) => ({
+          type: 'doughnut',
+          data: { labels, datasets: [{ data: title==='rev' ? revPct : cntPct, backgroundColor: colors, borderWidth: 2, borderColor: '#0f0f13', hoverOffset: 6 }] },
+          options: {
+            responsive: true,
+            cutout: '65%',
+            plugins: {
+              legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 12 }, padding: 12, boxWidth: 12 } },
+              tooltip: {
+                backgroundColor: '#1a1a24', borderColor: '#2d2d3d', borderWidth: 1,
+                titleColor: '#94a3b8', bodyColor: '#e2e8f0',
+                callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}%` }
+              }
+            }
+          }
+        });
+
+        ['tdChartRevenue','tdChartOrders'].forEach(id => {
+          const c = document.getElementById(id);
+          const ex = Chart.getChart(c); if (ex) ex.destroy();
+        });
+        new Chart(document.getElementById('tdChartRevenue'), donutOpts('rev'));
+        new Chart(document.getElementById('tdChartOrders'),  donutOpts('cnt'));
+
+        // Insights: compare revenue % vs order %
+        const avgRevPerOrder = sorted.map(r => Math.round(r.total_kopecks / r.cnt / 100));
+
+        const insights = sorted.map((r, i) => {
+          const rv = revPct[i], cv = cntPct[i];
+          const diff = rv - cv;
+          const color = COLORS[r.slot];
+          const avgRub = avgRevPerOrder[i];
+          let signal = '', advice = '';
+          if (diff >= 8) {
+            signal = '🟢';
+            advice = `Приносит непропорционально много выручки (+${diff}пп). Спрос устойчив — цену можно проверить на повышение.`;
+          } else if (diff <= -8) {
+            signal = '🔴';
+            advice = `Популярен по штукам, но даёт мало денег (${diff}пп). Возможно, цена занижена или слот "перегревает" очередь.`;
+          } else {
+            signal = '🟡';
+            advice = `Баланс в норме (${diff > 0 ? '+' : ''}${diff}пп). Резких изменений не требует.`;
+          }
+          return `<div style="background:#111118;border:1px solid #2d2d3d;border-radius:12px;padding:14px 16px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <span style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;display:inline-block"></span>
+              <span style="font-size:13px;font-weight:600;color:#e2e8f0">${r.slot}</span>
+              <span style="margin-left:auto;font-size:11px;color:#6b7280">${signal}</span>
+            </div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:6px">
+              Выручка <strong style="color:#e2e8f0">${rv}%</strong> · Поездки <strong style="color:#e2e8f0">${cv}%</strong> · Ср. чек <strong style="color:#e2e8f0">${avgRub} ₽</strong>
+            </div>
+            <div style="font-size:12px;color:#94a3b8;line-height:1.5">${advice}</div>
+          </div>`;
+        });
+
+        document.getElementById('tdInsights').innerHTML = insights.join('');
+        document.getElementById('tariffDemandSub').textContent =
+          `${totalCnt.toLocaleString('ru-RU')} поездок · ${Math.round(totalRev/100).toLocaleString('ru-RU')} ₽ выручки · все время`;
+
+      } catch(e) { console.error('loadTariffDemand:', e); }
+    }
+
     loadFleetSection();
     loadGrafanaAnalytics();
     loadLiveKPI();
     loadTariffPriceChart();
+    loadTariffDemand();
     loadOutOfZone();
 
     // --- Договоры ---
