@@ -1912,16 +1912,20 @@
       const today = new Date(Date.now() + 3*60*60*1000).toISOString().slice(0,10);
       try {
         const rows = await grafanaQuery(`
-          SELECT oe.order_id, SUM(oe.time_unit) as out_sec,
+          SELECT e1.order_id,
+            SUM(TIMESTAMPDIFF(SECOND, e1.time, e2.time)) as out_sec,
+            o.status,
             c.name as company,
             TIMESTAMPDIFF(SECOND, o.start_time, o.finish_time) as total_sec
-          FROM order_events oe
-          JOIN orders o ON oe.order_id=o.id
+          FROM order_events e1
+          JOIN order_events e2 ON e2.order_id=e1.order_id
+            AND e2.id=(SELECT MIN(id) FROM order_events WHERE order_id=e1.order_id AND id>e1.id AND reason='GEO')
+          JOIN orders o ON e1.order_id=o.id
           JOIN companies c ON o.company_id=c.id
-          WHERE oe.reason='GEO' AND oe.geo_id=1
+          WHERE e1.reason='GEO' AND e1.geo_id=1
             AND DATE(o.start_time)='${today}'
-          GROUP BY oe.order_id, c.name, o.start_time, o.finish_time
-          HAVING SUM(oe.time_unit) >= 10
+          GROUP BY e1.order_id, o.status, c.name, o.start_time, o.finish_time
+          HAVING out_sec >= 10
           ORDER BY out_sec DESC
         `);
 
@@ -1936,15 +1940,22 @@
 
         sub.textContent = `Сегодня (${today}) — ${rows.length} заказ${rows.length===1?'':rows.length<5?'а':'ов'} с выездом за зону`;
 
+        const statusLabel = s => {
+          if (s === 'FINISHED') return ['Оплачен', '#4ade80'];
+          if (s === 'CANCELED') return ['Отменён', '#f87171'];
+          return [s, '#94a3b8'];
+        };
+
         const html = `
           <table style="width:100%;border-collapse:collapse;font-size:13px">
             <thead>
               <tr style="border-bottom:1px solid #2d2d3d;color:#6b7280">
                 <th style="padding:8px 12px;text-align:left;white-space:nowrap">Заказ</th>
+                <th style="padding:8px 12px;text-align:left;white-space:nowrap">Статус</th>
                 <th style="padding:8px 12px;text-align:left">Компания</th>
                 <th style="padding:8px 12px;text-align:right;white-space:nowrap">За зоной</th>
                 <th style="padding:8px 12px;text-align:right;white-space:nowrap">Весь заказ</th>
-                <th style="padding:8px 12px;text-align:right;white-space:nowrap">% за зоной</th>
+                <th style="padding:8px 12px;text-align:right;white-space:nowrap">%</th>
               </tr>
             </thead>
             <tbody>
@@ -1952,8 +1963,10 @@
                 const pct = r.total_sec > 0 ? Math.round(r.out_sec / r.total_sec * 100) : 0;
                 const pctColor = pct >= 50 ? '#f87171' : pct >= 20 ? '#fbbf24' : '#94a3b8';
                 const adminUrl = `https://ecoskat.bumerang.tech/admin/order/${r.order_id}`;
+                const [sLabel, sColor] = statusLabel(r.status);
                 return `<tr style="border-bottom:1px solid #1e1e2a;${i%2===1?'background:#111118':''}">
                   <td style="padding:8px 12px"><a href="${adminUrl}" target="_blank" style="color:#60a5fa;text-decoration:none;font-weight:600">#${r.order_id}</a></td>
+                  <td style="padding:8px 12px;font-size:12px;font-weight:600;color:${sColor}">${sLabel}</td>
                   <td style="padding:8px 12px;color:#cbd5e1">${r.company}</td>
                   <td style="padding:8px 12px;text-align:right;color:#fbbf24;font-weight:600">${r.out_sec} с</td>
                   <td style="padding:8px 12px;text-align:right;color:#94a3b8">${r.total_sec} с</td>
