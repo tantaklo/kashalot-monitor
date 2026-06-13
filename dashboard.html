@@ -455,6 +455,13 @@
     }
     .period-tab.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
     .period-tab:hover:not(.active) { border-color: #4b5563; color: #94a3b8; }
+    .td-btn-period, .td-btn-dow {
+      font-size: 12px; padding: 4px 11px; border-radius: 7px; border: none;
+      background: transparent; color: #4b5563; cursor: pointer;
+      transition: all 0.15s; font-family: inherit;
+    }
+    .td-btn-period.active, .td-btn-dow.active { background: #3b82f6; color: #fff; }
+    .td-btn-period:hover:not(.active), .td-btn-dow:hover:not(.active) { color: #94a3b8; }
     .rev-chart-block { margin-bottom: 24px; }
     .rev-chart-title {
       font-size: 11px;
@@ -532,6 +539,8 @@
       <div class="nav-links">
         <a class="nav-link" href="index.html">Мониторинг</a>
         <a class="nav-link active" href="dashboard.html">Аналитика</a>
+        <span id="grafanaUpdatedAt" style="font-size:11px;color:#4b5563;margin-left:12px"></span>
+        <button onclick="refreshGrafanaData()" id="btnRefreshGrafana" style="margin-left:8px;padding:3px 10px;font-size:11px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#9ca3af;cursor:pointer;transition:color .2s" onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#9ca3af'">⟳ Обновить</button>
         <span class="last-update" id="lastUpdate" style="font-size:12px;color:#374151;margin-left:8px"></span>
       </div>
     </div>
@@ -724,6 +733,10 @@
           <div class="rev-chart-title">Факт: цена минуты из заказов, ₽/мин</div>
           <div class="rev-chart-wrap"><canvas id="tpChartFact"></canvas></div>
         </div>
+        <div class="rev-chart-block">
+          <div class="rev-chart-title">Доля выборов тарифа, % от заказов · <span style="color:#6b7280;font-size:11px">сигнал: если цена растёт, а доля падает — тариф перегрет</span></div>
+          <div class="rev-chart-wrap"><canvas id="tpChartShare"></canvas></div>
+        </div>
       </div>
     </div>
 
@@ -736,6 +749,20 @@
         </div>
       </div>
       <div class="section-body open" id="tariffDemandBody">
+        <!-- Filters -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:center">
+          <div style="display:flex;gap:4px;background:#0a0a10;border:1px solid #2d2d3d;border-radius:10px;padding:3px">
+            <button class="td-btn-period active" data-days="7"   onclick="tdSetPeriod(this,7)">7 дн</button>
+            <button class="td-btn-period"        data-days="30"  onclick="tdSetPeriod(this,30)">30 дн</button>
+            <button class="td-btn-period"        data-days="90"  onclick="tdSetPeriod(this,90)">90 дн</button>
+            <button class="td-btn-period"        data-days="0"   onclick="tdSetPeriod(this,0)">Всё</button>
+          </div>
+          <div style="display:flex;gap:4px;background:#0a0a10;border:1px solid #2d2d3d;border-radius:10px;padding:3px">
+            <button class="td-btn-dow active" data-dow="all" onclick="tdSetDow(this,'all')">Все дни</button>
+            <button class="td-btn-dow"        data-dow="wd"  onclick="tdSetDow(this,'wd')">Будни</button>
+            <button class="td-btn-dow"        data-dow="we"  onclick="tdSetDow(this,'we')">Выходные</button>
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
           <div>
             <div class="rev-chart-title" style="text-align:center">Выручка, %</div>
@@ -1673,7 +1700,7 @@
       const rows = days ? fsAllData.slice(-days) : fsAllData;
       const labels = rows.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
       const avail  = rows.map(r => r.max_available ?? null);
-      const active = rows.map(r => r.active_objects ?? r.peak_rented ?? null);
+      const active = rows.map(r => r.active_objects ?? null);
       const share  = rows.map((r, i) => {
         const a = active[i], v = avail[i];
         return (a != null && v) ? Math.round(a / v * 100) : null;
@@ -1713,14 +1740,22 @@
 
     async function loadFleetSection() {
       try {
-        const res = await fetch('./data/history.json?t=' + Date.now());
-        if (!res.ok) return;
-        fsAllData = (await res.json()).sort((a, b) => a.date.localeCompare(b.date));
+        const [histRes, activeRows] = await Promise.all([
+          fetch('./data/history.json?t=' + Date.now()).then(r => r.ok ? r.json() : []),
+          grafanaQuery(`SELECT DATE_FORMAT(start_time,'%Y-%m-%d') as date, COUNT(DISTINCT car_id) as active_objects FROM orders GROUP BY DATE_FORMAT(start_time,'%Y-%m-%d') ORDER BY date`).catch(() => []),
+        ]);
+
+        const activeMap = {};
+        activeRows.forEach(r => { activeMap[r.date] = r.active_objects; });
+
+        fsAllData = histRes
+          .map(r => ({ ...r, active_objects: activeMap[r.date] ?? r.active_objects ?? null }))
+          .sort((a, b) => a.date.localeCompare(b.date));
         if (!fsAllData.length) return;
 
         const last   = fsAllData[fsAllData.length - 1];
         const avail  = last.max_available ?? null;
-        const active = last.active_objects ?? last.peak_rented ?? null;
+        const active = last.active_objects ?? null;
         const share  = (avail && active) ? Math.round(active / avail * 100) : null;
 
         document.getElementById('fsAvail').textContent  = avail  != null ? avail  : '—';
@@ -1900,6 +1935,52 @@
           tpBuildChart('tpChartFact', labels, offerDatasets);
         }
 
+        // Доля выборов: % заказов на каждый тариф по дням
+        if (factRows.length) {
+          const shareMap = {};
+          factRows.forEach(r => {
+            if (!r.slot) return;
+            if (!shareMap[r.date]) shareMap[r.date] = {};
+            shareMap[r.date][r.slot] = (shareMap[r.date][r.slot] ?? 0) + Number(r.cnt);
+          });
+          const shareDatasets = TP_SLOTS.map(slot => ({
+            label: slot.label, color: slot.color,
+            data: filtered.map(r => {
+              const day = shareMap[r.date];
+              if (!day) return null;
+              const total = Object.values(day).reduce((s, v) => s + v, 0);
+              return total ? +((day[slot.key] ?? 0) / total * 100).toFixed(1) : null;
+            }),
+          }));
+          const ctx = document.getElementById('tpChartShare').getContext('2d');
+          if (tpCharts['tpChartShare']) { tpCharts['tpChartShare'].destroy(); }
+          tpCharts['tpChartShare'] = new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets: shareDatasets.map(ds => ({
+              label: ds.label, data: ds.data,
+              borderColor: ds.color, backgroundColor: ds.color + '15',
+              borderWidth: 2, pointRadius: labels.length < 15 ? 4 : 2,
+              pointBackgroundColor: ds.color, fill: false, tension: 0.35, spanGaps: true,
+            })) },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: {
+                legend: { display: true, labels: { color: '#6b7280', boxWidth: 12, padding: 14, font: { size: 11 } } },
+                tooltip: {
+                  backgroundColor: '#1a1a24', borderColor: '#2d2d3d', borderWidth: 1,
+                  titleColor: '#94a3b8', bodyColor: '#e2e8f0',
+                  callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y != null ? ctx.parsed.y.toFixed(1) + '%' : '—'}` },
+                }
+              },
+              scales: {
+                x: { grid: { color: '#1a1a24' }, ticks: { maxTicksLimit: 10, maxRotation: 0, color: '#4b5563' } },
+                y: { grid: { color: '#1e1e2a' }, beginAtZero: true, max: 100, ticks: { color: '#4b5563', callback: v => v + '%' } },
+              },
+            },
+          });
+        }
+
         if (filtered.length) {
           const last = filtered[filtered.length - 1];
           document.getElementById('tariffPriceUpdated').textContent = 'из тарифной истории · ' + last.date;
@@ -1938,7 +2019,9 @@
           return;
         }
 
-        sub.textContent = `Сегодня (${today}) — ${rows.length} заказ${rows.length===1?'':rows.length<5?'а':'ов'} с выездом за зону`;
+        const loadedAt = new Date(Date.now()+3*60*60*1000);
+        const ts = String(loadedAt.getUTCHours()).padStart(2,'0')+':'+String(loadedAt.getUTCMinutes()).padStart(2,'0');
+        sub.textContent = `Сегодня (${today}) — ${rows.length} заказ${rows.length===1?'':rows.length<5?'а':'ов'} с выездом за зону · данные на ${ts} (нажмите ⟳ для обновления)`;
 
         const statusLabel = s => {
           if (s === 'FINISHED') return ['Оплачен', '#4ade80'];
@@ -1983,8 +2066,32 @@
     }
 
     // --- Tariff demand structure (donut charts) ---
+    let tdActiveDays = 7;
+    let tdActiveDow  = 'all'; // 'all' | 'wd' | 'we'
+
+    function tdSetPeriod(btn, days) {
+      document.querySelectorAll('.td-btn-period').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      tdActiveDays = days;
+      loadTariffDemand();
+    }
+    function tdSetDow(btn, dow) {
+      document.querySelectorAll('.td-btn-dow').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      tdActiveDow = dow;
+      loadTariffDemand();
+    }
+
     async function loadTariffDemand() {
+      document.getElementById('tariffDemandSub').textContent = 'Загрузка...';
       try {
+        const dateClause = tdActiveDays > 0
+          ? `AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${tdActiveDays} DAY)` : '';
+        const dowClause = tdActiveDow === 'wd'
+          ? `AND DAYOFWEEK(o.start_time) BETWEEN 2 AND 6`
+          : tdActiveDow === 'we'
+          ? `AND DAYOFWEEK(o.start_time) IN (1,7)` : '';
+
         const rows = await grafanaQuery(`
           SELECT
             CASE
@@ -2001,6 +2108,8 @@
           WHERE o.status='FINISHED'
             AND (a.description LIKE '%Детский%' OR a.description LIKE '%Быстрый%')
             AND (a.description LIKE '%5 мин%' OR a.description LIKE '%10 мин%')
+            ${dateClause}
+            ${dowClause}
           GROUP BY slot, slot_min
         `);
 
@@ -2087,12 +2196,37 @@
       } catch(e) { console.error('loadTariffDemand:', e); }
     }
 
+    function setGrafanaTimestamp() {
+      const now = new Date(Date.now() + 3*60*60*1000);
+      const hh = String(now.getUTCHours()).padStart(2,'0');
+      const mm = String(now.getUTCMinutes()).padStart(2,'0');
+      document.getElementById('grafanaUpdatedAt').textContent = `Grafana · ${hh}:${mm}`;
+    }
+
+    async function refreshGrafanaData() {
+      const btn = document.getElementById('btnRefreshGrafana');
+      btn.textContent = '⟳ Загрузка…';
+      btn.disabled = true;
+      await Promise.allSettled([
+        loadFleetSection(),
+        loadGrafanaAnalytics(),
+        loadLiveKPI(),
+        loadTariffPriceChart(),
+        loadTariffDemand(),
+        loadOutOfZone(),
+      ]);
+      setGrafanaTimestamp();
+      btn.textContent = '⟳ Обновить';
+      btn.disabled = false;
+    }
+
     loadFleetSection();
     loadGrafanaAnalytics();
     loadLiveKPI();
     loadTariffPriceChart();
     loadTariffDemand();
     loadOutOfZone();
+    setGrafanaTimestamp();
 
     // --- Договоры ---
     const PARTNERS = [
