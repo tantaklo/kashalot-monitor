@@ -599,6 +599,7 @@
     <div class="global-period-bar">
       <span class="global-period-label">Период</span>
       <div class="period-tabs" id="globalPeriodTabs">
+        <button class="period-tab" data-period="1">1 день</button>
         <button class="period-tab active" data-period="7">7 дней</button>
         <button class="period-tab" data-period="30">30 дней</button>
         <button class="period-tab" data-period="0">Всё время</button>
@@ -771,14 +772,8 @@
         </div>
       </div>
       <div class="section-body open" id="tariffDemandBody">
-        <!-- Filters -->
+        <!-- Filters: только день недели; период — из глобального переключателя -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:center">
-          <div style="display:flex;gap:4px;background:#0a0a10;border:1px solid #2d2d3d;border-radius:10px;padding:3px">
-            <button class="td-btn-period active" data-days="7"   onclick="tdSetPeriod(this,7)">7 дн</button>
-            <button class="td-btn-period"        data-days="30"  onclick="tdSetPeriod(this,30)">30 дн</button>
-            <button class="td-btn-period"        data-days="90"  onclick="tdSetPeriod(this,90)">90 дн</button>
-            <button class="td-btn-period"        data-days="0"   onclick="tdSetPeriod(this,0)">Всё</button>
-          </div>
           <div style="display:flex;gap:4px;background:#0a0a10;border:1px solid #2d2d3d;border-radius:10px;padding:3px">
             <button class="td-btn-dow active" data-dow="all" onclick="tdSetDow(this,'all')">Все дни</button>
             <button class="td-btn-dow"        data-dow="wd"  onclick="tdSetDow(this,'wd')">Будни</button>
@@ -1079,7 +1074,7 @@
           document.getElementById('lastUpdate').textContent = 'Данные за ' + last.date;
         }
         lastHistory = history;
-        drawChart(history);
+        drawChart(raActivePeriod ? history.slice(-raActivePeriod) : history);
       } catch {}
     }
 
@@ -1354,7 +1349,7 @@
 
     function renderRevenue(data) {
       fleetSize = data.fleet_size || 0;
-      if (lastHistory.length) drawChart(lastHistory);
+      if (lastHistory.length) drawChart(raActivePeriod ? lastHistory.slice(-raActivePeriod) : lastHistory);
       document.getElementById('cntTotal').textContent = fleetSize || '—';
       document.getElementById('revTotal').textContent = fmt(data.total_revenue);
       document.getElementById('revFleet').textContent = data.fleet_size;
@@ -1725,7 +1720,11 @@
         raActivePeriod = parseInt(btn.dataset.period);
         raRenderCharts(raActivePeriod);
         if (fsAllData.length) fsRenderChart(raActivePeriod);
+        if (lastHistory.length) drawChart(raActivePeriod ? lastHistory.slice(-raActivePeriod) : lastHistory);
+        tdActiveDays = raActivePeriod;
         loadTariffPriceChart();
+        loadTariffDemand();
+        setTimeout(renderAndSaveInsights, 2000);
       });
     });
 
