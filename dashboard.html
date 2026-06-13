@@ -529,6 +529,24 @@
       border-radius: 4px;
       transition: width 0.6s ease;
     }
+
+    /* Insights */
+    .insight-badge {
+      border-radius: 10px;
+      padding: 12px 14px;
+      flex: 1;
+      min-width: 200px;
+      max-width: 380px;
+      border-left-width: 3px;
+      border-left-style: solid;
+    }
+    .insight-badge-title { font-size: 13px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
+    .insight-badge-body  { font-size: 12px; color: #94a3b8; line-height: 1.5; }
+    .insight-rec-row { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid #1e1e2a; }
+    .insight-rec-num { font-size: 12px; font-weight: 700; min-width: 20px; }
+    .insight-rec-title { font-size: 12px; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; }
+    .insight-rec-text  { font-size: 12px; color: #6b7280; line-height: 1.5; }
+    .insight-archive-row { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #111118; align-items: baseline; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
@@ -854,6 +872,28 @@
     <div id="tariffSection" style="display:none">
       <div class="section-title" style="margin-bottom:12px">Тарифы по парку</div>
       <div class="tariff-grid" id="tariffGrid"></div>
+    </div>
+
+    <!-- Insights -->
+    <div class="chart-card" id="insightsCard">
+      <div class="chart-header collapsible" onclick="toggleSection('insightsBody', 'insightsArrow')">
+        <div>
+          <div class="chart-title">Инсайты <span class="toggle-arrow open" id="insightsArrow">▼</span></div>
+          <div class="chart-sub" id="insightsSub">автоматические выводы по данным</div>
+        </div>
+      </div>
+      <div class="section-body open" id="insightsBody">
+        <div id="insightsBadges" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px"></div>
+        <div id="insightsRecs"></div>
+        <div style="margin-top:16px">
+          <div style="font-size:11px;color:#4b5563;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;cursor:pointer;user-select:none" onclick="toggleSection('insightsArchiveBody','insightsArchiveArrow')">
+            Архив инсайтов <span id="insightsArchiveArrow">▶</span>
+          </div>
+          <div id="insightsArchiveBody" style="display:none">
+            <div id="insightsArchiveList" style="font-size:13px;color:#4b5563">Загрузка архива...</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Out-of-zone orders -->
@@ -1853,6 +1893,7 @@
       { key: 'Быстрый|10 мин', label: 'Быстрый 10 мин', min: 10, color: '#fb923c' },
     ];
     const tpCharts = {};
+    let tpGapData = {}; // slot.key → { offerPM, factPM, deltaPct, orders }
 
     function tpBuildChart(canvasId, labels, datasets) {
       const ctx = document.getElementById(canvasId)?.getContext('2d');
@@ -2012,6 +2053,7 @@
             factBySlot[r.slot].cnt      += Number(r.cnt);
           });
 
+          tpGapData = {};
           const gapCards = document.getElementById('tpGapCards');
           gapCards.innerHTML = TP_SLOTS.map(slot => {
             const off = offerBySlot[slot.key];
@@ -2023,6 +2065,7 @@
             const deltaRub = +(factPM - offerPM).toFixed(1);
             const deltaPct = +((factPM - offerPM) / offerPM * 100).toFixed(1);
             const orders = fct.cnt;
+            tpGapData[slot.key] = { offerPM, factPM, deltaPct, deltaRub, orders, label: slot.label };
 
             // Signal
             let borderColor, badge, advice;
@@ -2071,6 +2114,199 @@
           document.getElementById('tariffPriceUpdated').textContent = 'из тарифной истории · ' + last.date;
         }
       } catch(e) { console.error('Tariff price chart:', e); }
+    }
+
+    // --- Insights ---
+    function insightWeekId() {
+      const now = new Date(Date.now() + 3*60*60*1000);
+      const yearStart = new Date(now.getFullYear(), 0, 1);
+      const week = Math.ceil((((now - yearStart) / 86400000) + yearStart.getDay() + 1) / 7);
+      return `${now.getFullYear()}-W${String(week).padStart(2,'0')}`;
+    }
+    function insightMonthId() {
+      const now = new Date(Date.now() + 3*60*60*1000);
+      return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    }
+
+    function generateInsights() {
+      const insights = [];
+      const week  = insightWeekId();
+      const month = insightMonthId();
+      const today = new Date(Date.now() + 3*60*60*1000).toISOString().slice(0,10);
+
+      // --- Активность ---
+      const actRows = raAllData.filter(r => r.activeObjects);
+      if (actRows.length >= 4) {
+        const recent = actRows.slice(-7);
+        const older  = actRows.slice(-14, -7);
+        if (recent.length >= 2 && older.length >= 2) {
+          const ra = recent.reduce((s,r) => s + r.activeObjects, 0) / recent.length;
+          const oa = older.reduce((s,r)  => s + r.activeObjects, 0) / older.length;
+          const pct = Math.round((ra/oa - 1) * 100);
+          if (pct >= 15) {
+            insights.push({
+              id: `activity-up-${week}`, date: today, type: 'activity', signal: 'up',
+              emoji: '📈', title: 'Активность растёт',
+              body: `+${pct}% к предыдущей неделе (${Math.round(oa)}→${Math.round(ra)} КШ/день)`,
+              recommendation: 'Спрос растёт — рассмотреть небольшое повышение цен на пиковые тарифы.',
+            });
+          } else if (pct <= -15) {
+            insights.push({
+              id: `activity-down-${week}`, date: today, type: 'activity', signal: 'down',
+              emoji: '📉', title: 'Активность падает',
+              body: `${pct}% к предыдущей неделе (${Math.round(oa)}→${Math.round(ra)} КШ/день)`,
+              recommendation: 'Проверить цены — возможно, тарифы отпугивают клиентов. Рассмотреть акцию или снижение.',
+            });
+          }
+        }
+      }
+
+      // --- Выручка на устройство ---
+      if (raAllData.length >= 7) {
+        const withRev = raAllData.filter(r => r.activeObjects && r.revenue);
+        if (withRev.length >= 4) {
+          const last = withRev[withRev.length - 1];
+          const perUnit = last.revenue / last.activeObjects;
+          const avgPU = withRev.reduce((s,r) => s + r.revenue/r.activeObjects, 0) / withRev.length;
+          const diff = Math.round((perUnit/avgPU - 1)*100);
+          if (diff >= 20) {
+            insights.push({
+              id: `revenue-per-unit-high-${week}`, date: today, type: 'revenue', signal: 'up',
+              emoji: '💰', title: 'Высокая выручка на устройство',
+              body: `${Math.round(perUnit).toLocaleString('ru-RU')} ₽/КШ — на ${diff}% выше среднего за период`,
+              recommendation: 'Изучить что происходило в этот день — мероприятие? Погода? Повторить условия.',
+            });
+          }
+        }
+      }
+
+      // --- Доступность ---
+      if (fsAllData.length && fleetSize) {
+        const last = fsAllData[fsAllData.length - 1];
+        const avPct = Math.round((last.max_available ?? 0) / fleetSize * 100);
+        if (avPct > 0 && avPct < 20) {
+          insights.push({
+            id: `avail-low-${month}`, date: today, type: 'availability', signal: 'warning',
+            emoji: '⚠️', title: 'Низкая доступность парка',
+            body: `${avPct}% парка онлайн (${last.max_available} из ${fleetSize} КШ)`,
+            recommendation: 'Провести аудит офлайн-устройств. Часть могла уйти в сервис без уведомления.',
+          });
+        } else if (avPct >= 60) {
+          insights.push({
+            id: `avail-high-${month}`, date: today, type: 'availability', signal: 'ok',
+            emoji: '✅', title: 'Высокая доступность парка',
+            body: `${avPct}% парка онлайн (${last.max_available} из ${fleetSize} КШ)`,
+            recommendation: null,
+          });
+        }
+      }
+
+      // --- Тарифные разрывы ---
+      Object.entries(tpGapData).forEach(([key, d]) => {
+        if (!d) return;
+        const slug = key.replace(/[\s|]/g,'-').toLowerCase();
+        if (d.deltaPct <= -10) {
+          insights.push({
+            id: `tariff-gap-${slug}-${week}`, date: today, type: 'tariff', signal: 'warning',
+            emoji: '🔴', title: `${d.label}: факт ниже предложения`,
+            body: `Клиенты платят ${Math.abs(d.deltaPct)}% меньше заявленного (${d.offerPM.toFixed(1)}→${d.factPM.toFixed(1)} ₽/мин, ${d.orders.toLocaleString('ru-RU')} заказов)`,
+            recommendation: `Рассмотреть снижение цены "${d.label}" или переориентацию устройств на более популярные тарифы.`,
+          });
+        } else if (d.deltaPct >= -3 && d.deltaPct <= 3 && d.orders > 50) {
+          insights.push({
+            id: `tariff-ok-${slug}-${week}`, date: today, type: 'tariff', signal: 'ok',
+            emoji: '🟢', title: `${d.label}: цена в рынке`,
+            body: `Факт совпадает с предложением (${d.deltaPct > 0 ? '+' : ''}${d.deltaPct}%, ${d.factPM.toFixed(1)} ₽/мин, ${d.orders.toLocaleString('ru-RU')} заказов)`,
+            recommendation: null,
+          });
+        }
+      });
+
+      return insights;
+    }
+
+    const SIG_COLOR = { up: '#4ade80', down: '#f87171', warning: '#fbbf24', ok: '#94a3b8' };
+    const SIG_BG    = { up: '#14532d20', down: '#7f1d1d20', warning: '#78350f20', ok: '#1a1a24' };
+
+    function renderInsightBadges(insights) {
+      const badgesEl = document.getElementById('insightsBadges');
+      const recsEl   = document.getElementById('insightsRecs');
+
+      badgesEl.innerHTML = insights.map(i => `
+        <div class="insight-badge" style="background:${SIG_BG[i.signal]};border:1px solid ${SIG_COLOR[i.signal]}40;border-left-color:${SIG_COLOR[i.signal]}">
+          <div class="insight-badge-title">${i.emoji} ${i.title}</div>
+          <div class="insight-badge-body">${i.body}</div>
+        </div>
+      `).join('');
+
+      const recs = insights.filter(i => i.recommendation);
+      recsEl.innerHTML = recs.length ? `
+        <div style="font-size:11px;color:#4b5563;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">Рекомендации</div>
+        ${recs.map((i,n) => `
+          <div class="insight-rec-row">
+            <div class="insight-rec-num" style="color:${SIG_COLOR[i.signal]}">${n+1}</div>
+            <div>
+              <div class="insight-rec-title">${i.emoji} ${i.title}</div>
+              <div class="insight-rec-text">${i.recommendation}</div>
+            </div>
+          </div>
+        `).join('')}
+      ` : '';
+    }
+
+    function renderArchive(archive) {
+      const el = document.getElementById('insightsArchiveList');
+      if (!archive.length) { el.innerHTML = '<span style="color:#374151">Архив пуст — инсайты появятся после первого запуска</span>'; return; }
+
+      const byMonth = {};
+      [...archive].reverse().forEach(i => {
+        const m = i.date.slice(0,7);
+        if (!byMonth[m]) byMonth[m] = [];
+        byMonth[m].push(i);
+      });
+
+      el.innerHTML = Object.entries(byMonth).map(([m, items]) => `
+        <div style="margin-bottom:14px">
+          <div style="font-size:10px;color:#374151;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">${m}</div>
+          ${items.map(i => `
+            <div class="insight-archive-row">
+              <span style="font-size:11px;color:#374151;min-width:72px">${i.date}</span>
+              <span style="font-size:12px;color:#6b7280">${i.emoji} ${i.title}</span>
+              <span style="font-size:10px;color:#2d2d3d;margin-left:auto">${i.type}</span>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+    }
+
+    const INSIGHTS_WORKER = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev/insights';
+
+    async function renderAndSaveInsights() {
+      const insights = generateInsights();
+      if (!insights.length) return;
+
+      renderInsightBadges(insights);
+      document.getElementById('insightsSub').textContent = `${insights.length} инсайт${insights.length===1?'':'ов'} · обновлено при загрузке`;
+
+      try {
+        const archRes = await fetch('./data/insights-archive.json?t=' + Date.now());
+        const archive = archRes.ok ? await archRes.json() : [];
+        renderArchive(archive);
+        document.getElementById('insightsSub').textContent =
+          `${insights.length} инсайт${insights.length===1?'':'ов'} · архив ${archive.length} записей`;
+
+        const existingIds = new Set(archive.map(i => i.id));
+        const toSave = insights.filter(i => !existingIds.has(i.id));
+        if (toSave.length) {
+          fetch(INSIGHTS_WORKER, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Token': GRAFANA_TOKEN },
+            body: JSON.stringify({ insights: toSave }),
+          }).then(r => r.json()).then(d => {
+            if (d.ok && d.added > 0) console.log(`Insights: +${d.added} сохранено в архив`);
+          }).catch(e => console.warn('Insights save:', e));
+        }
+      } catch(e) { console.warn('Insights archive load:', e); }
     }
 
     // --- Out-of-zone orders ---
@@ -2303,6 +2539,7 @@
         loadOutOfZone(),
       ]);
       setGrafanaTimestamp();
+      await renderAndSaveInsights();
       btn.textContent = '⟳ Обновить';
       btn.disabled = false;
     }
@@ -2314,6 +2551,8 @@
     loadTariffDemand();
     loadOutOfZone();
     setGrafanaTimestamp();
+    // Инсайты генерируются после загрузки данных (~3 сек)
+    setTimeout(renderAndSaveInsights, 4000);
 
     // --- Договоры ---
     const PARTNERS = [

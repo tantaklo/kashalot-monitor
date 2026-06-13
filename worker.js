@@ -77,6 +77,87 @@ export default {
       });
     }
 
+    // --- Роут 3: архив инсайтов (GitHub Contents API) ---
+    if (url.pathname === '/insights') {
+      if (request.method !== 'POST') {
+        return new Response('Method Not Allowed', { status: 405 });
+      }
+
+      const token = request.headers.get('X-Token');
+      if (!token || token !== env.PROXY_TOKEN) {
+        return new Response('Unauthorized', { status: 401, headers: CORS });
+      }
+
+      if (!env.GITHUB_TOKEN) {
+        return new Response(JSON.stringify({ ok: false, error: 'GITHUB_TOKEN not set' }), {
+          status: 503, headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      let body;
+      try { body = await request.json(); }
+      catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+
+      const newInsights = Array.isArray(body.insights) ? body.insights : [];
+      if (!newInsights.length) {
+        return new Response(JSON.stringify({ ok: true, added: 0 }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      const REPO = 'tantaklo/kashalot-monitor';
+      const FILE = 'data/insights-archive.json';
+      const API  = `https://api.github.com/repos/${REPO}/contents/${FILE}`;
+      const ghHeaders = {
+        'Authorization': `token ${env.GITHUB_TOKEN}`,
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'kashalot-worker',
+      };
+
+      // Читаем текущий файл
+      const getResp = await fetch(API, { headers: ghHeaders });
+      let current = [];
+      let sha = null;
+      if (getResp.ok) {
+        const fd = await getResp.json();
+        sha = fd.sha;
+        try { current = JSON.parse(atob(fd.content.replace(/\n/g, ''))); } catch {}
+      }
+
+      // Дедупликация по id
+      const existingIds = new Set(current.map(i => i.id));
+      const toAdd = newInsights.filter(i => !existingIds.has(i.id));
+      if (!toAdd.length) {
+        return new Response(JSON.stringify({ ok: true, added: 0 }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      const merged = [...current, ...toAdd].slice(-300);
+      const content = btoa(unescape(encodeURIComponent(JSON.stringify(merged, null, 2))));
+
+      const putResp = await fetch(API, {
+        method: 'PUT',
+        headers: { ...ghHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `insights: +${toAdd.length} (${new Date().toISOString().slice(0, 10)})`,
+          content,
+          ...(sha ? { sha } : {}),
+        }),
+      });
+
+      if (!putResp.ok) {
+        const err = await putResp.text();
+        return new Response(JSON.stringify({ ok: false, error: err }), {
+          status: 500, headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      return new Response(JSON.stringify({ ok: true, added: toAdd.length }), {
+        headers: { 'Content-Type': 'application/json', ...CORS },
+      });
+    }
+
     return new Response('Not found', { status: 404 });
   },
 };
