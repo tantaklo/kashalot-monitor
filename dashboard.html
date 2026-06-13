@@ -919,6 +919,7 @@
       arrow.classList.toggle('open', open);
     }
     let fleetSize = 0;
+    let lastHistory = [];
 
     function updatePct(available) {
       const base = fleetSize || 0;
@@ -942,10 +943,11 @@
 
       const labels   = history.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
       const avail    = history.map(r => r.max_available ?? r.available ?? null);
-      const total    = history.map(r => r.total ?? null);
+      const base     = fleetSize || null;
+      const total    = history.map(() => base);
       const pct      = history.map((r, i) => {
-        const a = avail[i], t = total[i];
-        return (a != null && t) ? +(a / t * 100).toFixed(1) : null;
+        const a = avail[i];
+        return (a != null && base) ? +(a / base * 100).toFixed(1) : null;
       });
 
       const ptR = history.length < 15 ? 4 : 2;
@@ -1023,6 +1025,7 @@
           }
           document.getElementById('lastUpdate').textContent = 'Данные за ' + last.date;
         }
+        lastHistory = history;
         drawChart(history);
       } catch {}
     }
@@ -1298,6 +1301,7 @@
 
     function renderRevenue(data) {
       fleetSize = data.fleet_size || 0;
+      if (lastHistory.length) drawChart(lastHistory);
       document.getElementById('cntTotal').textContent = fleetSize || '—';
       document.getElementById('revTotal').textContent = fmt(data.total_revenue);
       document.getElementById('revFleet').textContent = data.fleet_size;
