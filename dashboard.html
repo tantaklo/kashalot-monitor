@@ -1756,6 +1756,26 @@
     Chart.defaults.borderColor = '#1e1e2a';
     Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
+    // Глобальный плагин: вертикальная линия при наведении
+    Chart.register({
+      id: 'crosshair',
+      afterDraw(chart) {
+        if (!chart.tooltip?._active?.length) return;
+        const x = chart.tooltip._active[0].element.x;
+        const { top, bottom } = chart.chartArea;
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, bottom);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(148,163,184,0.35)';
+        ctx.setLineDash([4, 3]);
+        ctx.stroke();
+        ctx.restore();
+      }
+    });
+
     function chartMedianVal(data) {
       const vals = data.filter(v => v != null && !isNaN(v));
       if (!vals.length) return null;
