@@ -1251,8 +1251,11 @@
         scannedAt: new Date().toISOString(),
       }));
 
-      // Обновляем графики доступности текущим результатом сканирования
-      const livePoint = { date: today, max_available: up, min_available: up, scans: up };
+      // Берём активность из KPI-карточки (уже загружена loadLiveKPI)
+      const activeNow = parseInt(document.getElementById('fsActive').textContent) || null;
+
+      // Обновляем историю доступности и верхний график
+      const livePoint = { date: today, max_available: up, min_available: up, scans: up, active_objects: activeNow };
       lastHistory = [...lastHistory.filter(r => r.date !== today), livePoint]
         .sort((a, b) => a.date.localeCompare(b.date));
       drawChart(raActivePeriod ? lastHistory.slice(-raActivePeriod) : lastHistory);
@@ -1263,6 +1266,20 @@
       fsRenderChart(raActivePeriod);
       document.getElementById('fsAvail').textContent = up;
       document.getElementById('fsUpdated').textContent = 'скан · ' + today;
+
+      // Обновляем raAllData: totalObjects для сегодня = up (чтобы строились "на доступный" и %)
+      const todayIdx = raAllData.findIndex(r => r.date === today);
+      if (todayIdx >= 0) {
+        raAllData[todayIdx] = {
+          ...raAllData[todayIdx],
+          totalObjects: up,
+          activeObjects: activeNow ?? raAllData[todayIdx].activeObjects,
+        };
+      } else if (raAllData.length) {
+        raAllData.push({ date: today, revenue: 0, orders: null, avgCheck: null, activeObjects: activeNow, totalObjects: up });
+        raAllData.sort((a, b) => a.date.localeCompare(b.date));
+      }
+      if (raAllData.length) raRenderCharts(raActivePeriod);
 
       btn.disabled = false;
       btn.textContent = 'Обновить';
