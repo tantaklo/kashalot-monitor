@@ -101,26 +101,60 @@
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* Stats row */
-    .stats {
+    /* Top KPI block */
+    .top-kpi-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
+      grid-template-columns: 140px 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
     }
-
-    .stat-card {
+    .top-kpi-card {
       background: #1a1a24;
       border: 1px solid #2d2d3d;
       border-radius: 16px;
-      padding: 28px 24px;
-      text-align: center;
+      padding: 18px 20px;
     }
+    .top-kpi-section-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #4b5563;
+      margin-bottom: 14px;
+    }
+    .top-kpi-big {
+      font-size: 44px;
+      font-weight: 800;
+      color: #4b5563;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .top-kpi-big-sub { font-size: 12px; color: #374151; }
+    .top-kpi-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      padding: 8px 0;
+      border-top: 1px solid #1e1e2a;
+    }
+    .top-kpi-row:first-of-type { border-top: none; }
+    .top-kpi-tag {
+      font-size: 11px;
+      color: #4b5563;
+      min-width: 72px;
+      flex-shrink: 0;
+    }
+    .top-kpi-num {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1;
+      min-width: 44px;
+    }
+    .top-kpi-pct { font-size: 11px; color: #6b7280; line-height: 1.3; }
 
-    .stat-icon { font-size: 28px; margin-bottom: 12px; }
-    .stat-num { font-size: 40px; font-weight: 800; margin-bottom: 6px; }
+    /* legacy — kept for JS refs */
     .stat-num.green  { color: #4ade80; }
     .stat-num.yellow { color: #fbbf24; }
     .stat-num.gray   { color: #4b5563; }
-    .stat-label { font-size: 13px; color: #6b7280; }
 
     /* Chart */
     .chart-card {
@@ -657,21 +691,53 @@
 
   <div class="main">
 
-    <!-- Stats -->
+    <!-- hidden legacy refs -->
     <span id="heroNumber" style="display:none"></span>
     <span id="heroSub" style="display:none"></span>
     <span id="cntUp" style="display:none"></span>
-    <div class="stats">
-      <div class="stat-card">
-        <div class="stat-icon">📈</div>
-        <div class="stat-num yellow" id="cntPct">—</div>
-        <div class="stat-label">Активность / Доступность</div>
+    <span id="cntPct" style="display:none"></span>
+    <span id="cntTotal" style="display:none"></span>
+
+    <!-- Top KPI -->
+    <div class="top-kpi-grid">
+
+      <!-- Парк -->
+      <div class="top-kpi-card" style="display:flex;flex-direction:column;justify-content:center">
+        <div class="top-kpi-section-label">🐋 Парк</div>
+        <div class="top-kpi-big" id="topFleetSize">—</div>
+        <div class="top-kpi-big-sub">всего КШ</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon">🐋</div>
-        <div class="stat-num gray" id="cntTotal">—</div>
-        <div class="stat-label">Всего в парке</div>
+
+      <!-- Доступность -->
+      <div class="top-kpi-card">
+        <div class="top-kpi-section-label">Доступность</div>
+        <div class="top-kpi-row">
+          <span class="top-kpi-tag">Сегодня</span>
+          <span class="top-kpi-num" style="color:#60a5fa" id="topAvailToday">—</span>
+          <span class="top-kpi-pct" id="topAvailTodayPct"></span>
+        </div>
+        <div class="top-kpi-row">
+          <span class="top-kpi-tag" id="topAvailPeriodTag">Ср. 7 дн.</span>
+          <span class="top-kpi-num" style="color:#60a5fa;opacity:.65" id="topAvailPeriod">—</span>
+          <span class="top-kpi-pct" id="topAvailPeriodPct"></span>
+        </div>
       </div>
+
+      <!-- Активность -->
+      <div class="top-kpi-card">
+        <div class="top-kpi-section-label">Активность</div>
+        <div class="top-kpi-row">
+          <span class="top-kpi-tag">Сегодня</span>
+          <span class="top-kpi-num" style="color:#2dd4bf" id="topActiveToday">—</span>
+          <span class="top-kpi-pct" id="topActiveTodayPct"></span>
+        </div>
+        <div class="top-kpi-row">
+          <span class="top-kpi-tag" id="topActivePeriodTag">Ср. 7 дн.</span>
+          <span class="top-kpi-num" style="color:#2dd4bf;opacity:.65" id="topActivePeriod">—</span>
+          <span class="top-kpi-pct" id="topActivePeriodPct"></span>
+        </div>
+      </div>
+
     </div>
 
     <!-- Global period selector -->
@@ -1384,6 +1450,7 @@
       fsAllData = [...fsAllData.filter(r => r.date !== today), livePoint]
         .sort((a, b) => a.date.localeCompare(b.date));
       fsRenderChart(raActivePeriod);
+      updateTopKPI(raActivePeriod);
       document.getElementById('fsAvail').textContent = up;
       document.getElementById('fsUpdated').textContent = 'скан · ' + today;
 
@@ -1965,6 +2032,42 @@
     }
 
     // Sync all per-section tabs to a given period
+    function updateTopKPI(days) {
+      const today = new Date(Date.now() + 3*60*60*1000).toISOString().slice(0,10);
+      const fleetSz = fleetSize || 1180;
+      document.getElementById('topFleetSize').textContent = fleetSz.toLocaleString('ru-RU');
+
+      const todayRow = fsAllData.find(r => r.date === today);
+      const availToday  = todayRow?.max_available  ?? null;
+      const activeToday = todayRow?.active_objects ?? null;
+
+      // период — без сегодняшнего дня для 1/7/30; для «Всё» — всё включая сегодня
+      const hist = days === 0 ? fsAllData : fsAllData.filter(r => r.date < today);
+      const slice = days > 0 ? hist.slice(-days) : hist;
+      const avg = arr => { const v = arr.filter(x => x != null && !isNaN(x)); return v.length ? Math.round(v.reduce((s,x)=>s+x,0)/v.length) : null; };
+      const avgAvail  = avg(slice.map(r => r.max_available));
+      const avgActive = avg(slice.map(r => r.active_objects));
+
+      const pTag = days === 1 ? 'Вчера' : days === 7 ? 'Ср. 7 дн.' : days === 30 ? 'Ср. 30 дн.' : 'Ср. всё';
+      ['topAvailPeriodTag','topActivePeriodTag'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=pTag; });
+
+      const fmt = v => v != null ? v.toLocaleString('ru-RU') : '—';
+      const pct = (a, b) => (a != null && b) ? Math.round(a/b*100) + '%' : null;
+
+      // Доступность
+      document.getElementById('topAvailToday').textContent  = fmt(availToday);
+      document.getElementById('topAvailPeriod').textContent = fmt(avgAvail);
+      document.getElementById('topAvailTodayPct').textContent  = pct(availToday, fleetSz) ? pct(availToday, fleetSz) + ' от парка' : '';
+      document.getElementById('topAvailPeriodPct').textContent = pct(avgAvail,   fleetSz) ? pct(avgAvail,   fleetSz) + ' от парка' : '';
+
+      // Активность
+      document.getElementById('topActiveToday').textContent  = fmt(activeToday);
+      document.getElementById('topActivePeriod').textContent = fmt(avgActive);
+      const buildActPct = (act, avail) => [pct(act, avail) ? pct(act, avail)+' от доступных' : null, pct(act, fleetSz) ? pct(act, fleetSz)+' от парка' : null].filter(Boolean).join(' · ');
+      document.getElementById('topActiveTodayPct').textContent  = buildActPct(activeToday, availToday);
+      document.getElementById('topActivePeriodPct').textContent = buildActPct(avgActive,   avgAvail);
+    }
+
     function syncAllSptTabs(days) {
       document.querySelectorAll('.spt-wrap').forEach(wrap => {
         wrap.querySelectorAll('.spt').forEach(b => {
@@ -1984,7 +2087,7 @@
         Object.keys(sectionPeriods).forEach(k => { sectionPeriods[k] = days; });
         syncAllSptTabs(days);
         if (lastHistory.length) drawChart(days ? lastHistory.slice(-days) : lastHistory);
-        if (fsAllData.length) fsRenderChart(days);
+        if (fsAllData.length) { fsRenderChart(days); updateTopKPI(days); }
         raRenderCharts(days);
         tdActiveDays = days;
         loadTariffPriceChart();
@@ -2095,7 +2198,7 @@
         document.getElementById('fsShareBar').style.width = (share ?? 0) + '%';
         document.getElementById('fleetUpdated').textContent = 'последнее: ' + last.date;
 
-        requestAnimationFrame(() => fsRenderChart(raActivePeriod));
+        requestAnimationFrame(() => { fsRenderChart(raActivePeriod); updateTopKPI(raActivePeriod); });
       } catch (e) { console.error('Fleet section:', e); }
     }
 
