@@ -1276,7 +1276,7 @@
         const { up, total, upNums, slotMap, scannedAt } = JSON.parse(raw);
         document.getElementById('heroNumber').className = 'hero-number';
         document.getElementById('heroNumber').textContent = up;
-        document.getElementById('heroSub').textContent = total ? `из ${total} в парке` : '';
+        document.getElementById('heroSub').textContent = fleetSize ? `из ${fleetSize} в парке` : '';
         document.getElementById('cntUp').textContent = up;
         updatePct(up);
         document.getElementById('progressBar').className = 'progress-bar done';
