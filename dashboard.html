@@ -1974,6 +1974,7 @@
         const a = active[i], v = avail[i];
         return (a != null && v) ? Math.round(a / v * 100) : null;
       });
+      const availPct = avail.map(v => (v != null && fleetSize) ? Math.round(v / fleetSize * 100) : null);
 
       if (fsChartInst) { fsChartInst.destroy(); fsChartInst = null; }
 
@@ -1981,9 +1982,10 @@
       const fsMedAvail  = medianDataset(avail,  '#60a5fa88', 'Медиана Доступность');
       const fsMedActive = medianDataset(active, '#4ade8088', 'Медиана Активность');
       const fsDatasets = [
-        { label: 'Доступность', data: avail,  borderColor: '#60a5fa', backgroundColor: '#60a5fa15', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#60a5fa', fill: true, tension: 0.35, yAxisID: 'y' },
-        { label: 'Активность',  data: active, borderColor: '#4ade80', backgroundColor: '#4ade8015', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#4ade80', fill: true, tension: 0.35, yAxisID: 'y' },
-        { label: 'Доля, %',     data: share,  borderColor: '#f59e0b', backgroundColor: 'transparent', borderWidth: 2, borderDash: [4,3], pointRadius: ptRadius, pointBackgroundColor: '#f59e0b', fill: false, tension: 0.35, yAxisID: 'y2' },
+        { label: 'Доступность', data: avail,     borderColor: '#60a5fa', backgroundColor: '#60a5fa15', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#60a5fa', fill: true, tension: 0.35, yAxisID: 'y' },
+        { label: 'Активность',  data: active,    borderColor: '#4ade80', backgroundColor: '#4ade8015', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#4ade80', fill: true, tension: 0.35, yAxisID: 'y' },
+        { label: 'Доля, %',     data: share,     borderColor: '#f59e0b', backgroundColor: 'transparent', borderWidth: 2, borderDash: [4,3], pointRadius: ptRadius, pointBackgroundColor: '#f59e0b', fill: false, tension: 0.35, yAxisID: 'y2' },
+        { label: 'Доступн. от парка, %', data: availPct, borderColor: '#a78bfa', backgroundColor: 'transparent', borderWidth: 2, borderDash: [6,3], pointRadius: ptRadius, pointBackgroundColor: '#a78bfa', fill: false, tension: 0.35, yAxisID: 'y2' },
         ...(fsMedAvail  ? [{ ...fsMedAvail,  yAxisID: 'y' }] : []),
         ...(fsMedActive ? [{ ...fsMedActive, yAxisID: 'y' }] : []),
       ];
