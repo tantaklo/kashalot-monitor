@@ -693,25 +693,6 @@
       </div>
     </div>
 
-    <!-- Chart -->
-    <div class="chart-card">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Динамика доступности</div>
-          <div class="chart-sub">Доступные к аренде · всего в парке · % доступности</div>
-        </div>
-        <div class="spt-wrap" id="availSptWrap">
-          <button class="spt" onclick="setSectionPeriod('avail',this,1)">1д</button>
-          <button class="spt active" onclick="setSectionPeriod('avail',this,7)">7д</button>
-          <button class="spt" onclick="setSectionPeriod('avail',this,30)">30д</button>
-          <button class="spt" onclick="setSectionPeriod('avail',this,0)">Всё</button>
-        </div>
-      </div>
-      <div class="chart-wrap">
-        <div class="chart-empty" id="chartEmpty">Данные появятся после первого автоматического сканирования</div>
-        <canvas id="chartCanvas" style="display:none;height:200px"></canvas>
-      </div>
-    </div>
 
     <!-- Daily revenue chart -->
     <div class="chart-card" id="revenueDailySection" style="display:none">
@@ -1116,10 +1097,11 @@
       document.getElementById('cntPct').textContent = pct;
     }
 
-    // --- Chart ---
+    // --- Chart (верхний график удалён, функция оставлена как no-op для совместимости) ---
     let availChartInst = null;
     function drawChart(history) {
       const canvas = document.getElementById('chartCanvas');
+      if (!canvas) return; // график удалён
       const empty  = document.getElementById('chartEmpty');
       if (!history || history.length < 2) return;
 
