@@ -553,6 +553,87 @@
     .insight-rec-title { font-size: 12px; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; }
     .insight-rec-text  { font-size: 12px; color: #6b7280; line-height: 1.5; }
     .insight-archive-row { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #111118; align-items: baseline; }
+
+    /* ── Mobile (iPhone and all narrow viewports) ─────────────────────── */
+    @media (max-width: 640px) {
+
+      /* Layout */
+      body { padding: 16px 14px; }
+      .site-nav { margin: -16px -14px 20px; padding: 0 14px; }
+      .nav-logo { font-size: 14px; }
+      .nav-links { gap: 2px; }
+      .nav-link { padding: 6px 8px; font-size: 11px; }
+
+      /* Hero */
+      .hero { padding: 28px 18px; border-radius: 16px; }
+      .hero-number { font-size: 64px; }
+      .hero-label { font-size: 11px; }
+      .hero-sub { font-size: 13px; }
+      #btnScan { width: 100%; margin-top: 16px; }
+
+      /* Stat cards: 2 cols */
+      .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .stat-card { padding: 20px 16px; }
+      .stat-num { font-size: 30px; }
+      .stat-icon { font-size: 22px; }
+
+      /* Global period tabs */
+      .period-tabs { gap: 4px; }
+      .period-tab { padding: 6px 10px; font-size: 11px; }
+
+      /* Chart cards */
+      .chart-card { padding: 18px 14px; border-radius: 14px; }
+
+      /* Chart headers: stack title + tabs vertically on mobile */
+      .chart-header { flex-direction: column; align-items: flex-start; gap: 10px; margin-bottom: 16px; }
+      .spt-wrap { align-self: flex-start; }
+
+      /* Revenue grid: 2 cols */
+      .revenue-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+      /* Tariff grid: 1 col */
+      .tariff-grid { grid-template-columns: 1fr; }
+
+      /* Rev KPI: 2 cols */
+      .rev-kpi-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .rev-kpi { padding: 10px 12px; }
+      .rev-kpi-value { font-size: 20px; }
+
+      /* Fleet KPI: 3 boxes stay but smaller */
+      .fleet-kpi { padding: 10px 12px; }
+      .fleet-kpi-val { font-size: 24px; }
+
+      /* Tables: horizontal scroll */
+      #ozTable, #devEffTable { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      #ozTable table, #devEffTable table { min-width: 520px; }
+
+      /* Tariff gap cards: 1 col */
+      #tpGapCards { grid-template-columns: 1fr !important; }
+
+      /* Tariff demand donut grid and insights grid: 1 col */
+      #tdDonutGrid { grid-template-columns: 1fr !important; }
+      #tdInsights { grid-template-columns: 1fr !important; }
+
+      /* Insight badges: full width */
+      .insight-badge { min-width: 100%; max-width: 100%; }
+
+      /* Partner cards */
+      .partner-card { grid-template-columns: 1fr; }
+      .partner-territory, .partner-summary { grid-column: 1; }
+
+      /* Manager ranking */
+      .mgr-row { flex-wrap: wrap; gap: 6px; }
+      .mgr-bar-wrap { max-width: 100%; width: 100%; }
+
+      /* Device efficiency: compact select */
+      #devEffCompany { min-width: 0; width: 100%; }
+
+      /* Drop zone */
+      .drop-zone { padding: 16px; font-size: 13px; }
+
+      /* Scan found list */
+      #foundSection { font-size: 12px; }
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
@@ -816,7 +897,7 @@
             <button class="td-btn-dow"        data-dow="we"  onclick="tdSetDow(this,'we')">Выходные</button>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+        <div id="tdDonutGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
           <div>
             <div class="rev-chart-title" style="text-align:center">Выручка, %</div>
             <div style="max-width:260px;margin:0 auto"><canvas id="tdChartRevenue"></canvas></div>
