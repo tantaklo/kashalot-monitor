@@ -514,7 +514,7 @@
       margin-bottom: 6px;
     }
     .fleet-kpi-val.avail  { color: #60a5fa; }
-    .fleet-kpi-val.active { color: #4ade80; }
+    .fleet-kpi-val.active { color: #2dd4bf; }
     .fleet-kpi-val.share  { color: #a78bfa; }
     .fleet-kpi-label {
       font-size: 11px;
@@ -778,7 +778,7 @@
         </div>
 
         <div class="rev-chart-block">
-          <div class="rev-chart-title">Выручка на кашалот: активный vs доступный, ₽/день <span id="raMeanPerUnit" style="font-size:11px;font-weight:500;color:#60a5fa;margin-left:8px"></span></div>
+          <div class="rev-chart-title">Выручка на кашалот: активный vs доступный, ₽/день <span id="raMeanPerUnit" style="font-size:11px;font-weight:500;color:#4ade80;margin-left:8px"></span></div>
           <div class="rev-chart-wrap"><canvas id="raChartPerUnit"></canvas></div>
         </div>
         <div class="rev-chart-block">
@@ -794,7 +794,7 @@
           <div class="rev-chart-wrap"><canvas id="raChartAvgCheck"></canvas></div>
         </div>
         <div class="rev-chart-block">
-          <div class="rev-chart-title">Активность / Доступность, % <span id="raMeanAvail" style="font-size:11px;font-weight:500;color:#34d399;margin-left:8px"></span></div>
+          <div class="rev-chart-title">Активность / Доступность, % <span id="raMeanAvail" style="font-size:11px;font-weight:500;color:#a78bfa;margin-left:8px"></span></div>
           <div class="rev-chart-wrap"><canvas id="raChartAvail"></canvas></div>
         </div>
 
@@ -1876,11 +1876,11 @@
       });
 
       raCharts.perUnit  = raBuildDualChart('raChartPerUnit', labels, perUnit, perAvail,
-        '#60a5fa', '#f472b6', 'На активный', 'На доступный', '₽');
+        '#4ade80', '#86efac', 'На активный', 'На доступный', '₽');
       raCharts.revenue  = raBuildChart('raChartRevenue',  labels, revenue, '#4ade80', '₽');
       raCharts.orders   = raBuildChart('raChartOrders',   labels, orders,  '#f59e0b', '');
       raCharts.avgCheck = raBuildChart('raChartAvgCheck', labels, avgCheck,  '#f472b6', '₽');
-      raCharts.avail    = raBuildChart('raChartAvail',    labels, avail,     '#34d399', '%', 100);
+      raCharts.avail    = raBuildChart('raChartAvail',    labels, avail,     '#a78bfa', '%', 100);
       } catch(e) { console.error('raRenderCharts error:', e); }
     }
 
@@ -1994,10 +1994,10 @@
 
       const ptRadius = rows.length < 15 ? 4 : 2;
       const fsMedAvail  = medianDataset(avail,  '#60a5fa88', 'Медиана Доступность');
-      const fsMedActive = medianDataset(active, '#4ade8088', 'Медиана Активность');
+      const fsMedActive = medianDataset(active, '#2dd4bf88', 'Медиана Активность');
       const fsDatasets = [
         { label: 'Доступность', data: avail,     borderColor: '#60a5fa', backgroundColor: '#60a5fa15', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#60a5fa', fill: true, tension: 0.35, yAxisID: 'y' },
-        { label: 'Активность',  data: active,    borderColor: '#4ade80', backgroundColor: '#4ade8015', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#4ade80', fill: true, tension: 0.35, yAxisID: 'y' },
+        { label: 'Активность',  data: active,    borderColor: '#2dd4bf', backgroundColor: '#2dd4bf15', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#2dd4bf', fill: true, tension: 0.35, yAxisID: 'y' },
         { label: 'Доля, %',     data: share,     borderColor: '#f59e0b', backgroundColor: 'transparent', borderWidth: 2, borderDash: [4,3], pointRadius: ptRadius, pointBackgroundColor: '#f59e0b', fill: false, tension: 0.35, yAxisID: 'y2' },
         { label: 'Доступн. от парка, %', data: availPct, borderColor: '#a78bfa', backgroundColor: 'transparent', borderWidth: 2, borderDash: [6,3], pointRadius: ptRadius, pointBackgroundColor: '#a78bfa', fill: false, tension: 0.35, yAxisID: 'y2' },
         ...(fsMedAvail  ? [{ ...fsMedAvail,  yAxisID: 'y' }] : []),
@@ -2038,7 +2038,7 @@
           </div>`;
         medRow.innerHTML =
           chip('Медиана доступн.', mAvail != null ? Math.round(mAvail) : null, '#60a5fa') +
-          chip('Медиана актив.', mActive != null ? Math.round(mActive) : null, '#4ade80') +
+          chip('Медиана актив.', mActive != null ? Math.round(mActive) : null, '#2dd4bf') +
           chip('Доля, %', mShare != null ? Math.round(mShare) + '%' : null, '#f59e0b') +
           chip('От парка, %', mAvailPct != null ? Math.round(mAvailPct) + '%' : null, '#a78bfa');
       }
