@@ -814,6 +814,7 @@
         <div class="fleet-section-kpi">
           <div class="fleet-kpi">
             <div class="fleet-kpi-val avail" id="fsAvail">—</div>
+            <div style="font-size:13px;font-weight:600;color:#60a5fa;opacity:.7;margin-top:2px" id="fsAvailPct">—</div>
             <div class="fleet-kpi-label">Доступность</div>
           </div>
           <div class="fleet-kpi">
@@ -2233,8 +2234,7 @@
         medRow.innerHTML =
           chip('Среднее доступн.', mAvail != null ? Math.round(mAvail) : null, '#60a5fa') +
           chip('Среднее актив.', mActive != null ? Math.round(mActive) : null, '#2dd4bf') +
-          chip('Доля, %', mShare != null ? Math.round(mShare) + '%' : null, '#f59e0b') +
-          chip('От парка, %', mAvailPct != null ? Math.round(mAvailPct) + '%' : null, '#a78bfa');
+          chip('Доля, %', mShare != null ? Math.round(mShare) + '%' : null, '#f59e0b');
       }
     }
 
@@ -2258,9 +2258,11 @@
         const active = last.active_objects ?? null;
         const share  = (avail && active) ? Math.round(active / avail * 100) : null;
 
-        document.getElementById('fsAvail').textContent  = avail  != null ? avail  : '—';
-        document.getElementById('fsActive').textContent = active != null ? active : '—';
-        document.getElementById('fsShare').textContent  = share  != null ? share + '%' : '—';
+        const availPctNow = (avail && fleetSize) ? Math.round(avail / fleetSize * 100) : null;
+        document.getElementById('fsAvail').textContent    = avail  != null ? avail  : '—';
+        document.getElementById('fsAvailPct').textContent = availPctNow != null ? availPctNow + '% от парка' : '—';
+        document.getElementById('fsActive').textContent   = active != null ? active : '—';
+        document.getElementById('fsShare').textContent    = share  != null ? share + '%' : '—';
         document.getElementById('fsShareBar').style.width = (share ?? 0) + '%';
         document.getElementById('fleetUpdated').textContent = 'последнее: ' + last.date;
 
