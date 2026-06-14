@@ -646,6 +646,10 @@
         <a class="nav-link active" href="dashboard.html">Аналитика</a>
         <span id="grafanaUpdatedAt" style="font-size:11px;color:#4b5563;margin-left:12px"></span>
         <button onclick="refreshGrafanaData()" id="btnRefreshGrafana" style="margin-left:8px;padding:3px 10px;font-size:11px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#9ca3af;cursor:pointer;transition:color .2s" onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#9ca3af'">⟳ Обновить</button>
+        <span style="color:#2d2d3d;margin:0 6px">|</span>
+        <button id="btnScan" onclick="startScan()" style="padding:3px 10px;font-size:11px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#9ca3af;cursor:pointer;transition:color .2s" onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#9ca3af'">🔍 Сканировать</button>
+        <span id="progressLabel" style="font-size:11px;color:#6b7280;margin-left:6px"></span>
+        <div style="display:inline-block;vertical-align:middle;width:50px;height:3px;background:#1e1e2a;border-radius:2px;margin-left:4px;overflow:hidden"><div id="progressBar" class="progress-bar" style="height:100%;width:0%"></div></div>
         <span class="last-update" id="lastUpdate" style="font-size:12px;color:#374151;margin-left:8px"></span>
       </div>
     </div>
@@ -653,23 +657,11 @@
 
   <div class="main">
 
-    <!-- Hero -->
-    <div class="hero">
-      <div class="hero-label">Доступны к аренде прямо сейчас</div>
-      <div class="hero-number loading" id="heroNumber">—</div>
-      <div class="hero-sub" id="heroSub">Нажмите «Сканировать», чтобы обновить данные</div>
-      <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
-      <div class="progress-label" id="progressLabel"></div>
-      <button class="btn" id="btnScan" onclick="startScan()">Сканировать</button>
-    </div>
-
     <!-- Stats -->
+    <span id="heroNumber" style="display:none"></span>
+    <span id="heroSub" style="display:none"></span>
+    <span id="cntUp" style="display:none"></span>
     <div class="stats">
-      <div class="stat-card">
-        <div class="stat-icon">✅</div>
-        <div class="stat-num green" id="cntUp">—</div>
-        <div class="stat-label">Доступны</div>
-      </div>
       <div class="stat-card">
         <div class="stat-icon">📈</div>
         <div class="stat-num yellow" id="cntPct">—</div>
@@ -1861,7 +1853,7 @@
       // Накопительные итоги для отображения в шапке
       const totalRev = revenue.reduce((s, v) => s + (v ?? 0), 0);
       const totalOrd = orders.reduce((s, v) => s + (v ?? 0), 0);
-      const raPeriodLabel = days === 1 ? '1 день' : days === 7 ? '7 дней' : days === 30 ? '30 дней' : 'всё время';
+      const raPeriodLabel = days === 1 ? 'сегодня' : days === 7 ? '7 дней' : days === 30 ? '30 дней' : 'всё время';
       const revEl = document.getElementById('raCumRev');
       const ordEl = document.getElementById('raCumOrd');
       if (revEl) revEl.textContent = `· итого за ${raPeriodLabel}: ${totalRev.toLocaleString('ru-RU')} ₽`;
@@ -3039,7 +3031,7 @@
         });
 
         document.getElementById('tdInsights').innerHTML = insights.join('');
-        const tdPeriodLabel = tdActiveDays === 1 ? '1 день' : tdActiveDays === 7 ? '7 дней' : tdActiveDays === 30 ? '30 дней' : 'всё время';
+        const tdPeriodLabel = tdActiveDays === 1 ? 'сегодня' : tdActiveDays === 7 ? '7 дней' : tdActiveDays === 30 ? '30 дней' : 'всё время';
         document.getElementById('tariffDemandSub').textContent =
           `${totalCnt.toLocaleString('ru-RU')} поездок · ${Math.round(totalRev/100).toLocaleString('ru-RU')} ₽ выручки · ${tdPeriodLabel}`;
 
