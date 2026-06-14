@@ -730,6 +730,7 @@
         </div>
         <div class="rev-chart-block">
           <div class="rev-chart-title">Доступность и активность по дням</div>
+          <div id="fsMedRow" style="display:flex;gap:12px;margin:10px 0 14px;flex-wrap:wrap"></div>
           <div class="rev-chart-wrap" style="height:320px"><canvas id="fsChart"></canvas></div>
         </div>
       </div>
@@ -2018,6 +2019,25 @@
           }
         }
       });
+
+      // Медианные значения крупными числами
+      const medRow = document.getElementById('fsMedRow');
+      if (medRow) {
+        const mAvail    = chartMedianVal(avail);
+        const mActive   = chartMedianVal(active);
+        const mShare    = chartMedianVal(share);
+        const mAvailPct = chartMedianVal(availPct);
+        const chip = (label, val, color) => val == null ? '' :
+          `<div style="background:#12121a;border:1px solid #2d2d3d;border-radius:10px;padding:8px 14px;min-width:90px">
+            <div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">${label}</div>
+            <div style="font-size:22px;font-weight:700;color:${color};line-height:1">${val}</div>
+          </div>`;
+        medRow.innerHTML =
+          chip('Медиана доступн.', mAvail != null ? Math.round(mAvail) : null, '#60a5fa') +
+          chip('Медиана актив.', mActive != null ? Math.round(mActive) : null, '#4ade80') +
+          chip('Доля, %', mShare != null ? Math.round(mShare) + '%' : null, '#f59e0b') +
+          chip('От парка, %', mAvailPct != null ? Math.round(mAvailPct) + '%' : null, '#a78bfa');
+      }
     }
 
     async function loadFleetSection() {
