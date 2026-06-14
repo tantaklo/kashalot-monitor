@@ -1130,7 +1130,8 @@
           <div class="chart-sub">История запуска устройств · данные Grafana</div>
         </div>
         <div class="spt-wrap" onclick="event.stopPropagation()">
-          <button class="spt active" onclick="setSectionPeriod('fg',this,30)">30д</button>
+          <button class="spt active" onclick="setSectionPeriod('fg',this,7)">7д</button>
+          <button class="spt" onclick="setSectionPeriod('fg',this,30)">30д</button>
           <button class="spt" onclick="setSectionPeriod('fg',this,90)">90д</button>
           <button class="spt" onclick="setSectionPeriod('fg',this,365)">365д</button>
           <button class="spt" onclick="setSectionPeriod('fg',this,0)">Всё</button>
@@ -3403,7 +3404,7 @@
     // --- Fleet growth section (hardcoded historical data) ---
     let FG_BASE, FG_FLEET_RAW, FG_ACTIVE_RAW;
     let fgChart1 = null, fgChart2 = null, fgChart3 = null;
-    let fgActivePeriod = 30;
+    let fgActivePeriod = 7;
     let fgFleetTotal = 0;
 
     function fgRenderCharts(days) {
