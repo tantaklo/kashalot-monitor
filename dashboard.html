@@ -2158,9 +2158,13 @@
     });
 
     let raResizeTimer;
+    // Сохраняем позицию прокрутки при каждом скролле
+    let _scrollSaveTimer;
     window.addEventListener('scroll', () => {
       clearTimeout(raResizeTimer);
       raResizeTimer = setTimeout(() => { Object.values(raCharts).forEach(c => c.resize()); }, 100);
+      clearTimeout(_scrollSaveTimer);
+      _scrollSaveTimer = setTimeout(() => { sessionStorage.setItem('dashScrollY', window.scrollY); }, 150);
     }, { passive: true });
 
     // --- Fleet section ---
@@ -3255,13 +3259,18 @@
       btn.disabled = false;
     }
 
-    loadFleetSection();
-    loadGrafanaAnalytics();
-    loadLiveKPI();
-    loadTariffPriceChart();
-    loadTariffDemand();
-    loadDevEffCompanies();
-    loadOutOfZone();
+    Promise.allSettled([
+      loadFleetSection(),
+      loadGrafanaAnalytics(),
+      loadLiveKPI(),
+      loadTariffPriceChart(),
+      loadTariffDemand(),
+      loadDevEffCompanies(),
+      loadOutOfZone(),
+    ]).then(() => {
+      const saved = sessionStorage.getItem('dashScrollY');
+      if (saved) { setTimeout(() => window.scrollTo({ top: parseInt(saved), behavior: 'instant' }), 100); }
+    });
     setGrafanaTimestamp();
     // Инсайты генерируются после загрузки данных (~3 сек)
     setTimeout(renderAndSaveInsights, 4000);
