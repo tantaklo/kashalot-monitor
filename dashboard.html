@@ -1251,6 +1251,19 @@
         scannedAt: new Date().toISOString(),
       }));
 
+      // Обновляем графики доступности текущим результатом сканирования
+      const livePoint = { date: today, max_available: up, min_available: up, scans: up };
+      lastHistory = [...lastHistory.filter(r => r.date !== today), livePoint]
+        .sort((a, b) => a.date.localeCompare(b.date));
+      drawChart(raActivePeriod ? lastHistory.slice(-raActivePeriod) : lastHistory);
+
+      // Обновляем раздел Флот
+      fsAllData = [...fsAllData.filter(r => r.date !== today), livePoint]
+        .sort((a, b) => a.date.localeCompare(b.date));
+      fsRenderChart(raActivePeriod);
+      document.getElementById('fsAvail').textContent = up;
+      document.getElementById('fsUpdated').textContent = 'скан · ' + today;
+
       btn.disabled = false;
       btn.textContent = 'Обновить';
       scanning = false;
