@@ -741,7 +741,7 @@
     </div>
 
     <!-- Global period selector -->
-    <div class="global-period-bar">
+    <div class="global-period-bar" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
       <span class="global-period-label">Период</span>
       <div class="period-tabs" id="globalPeriodTabs">
         <button class="period-tab" data-period="1">1 день</button>
@@ -749,6 +749,10 @@
         <button class="period-tab" data-period="30">30 дней</button>
         <button class="period-tab" data-period="0">Всё время</button>
       </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b7280;cursor:pointer;user-select:none">
+        <input type="checkbox" id="chkIncludeToday" style="width:14px;height:14px;cursor:pointer;accent-color:#60a5fa">
+        включить сегодня
+      </label>
     </div>
 
 
@@ -2032,6 +2036,8 @@
     }
 
     // Sync all per-section tabs to a given period
+    let includeToday = false;
+
     function updateTopKPI(days) {
       const today = new Date(Date.now() + 3*60*60*1000).toISOString().slice(0,10);
       const fleetSz = fleetSize || 1180;
@@ -2041,8 +2047,8 @@
       const availToday  = todayRow?.max_available  ?? null;
       const activeToday = todayRow?.active_objects ?? null;
 
-      // период — без сегодняшнего дня для 1/7/30; для «Всё» — всё включая сегодня
-      const hist = days === 0 ? fsAllData : fsAllData.filter(r => r.date < today);
+      // период: включаем сегодня если чекбокс активен или «Всё время»
+      const hist = (days === 0 || includeToday) ? fsAllData : fsAllData.filter(r => r.date < today);
       const slice = days > 0 ? hist.slice(-days) : hist;
       const avg = arr => { const v = arr.filter(x => x != null && !isNaN(x)); return v.length ? Math.round(v.reduce((s,x)=>s+x,0)/v.length) : null; };
       const avgAvail  = avg(slice.map(r => r.max_available));
@@ -2076,6 +2082,11 @@
         });
       });
     }
+
+    document.getElementById('chkIncludeToday').addEventListener('change', e => {
+      includeToday = e.target.checked;
+      updateTopKPI(raActivePeriod);
+    });
 
     // Global period selector — syncs all sections at once
     document.getElementById('globalPeriodTabs').querySelectorAll('.period-tab').forEach(btn => {
