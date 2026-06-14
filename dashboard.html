@@ -741,7 +741,6 @@
         <div>
           <div class="chart-title">Аналитика выручки <span class="toggle-arrow open" id="revAnalyticsArrow">▼</span></div>
           <div class="chart-sub" id="revAnalyticsUpdated">из админки · фиксируется в 23:55</div>
-          <div class="chart-sub" id="raCumSummary" style="margin-top:3px;color:#60a5fa;font-weight:500"></div>
         </div>
         <div class="spt-wrap" onclick="event.stopPropagation()">
           <button class="spt" onclick="setSectionPeriod('ra',this,1)">1д</button>
@@ -790,11 +789,11 @@
           <div class="rev-chart-wrap"><canvas id="raChartPerUnit"></canvas></div>
         </div>
         <div class="rev-chart-block">
-          <div class="rev-chart-title">Выручка итого, ₽/день</div>
+          <div class="rev-chart-title">Выручка итого, ₽/день <span id="raCumRev" style="font-size:11px;font-weight:500;color:#4ade80;margin-left:8px"></span></div>
           <div class="rev-chart-wrap"><canvas id="raChartRevenue"></canvas></div>
         </div>
         <div class="rev-chart-block">
-          <div class="rev-chart-title">Заказы в день</div>
+          <div class="rev-chart-title">Заказы в день <span id="raCumOrd" style="font-size:11px;font-weight:500;color:#f59e0b;margin-left:8px"></span></div>
           <div class="rev-chart-wrap"><canvas id="raChartOrders"></canvas></div>
         </div>
         <div class="rev-chart-block">
@@ -1862,8 +1861,10 @@
       const totalRev = revenue.reduce((s, v) => s + (v ?? 0), 0);
       const totalOrd = orders.reduce((s, v) => s + (v ?? 0), 0);
       const raPeriodLabel = days === 1 ? '1 день' : days === 7 ? '7 дней' : days === 30 ? '30 дней' : 'всё время';
-      const cumEl = document.getElementById('raCumSummary');
-      if (cumEl) cumEl.textContent = `Итого за ${raPeriodLabel}: ${totalRev.toLocaleString('ru-RU')} ₽ · ${totalOrd.toLocaleString('ru-RU')} заказов`;
+      const revEl = document.getElementById('raCumRev');
+      const ordEl = document.getElementById('raCumOrd');
+      if (revEl) revEl.textContent = `· итого за ${raPeriodLabel}: ${totalRev.toLocaleString('ru-RU')} ₽`;
+      if (ordEl) ordEl.textContent = `· итого за ${raPeriodLabel}: ${totalOrd.toLocaleString('ru-RU')}`;
 
       ['perUnit','revenue','orders','avgCheck','avail'].forEach(k => {
         if (raCharts[k]) { raCharts[k].destroy(); delete raCharts[k]; }
