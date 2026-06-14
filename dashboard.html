@@ -131,25 +131,35 @@
     .top-kpi-big-sub { font-size: 12px; color: #374151; }
     .top-kpi-row {
       display: flex;
-      align-items: baseline;
-      gap: 10px;
-      padding: 8px 0;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 0;
       border-top: 1px solid #1e1e2a;
     }
     .top-kpi-row:first-of-type { border-top: none; }
     .top-kpi-tag {
       font-size: 11px;
       color: #4b5563;
-      min-width: 72px;
+      width: 72px;
       flex-shrink: 0;
     }
     .top-kpi-num {
       font-size: 26px;
       font-weight: 700;
       line-height: 1;
-      min-width: 44px;
+      width: 48px;
+      flex-shrink: 0;
     }
-    .top-kpi-pct { font-size: 11px; color: #6b7280; line-height: 1.3; }
+    .top-kpi-pct-group { display: flex; flex-direction: column; gap: 2px; }
+    .top-kpi-pct-val {
+      font-size: 20px;
+      font-weight: 700;
+      color: #a78bfa;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .top-kpi-pct-val.dim { opacity: .6; }
+    .top-kpi-pct-lbl { font-size: 10px; color: #4b5563; }
 
     /* legacy — kept for JS refs */
     .stat-num.green  { color: #4ade80; }
@@ -714,12 +724,18 @@
         <div class="top-kpi-row">
           <span class="top-kpi-tag">Сегодня</span>
           <span class="top-kpi-num" style="color:#60a5fa" id="topAvailToday">—</span>
-          <span class="top-kpi-pct" id="topAvailTodayPct"></span>
+          <div class="top-kpi-pct-group">
+            <span class="top-kpi-pct-val" id="topAvailTodayPct">—</span>
+            <span class="top-kpi-pct-lbl">от парка</span>
+          </div>
         </div>
         <div class="top-kpi-row">
           <span class="top-kpi-tag" id="topAvailPeriodTag">Ср. 7 дн.</span>
           <span class="top-kpi-num" style="color:#60a5fa;opacity:.65" id="topAvailPeriod">—</span>
-          <span class="top-kpi-pct" id="topAvailPeriodPct"></span>
+          <div class="top-kpi-pct-group">
+            <span class="top-kpi-pct-val dim" id="topAvailPeriodPct">—</span>
+            <span class="top-kpi-pct-lbl">от парка</span>
+          </div>
         </div>
       </div>
 
@@ -729,12 +745,22 @@
         <div class="top-kpi-row">
           <span class="top-kpi-tag">Сегодня</span>
           <span class="top-kpi-num" style="color:#2dd4bf" id="topActiveToday">—</span>
-          <span class="top-kpi-pct" id="topActiveTodayPct"></span>
+          <div class="top-kpi-pct-group">
+            <span class="top-kpi-pct-val" id="topActiveTodayPctD">—</span>
+            <span class="top-kpi-pct-lbl" id="topActiveTodayLblD">от доступных</span>
+            <span class="top-kpi-pct-val dim" id="topActiveTodayPctP">—</span>
+            <span class="top-kpi-pct-lbl">от парка</span>
+          </div>
         </div>
         <div class="top-kpi-row">
           <span class="top-kpi-tag" id="topActivePeriodTag">Ср. 7 дн.</span>
           <span class="top-kpi-num" style="color:#2dd4bf;opacity:.65" id="topActivePeriod">—</span>
-          <span class="top-kpi-pct" id="topActivePeriodPct"></span>
+          <div class="top-kpi-pct-group">
+            <span class="top-kpi-pct-val dim" id="topActivePeriodPctD">—</span>
+            <span class="top-kpi-pct-lbl">от доступных</span>
+            <span class="top-kpi-pct-val dim" style="opacity:.4" id="topActivePeriodPctP">—</span>
+            <span class="top-kpi-pct-lbl">от парка</span>
+          </div>
         </div>
       </div>
 
@@ -2062,18 +2088,21 @@
       const fmt = v => v != null ? v.toLocaleString('ru-RU') : '—';
       const pct = (a, b) => (a != null && b) ? Math.round(a/b*100) + '%' : null;
 
+      const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val ?? '—'; };
+
       // Доступность
-      document.getElementById('topAvailToday').textContent  = fmt(availToday);
-      document.getElementById('topAvailPeriod').textContent = fmt(avgAvail);
-      document.getElementById('topAvailTodayPct').textContent  = pct(availToday, fleetSz) ? pct(availToday, fleetSz) + ' от парка' : '';
-      document.getElementById('topAvailPeriodPct').textContent = pct(avgAvail,   fleetSz) ? pct(avgAvail,   fleetSz) + ' от парка' : '';
+      set('topAvailToday',     fmt(availToday));
+      set('topAvailPeriod',    fmt(avgAvail));
+      set('topAvailTodayPct',  pct(availToday, fleetSz) ?? '—');
+      set('topAvailPeriodPct', pct(avgAvail,   fleetSz) ?? '—');
 
       // Активность
-      document.getElementById('topActiveToday').textContent  = fmt(activeToday);
-      document.getElementById('topActivePeriod').textContent = fmt(avgActive);
-      const buildActPct = (act, avail) => [pct(act, avail) ? pct(act, avail)+' от доступных' : null, pct(act, fleetSz) ? pct(act, fleetSz)+' от парка' : null].filter(Boolean).join(' · ');
-      document.getElementById('topActiveTodayPct').textContent  = buildActPct(activeToday, availToday);
-      document.getElementById('topActivePeriodPct').textContent = buildActPct(avgActive,   avgAvail);
+      set('topActiveToday',       fmt(activeToday));
+      set('topActivePeriod',      fmt(avgActive));
+      set('topActiveTodayPctD',   pct(activeToday, availToday) ?? '—');
+      set('topActiveTodayPctP',   pct(activeToday, fleetSz)   ?? '—');
+      set('topActivePeriodPctD',  pct(avgActive,   avgAvail)  ?? '—');
+      set('topActivePeriodPctP',  pct(avgActive,   fleetSz)   ?? '—');
     }
 
     function syncAllSptTabs(days) {
