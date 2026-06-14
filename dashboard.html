@@ -150,16 +150,16 @@
       width: 48px;
       flex-shrink: 0;
     }
-    .top-kpi-pct-group { display: flex; flex-direction: column; gap: 2px; }
+    .top-kpi-pct-group { display: flex; flex-direction: column; gap: 4px; }
+    .top-kpi-pct-row { display: flex; align-items: baseline; gap: 5px; }
     .top-kpi-pct-val {
-      font-size: 20px;
+      font-size: 26px;
       font-weight: 700;
-      color: #a78bfa;
       line-height: 1;
       white-space: nowrap;
     }
-    .top-kpi-pct-val.dim { opacity: .6; }
-    .top-kpi-pct-lbl { font-size: 10px; color: #4b5563; }
+    .top-kpi-pct-val.dim { opacity: .55; }
+    .top-kpi-pct-lbl { font-size: 10px; color: #4b5563; white-space: nowrap; }
 
     /* legacy — kept for JS refs */
     .stat-num.green  { color: #4ade80; }
@@ -725,16 +725,20 @@
           <span class="top-kpi-tag">Сегодня</span>
           <span class="top-kpi-num" style="color:#60a5fa" id="topAvailToday">—</span>
           <div class="top-kpi-pct-group">
-            <span class="top-kpi-pct-val" id="topAvailTodayPct">—</span>
-            <span class="top-kpi-pct-lbl">от парка</span>
+            <div class="top-kpi-pct-row">
+              <span class="top-kpi-pct-val" style="color:#60a5fa" id="topAvailTodayPct">—</span>
+              <span class="top-kpi-pct-lbl">от парка</span>
+            </div>
           </div>
         </div>
         <div class="top-kpi-row">
           <span class="top-kpi-tag" id="topAvailPeriodTag">Ср. 7 дн.</span>
-          <span class="top-kpi-num" style="color:#60a5fa;opacity:.65" id="topAvailPeriod">—</span>
+          <span class="top-kpi-num" style="color:#60a5fa;opacity:.55" id="topAvailPeriod">—</span>
           <div class="top-kpi-pct-group">
-            <span class="top-kpi-pct-val dim" id="topAvailPeriodPct">—</span>
-            <span class="top-kpi-pct-lbl">от парка</span>
+            <div class="top-kpi-pct-row">
+              <span class="top-kpi-pct-val" style="color:#60a5fa;opacity:.55" id="topAvailPeriodPct">—</span>
+              <span class="top-kpi-pct-lbl">от парка</span>
+            </div>
           </div>
         </div>
       </div>
@@ -746,20 +750,28 @@
           <span class="top-kpi-tag">Сегодня</span>
           <span class="top-kpi-num" style="color:#2dd4bf" id="topActiveToday">—</span>
           <div class="top-kpi-pct-group">
-            <span class="top-kpi-pct-val" id="topActiveTodayPctD">—</span>
-            <span class="top-kpi-pct-lbl" id="topActiveTodayLblD">от доступных</span>
-            <span class="top-kpi-pct-val dim" id="topActiveTodayPctP">—</span>
-            <span class="top-kpi-pct-lbl">от парка</span>
+            <div class="top-kpi-pct-row">
+              <span class="top-kpi-pct-val" style="color:#2dd4bf" id="topActiveTodayPctD">—</span>
+              <span class="top-kpi-pct-lbl">от доступных</span>
+            </div>
+            <div class="top-kpi-pct-row">
+              <span class="top-kpi-pct-val" style="color:#2dd4bf;opacity:.55" id="topActiveTodayPctP">—</span>
+              <span class="top-kpi-pct-lbl">от парка</span>
+            </div>
           </div>
         </div>
         <div class="top-kpi-row">
           <span class="top-kpi-tag" id="topActivePeriodTag">Ср. 7 дн.</span>
-          <span class="top-kpi-num" style="color:#2dd4bf;opacity:.65" id="topActivePeriod">—</span>
+          <span class="top-kpi-num" style="color:#2dd4bf;opacity:.55" id="topActivePeriod">—</span>
           <div class="top-kpi-pct-group">
-            <span class="top-kpi-pct-val dim" id="topActivePeriodPctD">—</span>
-            <span class="top-kpi-pct-lbl">от доступных</span>
-            <span class="top-kpi-pct-val dim" style="opacity:.4" id="topActivePeriodPctP">—</span>
-            <span class="top-kpi-pct-lbl">от парка</span>
+            <div class="top-kpi-pct-row">
+              <span class="top-kpi-pct-val" style="color:#2dd4bf;opacity:.55" id="topActivePeriodPctD">—</span>
+              <span class="top-kpi-pct-lbl">от доступных</span>
+            </div>
+            <div class="top-kpi-pct-row">
+              <span class="top-kpi-pct-val" style="color:#2dd4bf;opacity:.35" id="topActivePeriodPctP">—</span>
+              <span class="top-kpi-pct-lbl">от парка</span>
+            </div>
           </div>
         </div>
       </div>
