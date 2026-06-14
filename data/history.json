@@ -39,10 +39,10 @@
     "date": "2026-06-14",
     "active_objects": 2,
     "max_available": 200,
-    "min_available": 197,
-    "peak_rented": 3,
-    "offline": 1797,
-    "total": 1997,
-    "scans": 2
+    "min_available": 186,
+    "peak_rented": 14,
+    "offline": 1808,
+    "total": 1994,
+    "scans": 3
   }
 ]
