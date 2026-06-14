@@ -361,6 +361,12 @@
     }
     .tariff-summary b { color: #e2e8f0; font-weight: 600; }
 
+    /* Per-section period tabs */
+    .spt-wrap { display:flex;gap:2px;background:#0a0a10;border:1px solid #2d2d3d;border-radius:8px;padding:2px; }
+    .spt { background:none;border:none;border-radius:6px;color:#6b7280;font-size:11px;font-weight:500;padding:4px 9px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s; }
+    .spt.active { background:#1e1e2a;color:#e2e8f0; }
+    .spt:hover:not(.active) { color:#94a3b8; }
+
     /* Collapsible sections */
     .chart-header.collapsible { cursor: pointer; user-select: none; }
     .chart-header.collapsible:hover .chart-title { color: #94a3b8; }
@@ -613,6 +619,12 @@
           <div class="chart-title">Динамика доступности</div>
           <div class="chart-sub">Доступные к аренде · всего в парке · % доступности</div>
         </div>
+        <div class="spt-wrap" id="availSptWrap">
+          <button class="spt" onclick="setSectionPeriod('avail',this,1)">1д</button>
+          <button class="spt active" onclick="setSectionPeriod('avail',this,7)">7д</button>
+          <button class="spt" onclick="setSectionPeriod('avail',this,30)">30д</button>
+          <button class="spt" onclick="setSectionPeriod('avail',this,0)">Всё</button>
+        </div>
       </div>
       <div class="chart-wrap">
         <div class="chart-empty" id="chartEmpty">Данные появятся после первого автоматического сканирования</div>
@@ -640,6 +652,12 @@
         <div>
           <div class="chart-title">Флот · доступность и активность <span class="toggle-arrow open" id="fleetArrow">▼</span></div>
           <div class="chart-sub" id="fleetUpdated">из history.json</div>
+        </div>
+        <div class="spt-wrap" onclick="event.stopPropagation()">
+          <button class="spt" onclick="setSectionPeriod('fleet',this,1)">1д</button>
+          <button class="spt active" onclick="setSectionPeriod('fleet',this,7)">7д</button>
+          <button class="spt" onclick="setSectionPeriod('fleet',this,30)">30д</button>
+          <button class="spt" onclick="setSectionPeriod('fleet',this,0)">Всё</button>
         </div>
       </div>
       <div class="section-body open" id="fleetBody">
@@ -673,6 +691,12 @@
         <div>
           <div class="chart-title">Аналитика выручки <span class="toggle-arrow open" id="revAnalyticsArrow">▼</span></div>
           <div class="chart-sub" id="revAnalyticsUpdated">из админки · фиксируется в 23:55</div>
+        </div>
+        <div class="spt-wrap" onclick="event.stopPropagation()">
+          <button class="spt" onclick="setSectionPeriod('ra',this,1)">1д</button>
+          <button class="spt active" onclick="setSectionPeriod('ra',this,7)">7д</button>
+          <button class="spt" onclick="setSectionPeriod('ra',this,30)">30д</button>
+          <button class="spt" onclick="setSectionPeriod('ra',this,0)">Всё</button>
         </div>
       </div>
       <div class="section-body open" id="revAnalyticsBody">
@@ -742,6 +766,12 @@
           <div class="chart-title">Цена минуты по тарифам <span class="toggle-arrow open" id="tariffPriceArrow">▼</span></div>
           <div class="chart-sub" id="tariffPriceUpdated">предложение клиентам · из тарифной истории</div>
         </div>
+        <div class="spt-wrap" onclick="event.stopPropagation()">
+          <button class="spt" onclick="setSectionPeriod('tp',this,1)">1д</button>
+          <button class="spt active" onclick="setSectionPeriod('tp',this,7)">7д</button>
+          <button class="spt" onclick="setSectionPeriod('tp',this,30)">30д</button>
+          <button class="spt" onclick="setSectionPeriod('tp',this,0)">Всё</button>
+        </div>
       </div>
       <div class="section-body open" id="tariffPriceBody">
         <div class="rev-chart-block">
@@ -769,6 +799,12 @@
         <div>
           <div class="chart-title">Структура спроса по тарифам <span class="toggle-arrow open" id="tariffDemandArrow">▼</span></div>
           <div class="chart-sub" id="tariffDemandSub">доля в выручке vs. доля в штуках</div>
+        </div>
+        <div class="spt-wrap" onclick="event.stopPropagation()">
+          <button class="spt" onclick="setSectionPeriod('td',this,1)">1д</button>
+          <button class="spt active" onclick="setSectionPeriod('td',this,7)">7д</button>
+          <button class="spt" onclick="setSectionPeriod('td',this,30)">30д</button>
+          <button class="spt" onclick="setSectionPeriod('td',this,0)">Всё</button>
         </div>
       </div>
       <div class="section-body open" id="tariffDemandBody">
@@ -876,6 +912,12 @@
           <div class="chart-title">Инсайты <span class="toggle-arrow open" id="insightsArrow">▼</span></div>
           <div class="chart-sub" id="insightsSub">автоматические выводы по данным</div>
         </div>
+        <div class="spt-wrap" onclick="event.stopPropagation()">
+          <button class="spt" onclick="setSectionPeriod('ins',this,1)">1д</button>
+          <button class="spt active" onclick="setSectionPeriod('ins',this,7)">7д</button>
+          <button class="spt" onclick="setSectionPeriod('ins',this,30)">30д</button>
+          <button class="spt" onclick="setSectionPeriod('ins',this,0)">Всё</button>
+        </div>
       </div>
       <div class="section-body open" id="insightsBody">
         <div id="insightsBadges" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px"></div>
@@ -898,6 +940,12 @@
         <div>
           <div class="chart-title">📊 Эффективность устройств <span class="toggle-arrow open" id="devEffArrow">▼</span></div>
           <div class="chart-sub" id="devEffSub">выручка по КШ внутри компании</div>
+        </div>
+        <div class="spt-wrap" onclick="event.stopPropagation()">
+          <button class="spt" onclick="setSectionPeriod('dev',this,1)">1д</button>
+          <button class="spt active" onclick="setSectionPeriod('dev',this,7)">7д</button>
+          <button class="spt" onclick="setSectionPeriod('dev',this,30)">30д</button>
+          <button class="spt" onclick="setSectionPeriod('dev',this,0)">Всё</button>
         </div>
       </div>
       <div class="section-body open" id="devEffBody">
@@ -1763,16 +1811,64 @@
       }
     }
 
-    let raActivePeriod = 7;
+    // Per-section period state (all default 7 days)
+    const sectionPeriods = { avail: 7, fleet: 7, ra: 7, tp: 7, td: 7, ins: 7, dev: 7 };
+    let raActivePeriod = 7; // kept for compatibility
+
+    function setSectionPeriod(section, btn, days) {
+      btn.closest('.spt-wrap').querySelectorAll('.spt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      sectionPeriods[section] = days;
+      switch (section) {
+        case 'avail':
+          if (lastHistory.length) drawChart(days ? lastHistory.slice(-days) : lastHistory);
+          break;
+        case 'fleet':
+          if (fsAllData.length) fsRenderChart(days);
+          break;
+        case 'ra':
+          raActivePeriod = days;
+          raRenderCharts(days);
+          break;
+        case 'tp':
+          loadTariffPriceChart();
+          break;
+        case 'td':
+          tdActiveDays = days;
+          loadTariffDemand();
+          break;
+        case 'ins':
+          renderAndSaveInsights();
+          break;
+        case 'dev':
+          loadDevEffCompanies();
+          break;
+      }
+    }
+
+    // Sync all per-section tabs to a given period
+    function syncAllSptTabs(days) {
+      document.querySelectorAll('.spt-wrap').forEach(wrap => {
+        wrap.querySelectorAll('.spt').forEach(b => {
+          const bDays = b.getAttribute('onclick').match(/,this,(\d+)\)/) || b.getAttribute('onclick').match(/,this,(0)\)/);
+          if (bDays) b.classList.toggle('active', parseInt(bDays[1]) === days);
+        });
+      });
+    }
+
+    // Global period selector — syncs all sections at once
     document.getElementById('globalPeriodTabs').querySelectorAll('.period-tab').forEach(btn => {
       btn.addEventListener('click', () => {
         document.getElementById('globalPeriodTabs').querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        raActivePeriod = parseInt(btn.dataset.period);
-        raRenderCharts(raActivePeriod);
-        if (fsAllData.length) fsRenderChart(raActivePeriod);
-        if (lastHistory.length) drawChart(raActivePeriod ? lastHistory.slice(-raActivePeriod) : lastHistory);
-        tdActiveDays = raActivePeriod;
+        const days = parseInt(btn.dataset.period);
+        raActivePeriod = days;
+        Object.keys(sectionPeriods).forEach(k => { sectionPeriods[k] = days; });
+        syncAllSptTabs(days);
+        if (lastHistory.length) drawChart(days ? lastHistory.slice(-days) : lastHistory);
+        if (fsAllData.length) fsRenderChart(days);
+        raRenderCharts(days);
+        tdActiveDays = days;
         loadTariffPriceChart();
         loadTariffDemand();
         loadDevEffCompanies();
@@ -2002,8 +2098,8 @@
           grafanaQuery(`SELECT DATE_FORMAT(o.start_time,'%Y-%m-%d') as date, CASE WHEN a.description LIKE '%Детский%' AND a.description LIKE '%5 мин%' THEN 'Детский|5 мин' WHEN a.description LIKE '%Детский%' AND a.description LIKE '%10 мин%' THEN 'Детский|10 мин' WHEN a.description LIKE '%Быстрый%' AND a.description LIKE '%5 мин%' THEN 'Быстрый|5 мин' WHEN a.description LIKE '%Быстрый%' AND a.description LIKE '%10 мин%' THEN 'Быстрый|10 мин' END as slot, CASE WHEN a.description LIKE '%5 мин%' THEN 5 ELSE 10 END as slot_min, SUM(o.total_cost) as total_kopecks, COUNT(*) as cnt FROM orders o JOIN abonements a ON o.abonement_id=a.id WHERE o.status='FINISHED' AND (a.description LIKE '%Детский%' OR a.description LIKE '%Быстрый%') AND (a.description LIKE '%5 мин%' OR a.description LIKE '%10 мин%') GROUP BY date,slot,slot_min ORDER BY date,slot`).catch(() => []),
         ]);
 
-        const cutoff = raActivePeriod > 0
-          ? (() => { const d = new Date(Date.now()+3*60*60*1000); d.setDate(d.getDate()-raActivePeriod); return d.toISOString().slice(0,10); })()
+        const cutoff = sectionPeriods.tp > 0
+          ? (() => { const d = new Date(Date.now()+3*60*60*1000); d.setDate(d.getDate()-sectionPeriods.tp); return d.toISOString().slice(0,10); })()
           : null;
         const filtered = tariffRes.filter(r => !cutoff || r.date >= cutoff);
         const labels = filtered.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
@@ -2452,7 +2548,7 @@
     let devEffCompanies = [];
 
     async function loadDevEffCompanies() {
-      const days = raActivePeriod || 30;
+      const days = sectionPeriods.dev;
       const interval = days ? `AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${days} DAY)` : '';
       try {
         const rows = await grafanaQuery(`
@@ -2481,7 +2577,7 @@
       const el = document.getElementById('devEffTable');
       const sub = document.getElementById('devEffSub');
       el.innerHTML = '<div style="padding:16px;color:#6b7280;font-size:13px">Загрузка...</div>';
-      const days = raActivePeriod || 30;
+      const days = sectionPeriods.dev;
       const periodLabel = days === 1 ? '1 день' : days === 7 ? '7 дней' : days === 30 ? '30 дней' : 'всё время';
       const interval = days ? `AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${days} DAY)` : '';
 
