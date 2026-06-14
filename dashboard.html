@@ -2323,7 +2323,7 @@
         } catch {}
 
         raUpdateKPI(raAllData);
-        requestAnimationFrame(() => raRenderCharts(raActivePeriod));
+        requestAnimationFrame(() => { raRenderCharts(raActivePeriod); updateTopKPI(raActivePeriod); });
         const last = raAllData[raAllData.length - 1];
         document.getElementById('raUpdatedAt').textContent = 'Обновлено: ' + last.date;
         document.getElementById('revAnalyticsUpdated').textContent = 'из Grafana · ' + last.date;
@@ -2334,7 +2334,7 @@
           if (!res.ok) return;
           raAllData = (await res.json()).sort((a, b) => a.date.localeCompare(b.date));
           raUpdateKPI(raAllData);
-          requestAnimationFrame(() => raRenderCharts(raActivePeriod));
+          requestAnimationFrame(() => { raRenderCharts(raActivePeriod); updateTopKPI(raActivePeriod); });
           const last = raAllData[raAllData.length - 1];
           document.getElementById('raUpdatedAt').textContent = 'Обновлено: ' + last.date + ' (кэш)';
         } catch(e2) { console.error('Revenue analytics fallback:', e2); }
