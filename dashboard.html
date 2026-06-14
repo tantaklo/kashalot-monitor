@@ -786,7 +786,7 @@
         </div>
 
         <div class="rev-chart-block">
-          <div class="rev-chart-title">Выручка на кашалот: активный vs доступный, ₽/день</div>
+          <div class="rev-chart-title">Выручка на кашалот: активный vs доступный, ₽/день <span id="raMeanPerUnit" style="font-size:11px;font-weight:500;color:#60a5fa;margin-left:8px"></span></div>
           <div class="rev-chart-wrap"><canvas id="raChartPerUnit"></canvas></div>
         </div>
         <div class="rev-chart-block">
@@ -798,11 +798,11 @@
           <div class="rev-chart-wrap"><canvas id="raChartOrders"></canvas></div>
         </div>
         <div class="rev-chart-block">
-          <div class="rev-chart-title">Средний чек, ₽</div>
+          <div class="rev-chart-title">Средний чек, ₽ <span id="raMeanAvgCheck" style="font-size:11px;font-weight:500;color:#f472b6;margin-left:8px"></span></div>
           <div class="rev-chart-wrap"><canvas id="raChartAvgCheck"></canvas></div>
         </div>
         <div class="rev-chart-block">
-          <div class="rev-chart-title">Активность / Доступность, %</div>
+          <div class="rev-chart-title">Активность / Доступность, % <span id="raMeanAvail" style="font-size:11px;font-weight:500;color:#34d399;margin-left:8px"></span></div>
           <div class="rev-chart-wrap"><canvas id="raChartAvail"></canvas></div>
         </div>
 
@@ -1866,6 +1866,18 @@
       const ordEl = document.getElementById('raCumOrd');
       if (revEl) revEl.textContent = `· итого за ${raPeriodLabel}: ${totalRev.toLocaleString('ru-RU')} ₽`;
       if (ordEl) ordEl.textContent = `· итого за ${raPeriodLabel}: ${totalOrd.toLocaleString('ru-RU')}`;
+
+      const mean = arr => { const v = arr.filter(x => x != null); return v.length ? Math.round(v.reduce((s,x) => s+x, 0) / v.length) : null; };
+      const mPerUnit  = mean(perUnit);
+      const mPerAvail = mean(perAvail);
+      const mAvgCheck = mean(avgCheck);
+      const mAvail    = mean(avail);
+      const puEl = document.getElementById('raMeanPerUnit');
+      const acEl = document.getElementById('raMeanAvgCheck');
+      const avEl = document.getElementById('raMeanAvail');
+      if (puEl) puEl.textContent = mPerUnit  != null ? `· среднее за ${raPeriodLabel}: ${mPerUnit.toLocaleString('ru-RU')} ₽ / ${mPerAvail != null ? mPerAvail.toLocaleString('ru-RU') + ' ₽' : '—'}` : '';
+      if (acEl) acEl.textContent = mAvgCheck != null ? `· среднее за ${raPeriodLabel}: ${mAvgCheck.toLocaleString('ru-RU')} ₽` : '';
+      if (avEl) avEl.textContent = mAvail    != null ? `· среднее за ${raPeriodLabel}: ${mAvail}%` : '';
 
       ['perUnit','revenue','orders','avgCheck','avail'].forEach(k => {
         if (raCharts[k]) { raCharts[k].destroy(); delete raCharts[k]; }
