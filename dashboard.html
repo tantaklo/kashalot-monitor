@@ -2436,10 +2436,14 @@
           return [s ?? '—', '#6b7280'];
         };
 
+        const ozKey = `oz_reviewed_${today}`;
+        const ozChecked = new Set(JSON.parse(localStorage.getItem(ozKey) || '[]').map(String));
+
         const html = `
           <table style="width:100%;border-collapse:collapse;font-size:13px">
             <thead>
               <tr style="border-bottom:1px solid #2d2d3d;color:#6b7280">
+                <th style="padding:8px 12px;text-align:center;white-space:nowrap;width:36px">✓</th>
                 <th style="padding:8px 12px;text-align:left;white-space:nowrap">Заказ</th>
                 <th style="padding:8px 12px;text-align:left;white-space:nowrap">Статус</th>
                 <th style="padding:8px 12px;text-align:left">Компания</th>
@@ -2454,7 +2458,11 @@
                 const pctColor = pct >= 50 ? '#f87171' : pct >= 20 ? '#fbbf24' : '#94a3b8';
                 const adminUrl = `https://ecoskat.bumerang.tech/admin/order/${r.order_id}`;
                 const [sLabel, sColor] = statusLabel(r.pay_status);
-                return `<tr style="border-bottom:1px solid #1e1e2a;${i%2===1?'background:#111118':''}">
+                const done = ozChecked.has(String(r.order_id));
+                return `<tr data-oz-id="${r.order_id}" style="border-bottom:1px solid #1e1e2a;${i%2===1?'background:#111118':''};${done?'opacity:0.35':''}">
+                  <td style="padding:8px 12px;text-align:center">
+                    <input type="checkbox" class="oz-check" data-id="${r.order_id}" ${done?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:#4ade80">
+                  </td>
                   <td style="padding:8px 12px"><a href="${adminUrl}" target="_blank" style="color:#60a5fa;text-decoration:none;font-weight:600">#${r.order_id}</a></td>
                   <td style="padding:8px 12px;font-size:12px;font-weight:600;color:${sColor}">${sLabel}</td>
                   <td style="padding:8px 12px;color:#cbd5e1">${r.company}</td>
@@ -2466,6 +2474,16 @@
             </tbody>
           </table>`;
         tbl.innerHTML = html;
+
+        tbl.querySelectorAll('.oz-check').forEach(cb => {
+          cb.addEventListener('change', function() {
+            const id = String(this.dataset.id);
+            const set = new Set(JSON.parse(localStorage.getItem(ozKey) || '[]').map(String));
+            if (this.checked) set.add(id); else set.delete(id);
+            localStorage.setItem(ozKey, JSON.stringify([...set]));
+            this.closest('tr').style.opacity = this.checked ? '0.35' : '';
+          });
+        });
       } catch(e) {
         document.getElementById('ozSub').textContent = 'Ошибка загрузки';
         console.error('loadOutOfZone:', e);
