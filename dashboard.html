@@ -789,11 +789,11 @@
           <div class="rev-chart-wrap"><canvas id="raChartPerUnit"></canvas></div>
         </div>
         <div class="rev-chart-block">
-          <div class="rev-chart-title">Выручка итого, ₽/день</div>
+          <div class="rev-chart-title">Выручка накопительно за период, ₽</div>
           <div class="rev-chart-wrap"><canvas id="raChartRevenue"></canvas></div>
         </div>
         <div class="rev-chart-block">
-          <div class="rev-chart-title">Заказы в день</div>
+          <div class="rev-chart-title">Заказы накопительно за период</div>
           <div class="rev-chart-wrap"><canvas id="raChartOrders"></canvas></div>
         </div>
         <div class="rev-chart-block">
@@ -1857,14 +1857,19 @@
       const avgCheck  = rows.map(r => r.avgCheck ?? null);
       const avail     = rows.map(r => r.totalObjects ? Math.round(r.activeObjects / r.totalObjects * 100) : null);
 
+      // Накопительные значения для абсолютных метрик
+      let rSum = 0, oSum = 0;
+      const revCum = revenue.map(v => v != null ? (rSum += v) : null);
+      const ordCum = orders.map(v  => v != null ? (oSum += v) : null);
+
       ['perUnit','revenue','orders','avgCheck','avail'].forEach(k => {
         if (raCharts[k]) { raCharts[k].destroy(); delete raCharts[k]; }
       });
 
       raCharts.perUnit  = raBuildDualChart('raChartPerUnit', labels, perUnit, perAvail,
         '#60a5fa', '#f472b6', 'На активный', 'На доступный', '₽');
-      raCharts.revenue  = raBuildChart('raChartRevenue',  labels, revenue,   '#4ade80', '₽');
-      raCharts.orders   = raBuildChart('raChartOrders',   labels, orders,    '#f59e0b', '');
+      raCharts.revenue  = raBuildChart('raChartRevenue',  labels, revCum, '#4ade80', '₽');
+      raCharts.orders   = raBuildChart('raChartOrders',   labels, ordCum, '#f59e0b', '');
       raCharts.avgCheck = raBuildChart('raChartAvgCheck', labels, avgCheck,  '#f472b6', '₽');
       raCharts.avail    = raBuildChart('raChartAvail',    labels, avail,     '#34d399', '%', 100);
       } catch(e) { console.error('raRenderCharts error:', e); }
