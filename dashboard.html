@@ -751,8 +751,8 @@
           <span class="top-kpi-num" style="color:#2dd4bf" id="topActiveToday">—</span>
           <div class="top-kpi-pct-group">
             <div class="top-kpi-pct-row">
-              <span class="top-kpi-pct-val" style="color:#2dd4bf" id="topActiveTodayPctD">—</span>
-              <span class="top-kpi-pct-lbl">от доступных</span>
+              <span class="top-kpi-pct-val" style="color:#f59e0b" id="topActiveTodayPctD">—</span>
+              <span class="top-kpi-pct-lbl" style="color:#f59e0b">от доступных</span>
             </div>
             <div class="top-kpi-pct-row">
               <span class="top-kpi-pct-val" style="color:#2dd4bf;opacity:.55" id="topActiveTodayPctP">—</span>
@@ -765,8 +765,8 @@
           <span class="top-kpi-num" style="color:#2dd4bf;opacity:.55" id="topActivePeriod">—</span>
           <div class="top-kpi-pct-group">
             <div class="top-kpi-pct-row">
-              <span class="top-kpi-pct-val" style="color:#2dd4bf;opacity:.55" id="topActivePeriodPctD">—</span>
-              <span class="top-kpi-pct-lbl">от доступных</span>
+              <span class="top-kpi-pct-val" style="color:#f59e0b;opacity:.55" id="topActivePeriodPctD">—</span>
+              <span class="top-kpi-pct-lbl" style="color:#f59e0b;opacity:.55">от доступных</span>
             </div>
             <div class="top-kpi-pct-row">
               <span class="top-kpi-pct-val" style="color:#2dd4bf;opacity:.35" id="topActivePeriodPctP">—</span>
@@ -819,6 +819,7 @@
           </div>
           <div class="fleet-kpi">
             <div class="fleet-kpi-val active" id="fsActive">—</div>
+            <div style="font-size:13px;font-weight:600;color:#2dd4bf;opacity:.7;margin-top:2px" id="fsActivePct">—</div>
             <div class="fleet-kpi-label">Активность</div>
           </div>
           <div class="fleet-kpi">
@@ -2258,10 +2259,12 @@
         const active = last.active_objects ?? null;
         const share  = (avail && active) ? Math.round(active / avail * 100) : null;
 
-        const availPctNow = (avail && fleetSize) ? Math.round(avail / fleetSize * 100) : null;
-        document.getElementById('fsAvail').textContent    = avail  != null ? avail  : '—';
-        document.getElementById('fsAvailPct').textContent = availPctNow != null ? availPctNow + '% от парка' : '—';
-        document.getElementById('fsActive').textContent   = active != null ? active : '—';
+        const availPctNow  = (avail  && fleetSize) ? Math.round(avail  / fleetSize * 100) : null;
+        const activePctNow = (active && fleetSize) ? Math.round(active / fleetSize * 100) : null;
+        document.getElementById('fsAvail').textContent     = avail  != null ? avail  : '—';
+        document.getElementById('fsAvailPct').textContent  = availPctNow  != null ? availPctNow  + '% от парка' : '—';
+        document.getElementById('fsActive').textContent    = active != null ? active : '—';
+        document.getElementById('fsActivePct').textContent = activePctNow != null ? activePctNow + '% от парка' : '—';
         document.getElementById('fsShare').textContent    = share  != null ? share + '%' : '—';
         document.getElementById('fsShareBar').style.width = (share ?? 0) + '%';
         document.getElementById('fleetUpdated').textContent = 'последнее: ' + last.date;
@@ -2350,6 +2353,8 @@
         document.getElementById('raKpiActive').textContent   = active  != null ? active  : '—';
         if (active != null) {
           document.getElementById('fsActive').textContent = active;
+          const activePctLive = fleetSize ? Math.round(active / fleetSize * 100) : null;
+          if (activePctLive != null) document.getElementById('fsActivePct').textContent = activePctLive + '% от парка';
           const avail = parseInt(document.getElementById('fsAvail').textContent);
           if (avail) {
             const share = Math.round(active / avail * 100);
