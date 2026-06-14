@@ -1756,6 +1756,32 @@
     Chart.defaults.borderColor = '#1e1e2a';
     Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
+    function chartMedianVal(data) {
+      const vals = data.filter(v => v != null && !isNaN(v));
+      if (!vals.length) return null;
+      const s = [...vals].sort((a, b) => a - b);
+      const m = Math.floor(s.length / 2);
+      return s.length % 2 === 0 ? (s[m-1] + s[m]) / 2 : s[m];
+    }
+    function medianDataset(data, color, label) {
+      const med = chartMedianVal(data);
+      if (med == null) return null;
+      const v = Math.round(med * 10) / 10;
+      return {
+        label: label || 'Медиана',
+        data: data.map(d => d != null ? v : null),
+        borderColor: color,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [5, 4],
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+        spanGaps: true,
+        order: 10,
+      };
+    }
+
     function raChartOpts(yLabel, yMax) {
       const opts = {
         responsive: true, maintainAspectRatio: false,
@@ -1794,7 +1820,9 @@
             pointRadius: data.length < 15 ? 4 : 2, pointBackgroundColor: color, fill: true, tension: 0.35 };
       const opts = raChartOpts(yLabel, yMax);
       if (type === 'bar') opts.scales.y.beginAtZero = true;
-      return new Chart(ctx, { type, data: { labels, datasets: [dataset] }, options: opts });
+      const medDs = type === 'line' ? medianDataset(data, color + '99') : null;
+      const datasets = medDs ? [dataset, medDs] : [dataset];
+      return new Chart(ctx, { type, data: { labels, datasets }, options: opts });
     }
 
     function raBuildDualChart(canvasId, labels, data1, data2, color1, color2, label1, label2, yLabel) {
@@ -1803,14 +1831,15 @@
       const ptR = labels.length < 15 ? 4 : 2;
       const opts = raChartOpts(yLabel);
       opts.plugins.legend = { display: true, labels: { color: '#6b7280', boxWidth: 12, padding: 14, font: { size: 11 } } };
-      return new Chart(ctx, {
-        type: 'line',
-        data: { labels, datasets: [
-          { label: label1, data: data1, borderColor: color1, backgroundColor: color1 + '18', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: color1, fill: false, tension: 0.35 },
-          { label: label2, data: data2, borderColor: color2, backgroundColor: color2 + '18', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: color2, fill: false, tension: 0.35 },
-        ]},
-        options: opts,
-      });
+      const med1 = medianDataset(data1, color1 + '88', 'Медиана ' + label1);
+      const med2 = medianDataset(data2, color2 + '88', 'Медиана ' + label2);
+      const dualDs = [
+        { label: label1, data: data1, borderColor: color1, backgroundColor: color1 + '18', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: color1, fill: false, tension: 0.35 },
+        { label: label2, data: data2, borderColor: color2, backgroundColor: color2 + '18', borderWidth: 2, pointRadius: ptR, pointBackgroundColor: color2, fill: false, tension: 0.35 },
+        ...(med1 ? [med1] : []), ...(med2 ? [med2] : []),
+      ];
+      opts.plugins.legend.labels = { ...opts.plugins.legend.labels, filter: item => !item.text.startsWith('Медиана') };
+      return new Chart(ctx, { type: 'line', data: { labels, datasets: dualDs }, options: opts });
     }
 
     let raAllData = [];
@@ -1949,21 +1978,23 @@
       if (fsChartInst) { fsChartInst.destroy(); fsChartInst = null; }
 
       const ptRadius = rows.length < 15 ? 4 : 2;
+      const fsMedAvail  = medianDataset(avail,  '#60a5fa88', 'Медиана Доступность');
+      const fsMedActive = medianDataset(active, '#4ade8088', 'Медиана Активность');
+      const fsDatasets = [
+        { label: 'Доступность', data: avail,  borderColor: '#60a5fa', backgroundColor: '#60a5fa15', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#60a5fa', fill: true, tension: 0.35, yAxisID: 'y' },
+        { label: 'Активность',  data: active, borderColor: '#4ade80', backgroundColor: '#4ade8015', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#4ade80', fill: true, tension: 0.35, yAxisID: 'y' },
+        { label: 'Доля, %',     data: share,  borderColor: '#f59e0b', backgroundColor: 'transparent', borderWidth: 2, borderDash: [4,3], pointRadius: ptRadius, pointBackgroundColor: '#f59e0b', fill: false, tension: 0.35, yAxisID: 'y2' },
+        ...(fsMedAvail  ? [{ ...fsMedAvail,  yAxisID: 'y' }] : []),
+        ...(fsMedActive ? [{ ...fsMedActive, yAxisID: 'y' }] : []),
+      ];
       fsChartInst = new Chart(document.getElementById('fsChart').getContext('2d'), {
         type: 'line',
-        data: {
-          labels,
-          datasets: [
-            { label: 'Доступность', data: avail,  borderColor: '#60a5fa', backgroundColor: '#60a5fa15', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#60a5fa', fill: true, tension: 0.35, yAxisID: 'y' },
-            { label: 'Активность',  data: active, borderColor: '#4ade80', backgroundColor: '#4ade8015', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#4ade80', fill: true, tension: 0.35, yAxisID: 'y' },
-            { label: 'Доля, %',     data: share,  borderColor: '#f59e0b', backgroundColor: 'transparent', borderWidth: 2, borderDash: [4,3], pointRadius: ptRadius, pointBackgroundColor: '#f59e0b', fill: false, tension: 0.35, yAxisID: 'y2' },
-          ]
-        },
+        data: { labels, datasets: fsDatasets },
         options: {
           responsive: true, maintainAspectRatio: false,
           interaction: { mode: 'index', intersect: false },
           plugins: {
-            legend: { display: true, labels: { color: '#6b7280', boxWidth: 12, padding: 16, font: { size: 12 } } },
+            legend: { display: true, labels: { color: '#6b7280', boxWidth: 12, padding: 16, font: { size: 12 }, filter: item => !item.text.startsWith('Медиана') } },
             tooltip: {
               backgroundColor: '#1a1a24', borderColor: '#2d2d3d', borderWidth: 1,
               titleColor: '#94a3b8', bodyColor: '#e2e8f0',
