@@ -1937,7 +1937,9 @@
     function raRenderCharts(days) {
       try {
       if (!raAllData.length) return;
-      const rows = days ? raAllData.slice(-days) : raAllData;
+      const _raToday = new Date(Date.now() + 3*60*60*1000).toISOString().slice(0,10);
+      const _raBase  = (includeToday || days === 0) ? raAllData : raAllData.filter(r => r.date < _raToday);
+      const rows = days ? _raBase.slice(-days) : _raBase;
       const labels    = rows.map(r => { const [,m,d] = String(r.date).split('-'); return d+'.'+m; });
       const perUnit   = rows.map(r => r.activeObjects ? Math.round(r.revenue / r.activeObjects) : null);
       const perAvail  = rows.map(r => r.totalObjects  ? Math.round(r.revenue / r.totalObjects)  : null);
@@ -2086,6 +2088,8 @@
     document.getElementById('chkIncludeToday').addEventListener('change', e => {
       includeToday = e.target.checked;
       updateTopKPI(raActivePeriod);
+      if (fsAllData.length) fsRenderChart(raActivePeriod);
+      if (raAllData.length) raRenderCharts(raActivePeriod);
     });
 
     // Global period selector — syncs all sections at once
@@ -2119,7 +2123,9 @@
     let fsChartInst = null;
 
     function fsRenderChart(days) {
-      const rows = days ? fsAllData.slice(-days) : fsAllData;
+      const _fsToday = new Date(Date.now() + 3*60*60*1000).toISOString().slice(0,10);
+      const _fsBase  = (includeToday || days === 0) ? fsAllData : fsAllData.filter(r => r.date < _fsToday);
+      const rows = days ? _fsBase.slice(-days) : _fsBase;
       const labels = rows.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
       const avail  = rows.map(r => r.max_available ?? null);
       const active = rows.map(r => r.active_objects ?? null);
