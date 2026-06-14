@@ -1862,6 +1862,22 @@
           totalObjects: histMap[r.date]?.max_available ?? null,
         }));
         raAllData.sort((a, b) => a.date.localeCompare(b.date));
+
+        // Применяем сохранённый скан: если сканировали сегодня, ставим totalObjects
+        try {
+          const savedScan = JSON.parse(localStorage.getItem('kashalot_scan') || 'null');
+          if (savedScan) {
+            const scanDate = savedScan.scannedAt.slice(0, 10);
+            const idx = raAllData.findIndex(r => r.date === scanDate);
+            if (idx >= 0 && !raAllData[idx].totalObjects) {
+              raAllData[idx] = { ...raAllData[idx], totalObjects: savedScan.up };
+            } else if (idx < 0) {
+              raAllData.push({ date: scanDate, revenue: 0, orders: null, avgCheck: null, activeObjects: null, totalObjects: savedScan.up });
+              raAllData.sort((a, b) => a.date.localeCompare(b.date));
+            }
+          }
+        } catch {}
+
         raUpdateKPI(raAllData);
         requestAnimationFrame(() => raRenderCharts(raActivePeriod));
         const last = raAllData[raAllData.length - 1];
@@ -2419,7 +2435,7 @@
             SUM(TIMESTAMPDIFF(SECOND, e1.time, e2.time)) as out_sec,
             (SELECT status FROM bills WHERE order_id=o.id ORDER BY id DESC LIMIT 1) as pay_status,
             c.name as company,
-            TIMESTAMPDIFF(SECOND, o.start_time, o.finish_time) as total_sec
+            TIMESTAMPDIFF(SECOND, o.start_time, COALESCE(o.finish_time, NOW())) as total_sec
           FROM order_events e1
           JOIN order_events e2 ON e2.order_id=e1.order_id
             AND e2.id=(SELECT MIN(id) FROM order_events WHERE order_id=e1.order_id AND id>e1.id AND reason='GEO')
