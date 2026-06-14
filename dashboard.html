@@ -104,62 +104,38 @@
     /* Top KPI block */
     .top-kpi-grid {
       display: grid;
-      grid-template-columns: 140px 1fr 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
       margin-bottom: 20px;
     }
-    .top-kpi-card {
+    .tkpi-cell {
       background: #1a1a24;
       border: 1px solid #2d2d3d;
-      border-radius: 16px;
-      padding: 18px 20px;
-    }
-    .top-kpi-section-label {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      color: #4b5563;
-      margin-bottom: 14px;
-    }
-    .top-kpi-big {
-      font-size: 44px;
-      font-weight: 800;
-      color: #4b5563;
-      line-height: 1;
-      margin-bottom: 4px;
-    }
-    .top-kpi-big-sub { font-size: 12px; color: #374151; }
-    .top-kpi-row {
+      border-radius: 12px;
+      padding: 14px 16px;
       display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 9px 0;
-      border-top: 1px solid #1e1e2a;
+      flex-direction: column;
     }
-    .top-kpi-row:first-of-type { border-top: none; }
-    .top-kpi-tag {
-      font-size: 11px;
-      color: #4b5563;
-      width: 72px;
-      flex-shrink: 0;
-    }
-    .top-kpi-num {
+    .tkpi-val {
       font-size: 26px;
       font-weight: 700;
       line-height: 1;
-      width: 48px;
-      flex-shrink: 0;
     }
-    .top-kpi-pct-group { display: flex; flex-direction: column; gap: 4px; }
-    .top-kpi-pct-row { display: flex; align-items: baseline; gap: 5px; }
-    .top-kpi-pct-val {
-      font-size: 26px;
-      font-weight: 700;
-      line-height: 1;
+    .tkpi-sub {
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 5px;
+      line-height: 1.4;
       white-space: nowrap;
     }
-    .top-kpi-pct-val.dim { opacity: .55; }
-    .top-kpi-pct-lbl { font-size: 10px; color: #4b5563; white-space: nowrap; }
+    .tkpi-lbl {
+      font-size: 10px;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-top: auto;
+      padding-top: 10px;
+    }
 
     /* legacy — kept for JS refs */
     .stat-num.green  { color: #4ade80; }
@@ -711,69 +687,67 @@
     <!-- Top KPI -->
     <div class="top-kpi-grid">
 
-      <!-- Парк -->
-      <div class="top-kpi-card" style="display:flex;flex-direction:column;justify-content:center">
-        <div class="top-kpi-section-label">🐋 Парк</div>
-        <div class="top-kpi-big" id="topFleetSize">—</div>
-        <div class="top-kpi-big-sub">всего КШ</div>
+      <!-- 1. Парк -->
+      <div class="tkpi-cell">
+        <div class="tkpi-val" style="color:#4b5563" id="topFleetSize">—</div>
+        <div class="tkpi-lbl">🐋 Парк · всего КШ</div>
       </div>
 
-      <!-- Доступность -->
-      <div class="top-kpi-card">
-        <div class="top-kpi-section-label">Доступность</div>
-        <div class="top-kpi-row">
-          <span class="top-kpi-tag">Сегодня</span>
-          <span class="top-kpi-num" style="color:#60a5fa" id="topAvailToday">—</span>
-          <div class="top-kpi-pct-group">
-            <div class="top-kpi-pct-row">
-              <span class="top-kpi-pct-val" style="color:#60a5fa" id="topAvailTodayPct">—</span>
-              <span class="top-kpi-pct-lbl" style="color:#60a5fa">от парка</span>
-            </div>
-          </div>
-        </div>
-        <div class="top-kpi-row">
-          <span class="top-kpi-tag" id="topAvailPeriodTag">Ср. 7 дн.</span>
-          <span class="top-kpi-num" style="color:#60a5fa;opacity:.55" id="topAvailPeriod">—</span>
-          <div class="top-kpi-pct-group">
-            <div class="top-kpi-pct-row">
-              <span class="top-kpi-pct-val" style="color:#60a5fa;opacity:.55" id="topAvailPeriodPct">—</span>
-              <span class="top-kpi-pct-lbl" style="color:#60a5fa;opacity:.55">от парка</span>
-            </div>
-          </div>
-        </div>
+      <!-- 2. Доступность -->
+      <div class="tkpi-cell">
+        <div class="tkpi-val" style="color:#60a5fa" id="topKpiAvail">—</div>
+        <div class="tkpi-sub" style="color:#60a5fa" id="topKpiAvailPct">—</div>
+        <div class="tkpi-lbl" id="topKpiAvailLbl">Доступность · ср.</div>
       </div>
 
-      <!-- Активность -->
-      <div class="top-kpi-card">
-        <div class="top-kpi-section-label">Активность</div>
-        <div class="top-kpi-row">
-          <span class="top-kpi-tag">Сегодня</span>
-          <span class="top-kpi-num" style="color:#2dd4bf" id="topActiveToday">—</span>
-          <div class="top-kpi-pct-group">
-            <div class="top-kpi-pct-row">
-              <span class="top-kpi-pct-val" style="color:#f59e0b" id="topActiveTodayPctD">—</span>
-              <span class="top-kpi-pct-lbl" style="color:#f59e0b">от доступных</span>
-            </div>
-            <div class="top-kpi-pct-row">
-              <span class="top-kpi-pct-val" style="color:#2dd4bf;opacity:.55" id="topActiveTodayPctP">—</span>
-              <span class="top-kpi-pct-lbl">от парка</span>
-            </div>
-          </div>
-        </div>
-        <div class="top-kpi-row">
-          <span class="top-kpi-tag" id="topActivePeriodTag">Ср. 7 дн.</span>
-          <span class="top-kpi-num" style="color:#2dd4bf;opacity:.55" id="topActivePeriod">—</span>
-          <div class="top-kpi-pct-group">
-            <div class="top-kpi-pct-row">
-              <span class="top-kpi-pct-val" style="color:#f59e0b;opacity:.55" id="topActivePeriodPctD">—</span>
-              <span class="top-kpi-pct-lbl" style="color:#f59e0b;opacity:.55">от доступных</span>
-            </div>
-            <div class="top-kpi-pct-row">
-              <span class="top-kpi-pct-val" style="color:#2dd4bf;opacity:.35" id="topActivePeriodPctP">—</span>
-              <span class="top-kpi-pct-lbl">от парка</span>
-            </div>
-          </div>
-        </div>
+      <!-- 3. Активность -->
+      <div class="tkpi-cell">
+        <div class="tkpi-val" style="color:#2dd4bf" id="topKpiActive">—</div>
+        <div class="tkpi-sub" style="color:#f59e0b" id="topKpiActivePctD">—</div>
+        <div class="tkpi-sub" style="color:#2dd4bf;opacity:.6" id="topKpiActivePctP">—</div>
+        <div class="tkpi-lbl" id="topKpiActiveLbl">Активность · ср.</div>
+      </div>
+
+      <!-- 4. Выручка -->
+      <div class="tkpi-cell">
+        <div class="tkpi-val" style="color:#4ade80" id="topKpiRevenue">—</div>
+        <div class="tkpi-lbl" id="topKpiRevLbl">Выручка за период</div>
+      </div>
+
+      <!-- 5. Доля актив/доступ -->
+      <div class="tkpi-cell">
+        <div class="tkpi-val" style="color:#f59e0b" id="topKpiShare">—</div>
+        <div class="tkpi-lbl" id="topKpiShareLbl">Доля актив/доступ · ср.</div>
+      </div>
+
+      <!-- 6. Выр/КШ активный -->
+      <div class="tkpi-cell">
+        <div class="tkpi-val" style="color:#4ade80" id="topKpiPerActive">—</div>
+        <div class="tkpi-lbl" id="topKpiPerActiveLbl">Выр / КШ актив · сут</div>
+      </div>
+
+      <!-- 7. Выр/КШ доступный -->
+      <div class="tkpi-cell">
+        <div class="tkpi-val" style="color:#4ade80" id="topKpiPerAvail">—</div>
+        <div class="tkpi-lbl" id="topKpiPerAvailLbl">Выр / КШ доступ · сут</div>
+      </div>
+
+      <!-- 8. Выр/КШ в парке -->
+      <div class="tkpi-cell">
+        <div class="tkpi-val" style="color:#4ade80" id="topKpiPerPark">—</div>
+        <div class="tkpi-lbl" id="topKpiPerParkLbl">Выр / КШ парк · сут</div>
+      </div>
+
+      <!-- 9. Цена минуты (факт) -->
+      <div class="tkpi-cell">
+        <div class="tkpi-val" style="color:#f472b6" id="topKpiPriceFact">—</div>
+        <div class="tkpi-lbl">Цена мин · куплено</div>
+      </div>
+
+      <!-- 10. Цена минуты (предложено) -->
+      <div class="tkpi-cell">
+        <div class="tkpi-val" style="color:#f472b6;opacity:.6" id="topKpiPriceOffer">—</div>
+        <div class="tkpi-lbl">Цена мин · предложено</div>
       </div>
 
     </div>
@@ -2081,43 +2055,80 @@
     let includeToday = false;
     const todayClause = () => includeToday ? '' : ' AND DATE(o.start_time) < CURDATE()';
 
+    let tpMeanFactMpm = null, tpMeanOfferMpm = null;
+    function setTopKPITariff() {
+      const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val ?? '—'; };
+      set('topKpiPriceFact',  tpMeanFactMpm  != null ? tpMeanFactMpm  + ' ₽/мин' : null);
+      set('topKpiPriceOffer', tpMeanOfferMpm != null ? tpMeanOfferMpm + ' ₽/мин' : null);
+    }
+
     function updateTopKPI(days) {
       const today = new Date(Date.now() + 3*60*60*1000).toISOString().slice(0,10);
       const fleetSz = fleetSize || 1180;
-      document.getElementById('topFleetSize').textContent = fleetSz.toLocaleString('ru-RU');
-
-      const todayRow = fsAllData.find(r => r.date === today);
-      const availToday  = todayRow?.max_available  ?? null;
-      const activeToday = todayRow?.active_objects ?? null;
-
-      // период: включаем сегодня если чекбокс активен или «Всё время»
-      const hist = (days === 0 || includeToday) ? fsAllData : fsAllData.filter(r => r.date < today);
-      const slice = days > 0 ? hist.slice(-days) : hist;
-      const avg = arr => { const v = arr.filter(x => x != null && !isNaN(x)); return v.length ? Math.round(v.reduce((s,x)=>s+x,0)/v.length) : null; };
-      const avgAvail  = avg(slice.map(r => r.max_available));
-      const avgActive = avg(slice.map(r => r.active_objects));
-
-      const pTag = days === 1 ? 'Вчера' : days === 7 ? 'Ср. 7 дн.' : days === 30 ? 'Ср. 30 дн.' : 'Ср. всё';
-      ['topAvailPeriodTag','topActivePeriodTag'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=pTag; });
-
-      const fmt = v => v != null ? v.toLocaleString('ru-RU') : '—';
-      const pct = (a, b) => (a != null && b) ? Math.round(a/b*100) + '%' : null;
-
       const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val ?? '—'; };
+      const avg = arr => { const v = arr.filter(x => x != null && !isNaN(x)); return v.length ? v.reduce((s,x)=>s+x,0)/v.length : null; };
+      const pct = (a, b) => (a != null && b) ? Math.round(a/b*100) + '%' : null;
+      const fmtRub = v => v != null ? Math.round(v).toLocaleString('ru-RU') + ' ₽' : '—';
 
-      // Доступность
-      set('topAvailToday',     fmt(availToday));
-      set('topAvailPeriod',    fmt(avgAvail));
-      set('topAvailTodayPct',  pct(availToday, fleetSz) ?? '—');
-      set('topAvailPeriodPct', pct(avgAvail,   fleetSz) ?? '—');
+      set('topFleetSize', fleetSz.toLocaleString('ru-RU'));
 
-      // Активность
-      set('topActiveToday',       fmt(activeToday));
-      set('topActivePeriod',      fmt(avgActive));
-      set('topActiveTodayPctD',   pct(activeToday, availToday) ?? '—');
-      set('topActiveTodayPctP',   pct(activeToday, fleetSz)   ?? '—');
-      set('topActivePeriodPctD',  pct(avgActive,   avgAvail)  ?? '—');
-      set('topActivePeriodPctP',  pct(avgActive,   fleetSz)   ?? '—');
+      // --- Флот: fsAllData ---
+      const fsHist = (days === 0 || includeToday) ? fsAllData : fsAllData.filter(r => r.date < today);
+      const fsSlice = days > 0 ? fsHist.slice(-days) : fsHist;
+      const avgAvail  = avg(fsSlice.map(r => r.max_available));
+      const avgActive = avg(fsSlice.map(r => r.active_objects));
+      const avgShare  = avg(fsSlice.map(r => (r.max_available && r.active_objects) ? r.active_objects / r.max_available * 100 : null));
+
+      const pLabel = days === 1 ? 'вчера' : days === 7 ? 'ср. 7 дн.' : days === 30 ? 'ср. 30 дн.' : 'ср. всё';
+      set('topKpiAvail',    avgAvail  != null ? Math.round(avgAvail)  : null);
+      set('topKpiAvailPct', pct(avgAvail, fleetSz) ?? null);
+      set('topKpiActive',   avgActive != null ? Math.round(avgActive) : null);
+      set('topKpiActivePctD', pct(avgActive, avgAvail) ?? null);
+      set('topKpiActivePctP', pct(avgActive, fleetSz)  ?? null);
+      set('topKpiShare', avgShare != null ? Math.round(avgShare) + '%' : null);
+
+      ['topKpiAvailLbl','topKpiActiveLbl','topKpiShareLbl'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = el.textContent.split(' · ')[0] + ' · ' + pLabel;
+      });
+
+      // --- Выручка: raAllData ---
+      if (raAllData.length) {
+        const raHist = (days === 0 || includeToday) ? raAllData : raAllData.filter(r => r.date < today);
+        const raSlice = days > 0 ? raHist.slice(-days) : raHist;
+
+        const sumRev = raSlice.reduce((s, r) => s + (r.revenue || 0), 0);
+        set('topKpiRevenue', sumRev > 0 ? Math.round(sumRev).toLocaleString('ru-RU') + ' ₽' : null);
+        ['topKpiRevLbl'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = 'Выручка · ' + (days === 1 ? 'вчера' : days === 7 ? '7 дней' : days === 30 ? '30 дней' : 'всё время');
+        });
+
+        // Выр/активный в сутки
+        const perActiveArr = raSlice.map(r => r.activeObjects ? r.revenue / r.activeObjects : null);
+        const avgPerActive = avg(perActiveArr);
+        set('topKpiPerActive', avgPerActive != null ? fmtRub(avgPerActive) : null);
+
+        // Выр/доступный в сутки (join с fsAllData)
+        const availByDate = {};
+        fsAllData.forEach(r => { availByDate[r.date] = r.max_available; });
+        const perAvailArr = raSlice.map(r => { const av = availByDate[r.date]; return (av && r.revenue) ? r.revenue / av : null; });
+        const avgPerAvail = avg(perAvailArr);
+        set('topKpiPerAvail', avgPerAvail != null ? fmtRub(avgPerAvail) : null);
+
+        // Выр/КШ парка в сутки
+        const avgPerPark = (raSlice.length && sumRev) ? sumRev / raSlice.length / fleetSz : null;
+        set('topKpiPerPark', avgPerPark != null ? fmtRub(avgPerPark) : null);
+
+        [['topKpiPerActiveLbl','Выр / КШ актив · сут'],
+         ['topKpiPerAvailLbl', 'Выр / КШ доступ · сут'],
+         ['topKpiPerParkLbl',  'Выр / КШ парк · сут']].forEach(([id, base]) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = base + ' · ' + pLabel;
+        });
+      }
+
+      setTopKPITariff();
     }
 
     function syncAllSptTabs(days) {
@@ -2504,6 +2515,36 @@
               },
             },
           });
+        }
+
+        // Цена минуты для топ-блока (факт и предложение, взвешенные по объёму)
+        {
+          // Факт: total_kopecks / (cnt * slot_min) по всем тарифам за период
+          let factTotalKop = 0, factTotalMins = 0;
+          const filteredDates = new Set(filtered.map(r => r.date));
+          factRows.forEach(r => {
+            if (!r.slot || !filteredDates.has(r.date)) return;
+            const slotDef = TP_SLOTS.find(s => s.key === r.slot);
+            if (!slotDef) return;
+            factTotalKop  += Number(r.total_kopecks);
+            factTotalMins += Number(r.cnt) * slotDef.min;
+          });
+          tpMeanFactMpm = factTotalMins > 0 ? +(factTotalKop / factTotalMins / 100).toFixed(1) : null;
+
+          // Предложение: total_price * cnt / (cnt * slot_min) по всем ценам в QR-данных
+          let offerTotalRev = 0, offerTotalMins = 0;
+          filtered.forEach(r => {
+            TP_SLOTS.forEach(slot => {
+              const sd = r.slots?.[slot.key];
+              if (!sd) return;
+              Object.entries(sd).forEach(([p, cnt]) => {
+                const price = parseInt(p);
+                if (!isNaN(price)) { offerTotalRev += price * Number(cnt); offerTotalMins += Number(cnt) * slot.min; }
+              });
+            });
+          });
+          tpMeanOfferMpm = offerTotalMins > 0 ? +(offerTotalRev / offerTotalMins).toFixed(1) : null;
+          setTopKPITariff();
         }
 
         // Отклонение факта от предложения по каждому тарифу
