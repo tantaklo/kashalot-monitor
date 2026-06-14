@@ -695,18 +695,6 @@
 
 
     <!-- Daily revenue chart -->
-    <div class="chart-card" id="revenueDailySection" style="display:none">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Выручка по дням</div>
-          <div class="chart-sub" id="revenueDailySub">из админки · фиксируется в 23:55</div>
-        </div>
-      </div>
-      <div class="chart-wrap">
-        <div class="chart-empty" id="revenueDailyEmpty">Данные появятся после первого ночного сбора</div>
-        <canvas id="revenueDailyCanvas" style="display:none" height="160"></canvas>
-      </div>
-    </div>
 
     <!-- Fleet section -->
     <div class="chart-card" id="fleetSection">
@@ -1674,11 +1662,10 @@
       });
     });
 
-    // --- Daily revenue chart ---
+    // --- Daily revenue chart (секция удалена, no-op) ---
     function drawRevenueChart(history) {
       const canvas = document.getElementById('revenueDailyCanvas');
-      const empty  = document.getElementById('revenueDailyEmpty');
-      if (!history || history.length < 2) return;
+      if (!canvas) return;
 
       empty.style.display  = 'none';
       canvas.style.display = 'block';
