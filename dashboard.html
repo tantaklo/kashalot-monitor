@@ -943,9 +943,16 @@
     </div>
 
     <!-- Tariff analytics -->
-    <div id="tariffSection" style="display:none">
-      <div class="section-title" style="margin-bottom:12px">Тарифы по парку</div>
-      <div class="tariff-grid" id="tariffGrid"></div>
+    <div class="chart-card" id="tariffSection" style="display:none">
+      <div class="chart-header collapsible" onclick="toggleSection('tariffSectionBody','tariffSectionArrow')">
+        <div>
+          <div class="chart-title">Тарифы по парку <span class="toggle-arrow open" id="tariffSectionArrow">▼</span></div>
+          <div class="chart-sub">результаты сканирования</div>
+        </div>
+      </div>
+      <div class="section-body open" id="tariffSectionBody">
+        <div class="tariff-grid" id="tariffGrid"></div>
+      </div>
     </div>
 
     <!-- Insights -->
