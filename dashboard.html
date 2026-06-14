@@ -3420,10 +3420,11 @@
       const weekMap = {};
       FG_FLEET_RAW.forEach(r => {
         if (r.date < startDate1) return;
-        const d = new Date(r.date), dow = d.getDay();
-        const mon = new Date(d);
-        mon.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
-        const wk = mon.toISOString().slice(0, 10);
+        const [yr, mo, dy] = r.date.split('-').map(Number);
+        const dow = new Date(yr, mo - 1, dy).getDay();
+        const monD = dy - (dow === 0 ? 6 : dow - 1);
+        const mon = new Date(yr, mo - 1, monD);
+        const wk = `${mon.getFullYear()}-${String(mon.getMonth()+1).padStart(2,'0')}-${String(mon.getDate()).padStart(2,'0')}`;
         weekMap[wk] = (weekMap[wk] || 0) + (+r.n);
       });
       let startCumul = FG_BASE;
@@ -3618,8 +3619,10 @@
           grafanaQuery(`SELECT DATE(start_time) as date, COUNT(DISTINCT car_id) as active FROM orders WHERE status = 'FINISHED' AND start_time >= '2024-12-08' GROUP BY DATE(start_time) ORDER BY date`),
         ]);
         if (baseRows && baseRows.length) FG_BASE = +baseRows[0].n; // 0 — валидное значение, || нельзя
-        if (fleetRows && fleetRows.length) FG_FLEET_RAW = fleetRows.map(r => ({ date: String(r.date), n: +r.n }));
-        if (activeRows && activeRows.length) FG_ACTIVE_RAW = activeRows.map(r => ({ date: String(r.date), active: +r.active }));
+        // Grafana возвращает даты как Unix-timestamp строку ("1733616000000"), конвертируем в YYYY-MM-DD
+        const toYMD = v => /^\d{4}-\d{2}-\d{2}/.test(String(v)) ? String(v).slice(0,10) : new Date(+v).toISOString().slice(0,10);
+        if (fleetRows && fleetRows.length) FG_FLEET_RAW = fleetRows.map(r => ({ date: toYMD(r.date), n: +r.n }));
+        if (activeRows && activeRows.length) FG_ACTIVE_RAW = activeRows.map(r => ({ date: toYMD(r.date), active: +r.active }));
       } catch (e) {
         console.warn('Fleet growth Grafana query failed, using cached data:', e);
       }
