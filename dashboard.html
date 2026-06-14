@@ -2758,7 +2758,7 @@
                     <span style="font-size:11px;font-weight:600;color:${st.color}">${st.label}</span>
                   </td>
                   <td style="padding:8px 12px;text-align:right">
-                    <a href="https://ecoskat.bumerang.tech/admin/car/${r.car_id}" target="_blank"
+                    <a href="https://gw.bumerang.tech/admin/car/${r.car_id}" target="_blank"
                        style="font-size:11px;color:#6b7280;text-decoration:none;opacity:0.7">↗</a>
                   </td>
                 </tr>`;
@@ -2837,7 +2837,7 @@
               ${rows.map((r,i) => {
                 const pct = r.total_sec > 0 ? Math.round(r.out_sec / r.total_sec * 100) : 0;
                 const pctColor = pct >= 50 ? '#f87171' : pct >= 20 ? '#fbbf24' : '#94a3b8';
-                const adminUrl = `https://ecoskat.bumerang.tech/admin/order/${r.order_id}`;
+                const adminUrl = `https://gw.bumerang.tech/admin/order/${r.order_id}`;
                 const [sLabel, sColor] = statusLabel(r.pay_status);
                 const done = ozChecked.has(String(r.order_id));
                 return `<tr data-oz-id="${r.order_id}" style="border-bottom:1px solid #1e1e2a;${i%2===1?'background:#111118':''};${done?'opacity:0.35':''}">
