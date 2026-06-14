@@ -2996,8 +2996,9 @@
         });
 
         document.getElementById('tdInsights').innerHTML = insights.join('');
+        const tdPeriodLabel = tdActiveDays === 1 ? '1 день' : tdActiveDays === 7 ? '7 дней' : tdActiveDays === 30 ? '30 дней' : 'всё время';
         document.getElementById('tariffDemandSub').textContent =
-          `${totalCnt.toLocaleString('ru-RU')} поездок · ${Math.round(totalRev/100).toLocaleString('ru-RU')} ₽ выручки · все время`;
+          `${totalCnt.toLocaleString('ru-RU')} поездок · ${Math.round(totalRev/100).toLocaleString('ru-RU')} ₽ выручки · ${tdPeriodLabel}`;
 
       } catch(e) { console.error('loadTariffDemand:', e); }
     }
