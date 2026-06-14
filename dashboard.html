@@ -2077,6 +2077,7 @@
 
     // Sync all per-section tabs to a given period
     let includeToday = false;
+    const todayClause = () => includeToday ? '' : ' AND DATE(o.start_time) < CURDATE()';
 
     function updateTopKPI(days) {
       const today = new Date(Date.now() + 3*60*60*1000).toISOString().slice(0,10);
@@ -2131,6 +2132,9 @@
       updateTopKPI(raActivePeriod);
       if (fsAllData.length) fsRenderChart(raActivePeriod);
       if (raAllData.length) raRenderCharts(raActivePeriod);
+      loadTariffPriceChart();
+      loadTariffDemand();
+      loadDevEffCompanies();
     });
 
     // Global period selector — syncs all sections at once
@@ -2403,7 +2407,8 @@
         const cutoff = sectionPeriods.tp > 0
           ? (() => { const d = new Date(Date.now()+3*60*60*1000); d.setDate(d.getDate()-sectionPeriods.tp); return d.toISOString().slice(0,10); })()
           : null;
-        const filtered = tariffRes.filter(r => !cutoff || r.date >= cutoff);
+        const _tpToday = new Date(Date.now()+3*60*60*1000).toISOString().slice(0,10);
+        const filtered = tariffRes.filter(r => (!cutoff || r.date >= cutoff) && (includeToday || r.date < _tpToday));
         const labels = filtered.map(r => { const [,m,d] = r.date.split('-'); return d+'.'+m; });
 
         // Предложение: weighted avg price/min per slot per day (from QR scan)
@@ -2851,7 +2856,7 @@
 
     async function loadDevEffCompanies() {
       const days = sectionPeriods.dev;
-      const interval = days ? `AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${days} DAY)` : '';
+      const interval = (days ? `AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${days} DAY)` : '') + todayClause();
       try {
         const rows = await grafanaQuery(`
           SELECT o.company_id, c.name, COUNT(DISTINCT o.car_id) as devices,
@@ -2881,7 +2886,7 @@
       el.innerHTML = '<div style="padding:16px;color:#6b7280;font-size:13px">Загрузка...</div>';
       const days = sectionPeriods.dev;
       const periodLabel = days === 1 ? '1 день' : days === 7 ? '7 дней' : days === 30 ? '30 дней' : 'всё время';
-      const interval = days ? `AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${days} DAY)` : '';
+      const interval = (days ? `AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${days} DAY)` : '') + todayClause();
 
       try {
         const rows = await grafanaQuery(`
@@ -3112,8 +3117,8 @@
     async function loadTariffDemand() {
       document.getElementById('tariffDemandSub').textContent = 'Загрузка...';
       try {
-        const dateClause = tdActiveDays > 0
-          ? `AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${tdActiveDays} DAY)` : '';
+        const dateClause = (tdActiveDays > 0
+          ? `AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${tdActiveDays} DAY)` : '') + todayClause();
         const dowClause = tdActiveDow === 'wd'
           ? `AND DAYOFWEEK(o.start_time) BETWEEN 2 AND 6`
           : tdActiveDow === 'we'
