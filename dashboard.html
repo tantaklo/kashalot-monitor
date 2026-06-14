@@ -3411,11 +3411,16 @@
       let activeSlice = FG_ACTIVE_RAW;
       if (days > 0) activeSlice = FG_ACTIVE_RAW.slice(-days);
       const sliceDates = activeSlice.map(r => r.date);
-      const startDate = sliceDates[0] || '2025-10-01';
+      const startDate = sliceDates[0] || '2024-12-08';
+
+      // Chart 1 (еженедельный рост) — минимум 90 дней, чтобы не пустовал при коротких периодах
+      const days1 = days > 0 ? Math.max(days, 90) : 0;
+      const slice1 = days1 > 0 ? FG_ACTIVE_RAW.slice(-days1) : FG_ACTIVE_RAW;
+      const startDate1 = slice1[0]?.date || startDate;
 
       const weekMap = {};
       FG_FLEET_RAW.forEach(r => {
-        if (r.date < startDate) return;
+        if (r.date < startDate1) return;
         const d = new Date(r.date), dow = d.getDay();
         const mon = new Date(d);
         mon.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
@@ -3423,7 +3428,7 @@
         weekMap[wk] = (weekMap[wk] || 0) + r.n;
       });
       let startCumul = FG_BASE;
-      FG_FLEET_RAW.forEach(r => { if (r.date < startDate) startCumul += r.n; });
+      FG_FLEET_RAW.forEach(r => { if (r.date < startDate1) startCumul += r.n; });
       const weeks = Object.keys(weekMap).sort();
       let cumW = startCumul;
       const wkCumul = [], wkNew = [], wkLabels = [];
