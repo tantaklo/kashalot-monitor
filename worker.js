@@ -86,6 +86,72 @@ async function sendBatteryReport(env) {
   if (current) await tg(current, env);
 }
 
+async function checkLowBatteryDuration(env) {
+  // Все онлайн-устройства — и те что ниже 30%, и те что выше (для сброса состояния)
+  const rows = await grafanaSQL(`
+    SELECT c.id, c.gosnomer, c.fuel, co.name AS company
+    FROM cars c
+    JOIN companies co ON c.company_id = co.id
+    WHERE c.fuel IS NOT NULL AND c.fuel > 0 AND c.online = 1
+    ORDER BY c.fuel ASC
+  `, env);
+
+  const now = Date.now();
+  const THRESHOLD = 30;
+  const ALERT_AFTER_MS = 24 * 60 * 60 * 1000; // 24 часа
+
+  const lowIds = new Set(rows.filter(r => r.fuel < THRESHOLD).map(r => r.id));
+
+  for (const row of rows) {
+    const id = row.id;
+    const kvLow = `batt_low:${id}`;
+    const kvAlerted = `batt_alerted:${id}`;
+
+    if (row.fuel >= THRESHOLD) {
+      // Устройство восстановилось — сбрасываем состояние
+      if (env.IGN_CACHE) {
+        await Promise.all([
+          env.IGN_CACHE.delete(kvLow),
+          env.IGN_CACHE.delete(kvAlerted),
+        ]);
+      }
+      continue;
+    }
+
+    // Устройство ниже 30%
+    if (!env.IGN_CACHE) continue;
+
+    const sinceRaw = await env.IGN_CACHE.get(kvLow);
+    if (!sinceRaw) {
+      // Первый раз видим — запоминаем момент входа
+      await env.IGN_CACHE.put(kvLow, String(now), { expirationTtl: 172800 }); // 48 ч
+      continue;
+    }
+
+    const since = Number(sinceRaw);
+    const hoursLow = Math.round((now - since) / 36000) / 100; // с одним знаком
+    if (now - since < ALERT_AFTER_MS) continue; // ещё не 24 часа
+
+    // Проверяем, не слали ли уже
+    const alerted = await env.IGN_CACHE.get(kvAlerted);
+    if (alerted) continue;
+
+    const emoji = row.fuel < 10 ? '🔴' : '🟠';
+    const carUrl = `https://gw.bumerang.tech/admin/car/${id}`;
+    const text =
+      `${emoji} <b>Кашалот разряжен >24 ч</b>\n\n` +
+      `<a href="${carUrl}">КШ-${id} ${row.gosnomer ?? ''}</a>\n` +
+      `🏢 ${row.company}\n` +
+      `🔋 Заряд: <b>${row.fuel}%</b>\n` +
+      `⏱ Ниже 30% уже <b>${hoursLow} ч</b>`;
+
+    await tg(text, env);
+
+    // Ставим флаг «уже отправлено» — до восстановления не повторяем
+    await env.IGN_CACHE.put(kvAlerted, '1', { expirationTtl: 172800 });
+  }
+}
+
 async function sendDailyOutlierReport(env) {
   const DAYS = 7;
 
@@ -270,7 +336,26 @@ async function adminLogin(env) {
   const csrfM = html4.match(/meta name="csrf-token" content="([^"]+)"/);
   const csrfMeta = csrfM ? csrfM[1] : '';
 
-  return { cookieStr, csrfMeta };
+  return { jar: { ...jar }, csrfMeta };
+}
+
+function makeCookieSession({ jar, csrfMeta }) {
+  return {
+    cookieStr: () => Object.entries(jar).map(([k, v]) => `${k}=${v}`).join('; '),
+    csrfMeta,
+  };
+}
+
+async function getAdminSession(env) {
+  if (env.IGN_CACHE) {
+    const cached = await env.IGN_CACHE.get('admin_session', { type: 'json' });
+    if (cached) return makeCookieSession(cached);
+  }
+  const data = await adminLogin(env);
+  if (env.IGN_CACHE) {
+    await env.IGN_CACHE.put('admin_session', JSON.stringify(data), { expirationTtl: 1200 });
+  }
+  return makeCookieSession(data);
 }
 
 async function fetchIgnOff(session, orderId) {
@@ -320,6 +405,88 @@ async function fetchIgnOff(session, orderId) {
 }
 
 const DS_UID = 'bb52db42-4304-442c-91e1-09a5e558c574';
+
+// Уведомление в TG для выездов за зону с зажиганием выключено > IGN_THRESHOLD%
+const IGN_THRESHOLD = 20;
+
+async function sendOutOfZoneAlert(env) {
+  const today = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const rows = await grafanaSQL(`
+    SELECT e1.order_id,
+      SUM(TIMESTAMPDIFF(SECOND, e1.time, e2.time)) AS out_sec,
+      (SELECT status FROM bills WHERE order_id=o.id ORDER BY id DESC LIMIT 1) AS pay_status,
+      c.name AS company,
+      TIMESTAMPDIFF(SECOND, o.start_time, COALESCE(o.finish_time, NOW())) AS total_sec,
+      o.car_id,
+      cars.gosnomer
+    FROM order_events e1
+    JOIN order_events e2 ON e2.order_id=e1.order_id
+      AND e2.id=(SELECT MIN(id) FROM order_events WHERE order_id=e1.order_id AND id>e1.id AND reason='GEO')
+    JOIN orders o ON e1.order_id=o.id
+    JOIN companies c ON o.company_id=c.id
+    JOIN cars ON cars.id=o.car_id
+    WHERE e1.reason='GEO' AND e1.geo_id=1
+      AND DATE(o.start_time)='${today}'
+    GROUP BY e1.order_id, pay_status, c.name, o.start_time, o.finish_time, o.car_id, cars.gosnomer
+    HAVING out_sec >= 10
+    ORDER BY out_sec DESC
+  `, env);
+
+  if (!rows.length) return;
+
+  // Получаем зажигание для всех заказов через кэш KV + admin
+  let session;
+  for (const row of rows) {
+    const id = row.order_id;
+    const kvKey = `ooz_alerted:${id}`;
+
+    // Пропускаем уже отправленные
+    if (env.IGN_CACHE && await env.IGN_CACHE.get(kvKey)) continue;
+
+    // Получаем секунды выключенного зажигания
+    let ignSecs = null;
+    if (env.IGN_CACHE) {
+      const cached = await env.IGN_CACHE.get(`ign:${id}`);
+      if (cached !== null) ignSecs = JSON.parse(cached);
+    }
+    if (ignSecs === null) {
+      try {
+        if (!session) session = await getAdminSession(env);
+        ignSecs = await fetchIgnOff(session, id);
+        if (env.IGN_CACHE && ignSecs !== null) {
+          await env.IGN_CACHE.put(`ign:${id}`, JSON.stringify(ignSecs), { expirationTtl: 21600 });
+        }
+      } catch {
+        continue; // не блокируем на ошибке одного заказа
+      }
+    }
+
+    if (ignSecs === null || row.total_sec <= 0) continue;
+    const ignPct = Math.round(ignSecs / row.total_sec * 100);
+    if (ignPct <= IGN_THRESHOLD) continue;
+
+    // Форматируем и отправляем
+    const fmt = s => `${Math.floor(s/60)} мин ${s%60} сек`;
+    const payLabel = row.pay_status === 'PAID' ? '💳 Оплачен' : row.pay_status === 'CANCELLED' || row.pay_status === 'CANCELED' ? '❌ Отменён' : row.pay_status ?? '—';
+    const orderUrl = `https://gw.bumerang.tech/admin/order/${id}`;
+    const carUrl = `https://gw.bumerang.tech/admin/car/${row.car_id}`;
+    const text =
+      `⚠️ <b>Выезд за зону · зажигание выкл. ${ignPct}%</b>\n\n` +
+      `Заказ <a href="${orderUrl}"><b>#${id}</b></a> · <a href="${carUrl}">КШ-${row.car_id} ${row.gosnomer ?? ''}</a>\n` +
+      `🏢 ${row.company}\n` +
+      `⏱ За зоной: <b>${fmt(row.out_sec)}</b> из ${fmt(row.total_sec)}\n` +
+      `🔑 Зажигание выкл.: <b>${fmt(ignSecs)}</b> (${ignPct}%)\n` +
+      payLabel;
+
+    await tg(text, env);
+
+    // Помечаем как отправленный (TTL 26 часов — перекрывает сутки)
+    if (env.IGN_CACHE) {
+      await env.IGN_CACHE.put(kvKey, '1', { expirationTtl: 93600 });
+    }
+  }
+}
 
 export default {
   async fetch(request, env) {
@@ -517,11 +684,38 @@ export default {
         return new Response(JSON.stringify({}), { headers: { 'Content-Type': 'application/json', ...CORS } });
       }
       try {
-        const session = await adminLogin(env);
         const result = {};
-        for (const id of orderIds) {
-          result[id] = await fetchIgnOff(session, id);
+        const toFetch = [];
+
+        // Проверяем кэш KV per-order
+        if (env.IGN_CACHE) {
+          await Promise.all(orderIds.map(async id => {
+            const v = await env.IGN_CACHE.get(`ign:${id}`);
+            if (v !== null) result[id] = JSON.parse(v);
+            else toFetch.push(id);
+          }));
+        } else {
+          toFetch.push(...orderIds);
         }
+
+        if (toFetch.length) {
+          let session;
+          try {
+            session = await getAdminSession(env);
+            for (const id of toFetch) {
+              const val = await fetchIgnOff(session, id);
+              result[id] = val;
+              if (env.IGN_CACHE && val !== null) {
+                await env.IGN_CACHE.put(`ign:${id}`, JSON.stringify(val), { expirationTtl: 21600 });
+              }
+            }
+          } catch (e) {
+            // При ошибке инвалидируем сессию, чтобы следующий запрос залогинился заново
+            if (env.IGN_CACHE) await env.IGN_CACHE.delete('admin_session');
+            throw e;
+          }
+        }
+
         return new Response(JSON.stringify(result), {
           headers: { 'Content-Type': 'application/json', ...CORS },
         });
@@ -545,6 +739,18 @@ export default {
       await sendBatteryReport(env);
       return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json', ...CORS } });
     }
+    if (url.pathname === '/run-batt-duration' && request.method === 'POST') {
+      const token = request.headers.get('X-Token');
+      if (!token || token !== env.PROXY_TOKEN) return new Response('Unauthorized', { status: 401 });
+      await checkLowBatteryDuration(env);
+      return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json', ...CORS } });
+    }
+    if (url.pathname === '/run-ooz' && request.method === 'POST') {
+      const token = request.headers.get('X-Token');
+      if (!token || token !== env.PROXY_TOKEN) return new Response('Unauthorized', { status: 401 });
+      await sendOutOfZoneAlert(env);
+      return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json', ...CORS } });
+    }
 
     return new Response('Not found', { status: 404 });
   },
@@ -557,6 +763,12 @@ export default {
     } else if (cron === '0 9 * * *') {
       // 12:00 МСК — отчёт о разряженных кашалотах
       ctx.waitUntil(sendBatteryReport(env));
+    } else if (cron === '*/30 * * * *') {
+      // каждые 30 минут — выезды за зону с зажиганием выкл. > 20%
+      ctx.waitUntil(sendOutOfZoneAlert(env));
+    } else if (cron === '0 */4 * * *') {
+      // каждые 4 часа — устройства ниже 30% более 24 ч
+      ctx.waitUntil(checkLowBatteryDuration(env));
     }
   },
 };
