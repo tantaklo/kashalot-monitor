@@ -3442,9 +3442,8 @@
       const sliceDates = activeSlice.map(r => r.date);
       const startDate = sliceDates[0] || '2024-12-08';
 
-      // Chart 1 всегда показывает полную историю (кумулятивный рост не обрезаем по периоду)
-      // Переключатель периодов управляет только Chart 2 и Chart 3
-      const startDate1 = FG_ACTIVE_RAW[0]?.date || '2024-12-08';
+      // Chart 1 показывает тот же период что Chart 2; при days=0 — вся история
+      const startDate1 = days > 0 ? startDate : (FG_ACTIVE_RAW[0]?.date || '2024-12-08');
 
       const weekMap = {};
       FG_FLEET_RAW.forEach(r => {
@@ -3505,12 +3504,8 @@
           `<div style="font-size:19px;font-weight:600;color:${color}">${val}</div>` +
           `<div style="font-size:11px;color:#4b5563;text-transform:uppercase;letter-spacing:.05em;margin-top:3px">${lbl}</div></div>`;
         kpiEl.innerHTML =
-          kpi('До дек. 2024', FG_BASE.toLocaleString('ru-RU') + ' КШ', '#4b5563') +
-          kpi('Добавлено', '+' + totalAdded + ' КШ', '#60a5fa') +
           kpi('Парк (>10к₽)', lastFleetAll.toLocaleString('ru-RU') + ' КШ', '#4ade80') +
-          kpi('Пик активных', peakActive + ' КШ', '#2dd4bf') +
-          kpi('Пик доли', peakPct + '%', '#f59e0b') +
-          kpi('Ср. доля (сезон)', avgSeasonPct + '%', '#f59e0b');
+          kpi('Пик активных', peakActive + ' КШ', '#2dd4bf');
       }
 
       if (fgChart1) { fgChart1.destroy(); fgChart1 = null; }
