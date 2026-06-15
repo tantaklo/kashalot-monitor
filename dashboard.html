@@ -708,46 +708,48 @@
         <div class="tkpi-lbl" id="topKpiActiveLbl">Активность · ср.</div>
       </div>
 
-      <!-- 4. Выручка -->
-      <div class="tkpi-cell">
-        <div class="tkpi-val" style="color:#4ade80" id="topKpiRevenue">—</div>
-        <div class="tkpi-lbl" id="topKpiRevLbl">Выручка за период</div>
-      </div>
-
-      <!-- 5. Доля актив/доступ -->
+      <!-- 4. Доля актив/доступ -->
       <div class="tkpi-cell">
         <div class="tkpi-val" style="color:#f59e0b" id="topKpiShare">—</div>
         <div class="tkpi-lbl" id="topKpiShareLbl">Доля актив/доступ · ср.</div>
       </div>
 
-      <!-- 6. Выр/КШ активный -->
+      <!-- 5. Выручка -->
       <div class="tkpi-cell">
-        <div class="tkpi-val" style="color:#4ade80" id="topKpiPerActive">—</div>
-        <div class="tkpi-lbl" id="topKpiPerActiveLbl">Выр / КШ актив · сут</div>
+        <div class="tkpi-val" style="color:#4ade80" id="topKpiRevenue">—</div>
+        <div class="tkpi-lbl" id="topKpiRevLbl">Выручка за период</div>
+      </div>
+
+      <!-- 6. Выр/КШ парк (самый широкий знаменатель) -->
+      <div class="tkpi-cell">
+        <div class="tkpi-val" style="color:#6b7280" id="topKpiPerPark">—</div>
+        <div class="tkpi-lbl" id="topKpiPerParkLbl">Выр / КШ парк · сут</div>
       </div>
 
       <!-- 7. Выр/КШ доступный -->
       <div class="tkpi-cell">
-        <div class="tkpi-val" style="color:#4ade80" id="topKpiPerAvail">—</div>
+        <div class="tkpi-val" style="color:#60a5fa" id="topKpiPerAvail">—</div>
         <div class="tkpi-lbl" id="topKpiPerAvailLbl">Выр / КШ доступ · сут</div>
       </div>
 
-      <!-- 8. Выр/КШ в парке -->
+      <!-- 8. Выр/КШ активный -->
       <div class="tkpi-cell">
-        <div class="tkpi-val" style="color:#4ade80" id="topKpiPerPark">—</div>
-        <div class="tkpi-lbl" id="topKpiPerParkLbl">Выр / КШ парк · сут</div>
+        <div class="tkpi-val" style="color:#2dd4bf" id="topKpiPerActive">—</div>
+        <div class="tkpi-lbl" id="topKpiPerActiveLbl">Выр / КШ актив · сут</div>
       </div>
 
-      <!-- 9. Цена минуты (факт) -->
+      <!-- 9. Цена минуты · Детский -->
       <div class="tkpi-cell">
-        <div class="tkpi-val" style="color:#f472b6" id="topKpiPriceFact">—</div>
-        <div class="tkpi-lbl">Цена мин · куплено</div>
+        <div class="tkpi-val" style="color:#f472b6" id="topKpiPriceDetskiy">—</div>
+        <div class="tkpi-val" style="font-size:13px;margin-top:4px" id="topKpiPriceDetskiyGap">—</div>
+        <div class="tkpi-lbl">Цена мин · Детский</div>
       </div>
 
-      <!-- 10. Цена минуты (предложено) -->
+      <!-- 10. Цена минуты · Быстрый -->
       <div class="tkpi-cell">
-        <div class="tkpi-val" style="color:#f472b6;opacity:.6" id="topKpiPriceOffer">—</div>
-        <div class="tkpi-lbl">Цена мин · предложено</div>
+        <div class="tkpi-val" style="color:#f472b6" id="topKpiPriceBystry">—</div>
+        <div class="tkpi-val" style="font-size:13px;margin-top:4px" id="topKpiPriceBystryGap">—</div>
+        <div class="tkpi-lbl">Цена мин · Быстрый</div>
       </div>
 
     </div>
@@ -2130,8 +2132,35 @@
     let tpMeanFactMpm = null, tpMeanOfferMpm = null;
     function setTopKPITariff() {
       const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val ?? '—'; };
-      set('topKpiPriceFact',  tpMeanFactMpm  != null ? tpMeanFactMpm  + ' ₽/мин' : null);
-      set('topKpiPriceOffer', tpMeanOfferMpm != null ? tpMeanOfferMpm + ' ₽/мин' : null);
+
+      const computeBrand = (prefix) => {
+        const d5 = tpGapData[prefix + '|5 мин'];
+        const d10 = tpGapData[prefix + '|10 мин'];
+        let factNum = 0, factDen = 0, offerNum = 0, offerDen = 0;
+        if (d5 && d5.orders) { factNum += d5.factPM * d5.orders * 5; factDen += d5.orders * 5; offerNum += d5.offerPM * d5.orders * 5; offerDen += d5.orders * 5; }
+        if (d10 && d10.orders) { factNum += d10.factPM * d10.orders * 10; factDen += d10.orders * 10; offerNum += d10.offerPM * d10.orders * 10; offerDen += d10.orders * 10; }
+        if (!factDen) return null;
+        const factPM = +(factNum / factDen).toFixed(1);
+        const offerPM = offerDen ? +(offerNum / offerDen).toFixed(1) : null;
+        const deltaPct = offerPM ? +((factPM - offerPM) / offerPM * 100).toFixed(1) : null;
+        return { factPM, deltaPct };
+      };
+
+      const setGap = (gapId, deltaPct) => {
+        const el = document.getElementById(gapId);
+        if (!el) return;
+        if (deltaPct == null) { el.textContent = '—'; el.style.color = ''; return; }
+        el.textContent = (deltaPct >= 0 ? '+' : '') + deltaPct + '% от предл.';
+        el.style.color = deltaPct >= 0 ? '#4ade80' : '#f87171';
+      };
+
+      const detskiy = computeBrand('Детский');
+      const bystry = computeBrand('Быстрый');
+
+      set('topKpiPriceDetskiy', detskiy ? detskiy.factPM + ' ₽/мин' : null);
+      setGap('topKpiPriceDetskiyGap', detskiy?.deltaPct ?? null);
+      set('topKpiPriceBystry', bystry ? bystry.factPM + ' ₽/мин' : null);
+      setGap('topKpiPriceBystryGap', bystry?.deltaPct ?? null);
     }
 
     function updateTopKPI(days) {
