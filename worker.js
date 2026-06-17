@@ -241,9 +241,22 @@ async function sendDailyOutlierReport(env) {
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, X-Token',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Token, X-Partner-Token',
 };
+
+function randomHex(bytes = 32) {
+  const arr = new Uint8Array(bytes);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function getPartnerSession(env, token) {
+  if (!token || !env.IGN_CACHE) return null;
+  const raw = await env.IGN_CACHE.get(`session:${token}`);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
 
 // --- bumerang.tech admin session ---
 async function adminLogin(env) {
@@ -750,6 +763,208 @@ export default {
       if (!token || token !== env.PROXY_TOKEN) return new Response('Unauthorized', { status: 401 });
       await sendOutOfZoneAlert(env);
       return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json', ...CORS } });
+    }
+
+    // --- Роут: Google OAuth — старт ---
+    if (url.pathname === '/auth/google' && request.method === 'GET') {
+      const state = randomHex(16);
+      await env.IGN_CACHE.put(`oauth_state:${state}`, '1', { expirationTtl: 600 });
+      const params = new URLSearchParams({
+        client_id: env.GOOGLE_CLIENT_ID,
+        redirect_uri: env.PARTNER_REDIRECT_URI,
+        response_type: 'code',
+        scope: 'openid email profile',
+        state,
+        access_type: 'online',
+        prompt: 'select_account',
+      });
+      return Response.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`, 302);
+    }
+
+    // --- Роут: Google OAuth — callback ---
+    if (url.pathname === '/auth/callback' && request.method === 'GET') {
+      const DASH = 'https://tantaklo.github.io/kashalot-monitor/partner-dashboard.html';
+      const code = url.searchParams.get('code');
+      const state = url.searchParams.get('state');
+
+      if (url.searchParams.get('error')) {
+        return Response.redirect(`${DASH}?error=access_denied`, 302);
+      }
+      if (!state || !env.IGN_CACHE) {
+        return Response.redirect(`${DASH}?error=invalid_state`, 302);
+      }
+      const stateOk = await env.IGN_CACHE.get(`oauth_state:${state}`);
+      if (!stateOk) return Response.redirect(`${DASH}?error=invalid_state`, 302);
+      await env.IGN_CACHE.delete(`oauth_state:${state}`);
+
+      // Обмен code → access_token
+      const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code, grant_type: 'authorization_code',
+          client_id: env.GOOGLE_CLIENT_ID,
+          client_secret: env.GOOGLE_CLIENT_SECRET,
+          redirect_uri: env.PARTNER_REDIRECT_URI,
+        }),
+      });
+      if (!tokenResp.ok) return Response.redirect(`${DASH}?error=token_failed`, 302);
+      const { access_token } = await tokenResp.json();
+
+      // Получаем email партнёра
+      const userResp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { 'Authorization': `Bearer ${access_token}` },
+      });
+      if (!userResp.ok) return Response.redirect(`${DASH}?error=userinfo_failed`, 302);
+      const { email, name: gname } = await userResp.json();
+
+      // Проверяем доступ в KV
+      const accessRaw = await env.IGN_CACHE.get(`partner_access:${email}`);
+      if (!accessRaw) return Response.redirect(`${DASH}?error=no_access`, 302);
+      const access = JSON.parse(accessRaw);
+
+      // Создаём сессию (TTL 24 ч)
+      const sessionToken = randomHex(32);
+      await env.IGN_CACHE.put(`session:${sessionToken}`, JSON.stringify({
+        email,
+        name: access.name || gname || email,
+        company_ids: access.companies,
+      }), { expirationTtl: 86400 });
+
+      return Response.redirect(`${DASH}?token=${sessionToken}`, 302);
+    }
+
+    // --- Роут: Данные для партнёрского дашборда ---
+    if (url.pathname === '/partner-data' && request.method === 'POST') {
+      const session = await getPartnerSession(env, request.headers.get('X-Partner-Token'));
+      if (!session) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+      let body;
+      try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+
+      const { type, period = 30, company_id } = body;
+      const ids = company_id ? [company_id] : session.company_ids;
+      if (!ids || !ids.length) {
+        return new Response(JSON.stringify({ error: 'No companies' }), {
+          status: 403, headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+      const idList = ids.map(Number).join(',');
+
+      try {
+        let rows;
+        if (type === 'revenue') {
+          rows = await grafanaSQL(`
+            SELECT DATE(o.start_time) AS date,
+              ROUND(SUM(b.amount)/100) AS revenue,
+              COUNT(DISTINCT o.id) AS orders,
+              COUNT(DISTINCT o.car_id) AS active_devices
+            FROM orders o JOIN bills b ON b.order_id = o.id
+            WHERE b.status = 'PAID' AND o.company_id IN (${idList})
+              AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
+            GROUP BY DATE(o.start_time) ORDER BY date ASC
+          `, env);
+        } else if (type === 'summary') {
+          rows = await grafanaSQL(`
+            SELECT o.company_id, co.name AS company_name,
+              ROUND(SUM(b.amount)/100) AS revenue,
+              COUNT(DISTINCT o.id) AS orders,
+              COUNT(DISTINCT o.car_id) AS active_devices
+            FROM orders o JOIN bills b ON b.order_id = o.id
+            JOIN companies co ON o.company_id = co.id
+            WHERE b.status = 'PAID' AND o.company_id IN (${idList})
+              AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
+            GROUP BY o.company_id, co.name ORDER BY revenue DESC
+          `, env);
+        } else if (type === 'devices') {
+          rows = await grafanaSQL(`
+            SELECT o.car_id, ROUND(SUM(b.amount)/100) AS revenue,
+              COUNT(DISTINCT o.id) AS orders,
+              o.company_id, co.name AS company_name
+            FROM orders o JOIN bills b ON b.order_id = o.id
+            JOIN companies co ON o.company_id = co.id
+            WHERE b.status = 'PAID' AND o.company_id IN (${idList})
+              AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
+            GROUP BY o.car_id, o.company_id, co.name ORDER BY revenue DESC
+          `, env);
+        } else if (type === 'fleet') {
+          rows = await grafanaSQL(`
+            SELECT DISTINCT c.id AS car_id, c.gosnomer, c.fuel, c.online
+            FROM cars c JOIN orders o ON o.car_id = c.id
+            WHERE o.company_id IN (${idList})
+              AND o.start_time >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            ORDER BY c.fuel ASC
+          `, env);
+        } else {
+          return new Response(JSON.stringify({ error: 'Unknown type' }), {
+            status: 400, headers: { 'Content-Type': 'application/json', ...CORS },
+          });
+        }
+        return new Response(JSON.stringify({
+          ok: true, rows,
+          session: { email: session.email, name: session.name, company_ids: session.company_ids },
+        }), { headers: { 'Content-Type': 'application/json', ...CORS } });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: e.message }), {
+          status: 500, headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+    }
+
+    // --- Роут: Управление доступами партнёров (только Антон, X-Token) ---
+    if (url.pathname === '/admin/partner-access') {
+      const token = request.headers.get('X-Token');
+      if (!token || token !== env.PROXY_TOKEN) {
+        return new Response('Unauthorized', { status: 401, headers: CORS });
+      }
+
+      if (request.method === 'GET') {
+        const list = await env.IGN_CACHE.list({ prefix: 'partner_access:' });
+        const partners = [];
+        for (const key of list.keys) {
+          const raw = await env.IGN_CACHE.get(key.name);
+          if (raw) {
+            partners.push({ email: key.name.replace('partner_access:', ''), ...JSON.parse(raw) });
+          }
+        }
+        return new Response(JSON.stringify({ ok: true, partners }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      if (request.method === 'POST') {
+        let body;
+        try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+        const { email, companies, name } = body;
+        if (!email || !Array.isArray(companies)) {
+          return new Response(JSON.stringify({ error: 'email and companies[] required' }), {
+            status: 400, headers: { 'Content-Type': 'application/json', ...CORS },
+          });
+        }
+        await env.IGN_CACHE.put(`partner_access:${email}`, JSON.stringify({ companies, name: name || email }));
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      if (request.method === 'DELETE') {
+        let body;
+        try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+        if (!body.email) {
+          return new Response(JSON.stringify({ error: 'email required' }), {
+            status: 400, headers: { 'Content-Type': 'application/json', ...CORS },
+          });
+        }
+        await env.IGN_CACHE.delete(`partner_access:${body.email}`);
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      return new Response('Method Not Allowed', { status: 405, headers: CORS });
     }
 
     return new Response('Not found', { status: 404 });

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кашалот — Партнёрский дашборд</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy: #0f172a;
+    --navy2: #1e293b;
+    --navy3: #334155;
+    --teal: #0d9488;
+    --teal2: #14b8a6;
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --green: #22c55e;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--navy); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+
+  /* LOGIN SCREEN */
+  #login-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; gap: 24px; padding: 24px;
+  }
+  .login-logo { font-size: 48px; }
+  .login-title { font-size: 24px; font-weight: 700; }
+  .login-sub { color: var(--text2); font-size: 15px; }
+  .btn-google {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; color: #1a1a1a; border: none; border-radius: 8px;
+    padding: 12px 24px; font-size: 16px; font-weight: 500; cursor: pointer;
+    text-decoration: none; margin-top: 8px;
+  }
+  .btn-google:hover { background: #f0f0f0; }
+  .btn-google img { width: 20px; height: 20px; }
+  .error-msg { color: var(--red); font-size: 14px; text-align: center; }
+
+  /* DASHBOARD */
+  #dashboard { display: none; }
+  header {
+    background: var(--navy2); border-bottom: 1px solid var(--navy3);
+    padding: 0 24px; display: flex; align-items: center; justify-content: space-between;
+    height: 60px; position: sticky; top: 0; z-index: 10;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-logo { font-size: 22px; font-weight: 800; color: var(--teal2); }
+  .header-subtitle { color: var(--text2); font-size: 13px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .user-badge { font-size: 13px; color: var(--text2); }
+  .btn-logout { background: none; border: 1px solid var(--navy3); color: var(--text2);
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .btn-logout:hover { border-color: var(--teal); color: var(--text); }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+  /* COMPANY SWITCHER */
+  .company-bar {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;
+  }
+  .company-btn {
+    background: var(--navy2); border: 1px solid var(--navy3); color: var(--text2);
+    padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px;
+    transition: all .15s;
+  }
+  .company-btn.active, .company-btn:hover {
+    background: var(--teal); border-color: var(--teal); color: #fff;
+  }
+
+  /* PERIOD SELECTOR */
+  .period-bar {
+    display: flex; gap: 6px; margin-bottom: 24px;
+  }
+  .period-btn {
+    background: var(--navy2); border: 1px solid var(--navy3); color: var(--text2);
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  .period-btn.active { background: var(--navy3); color: var(--text); border-color: var(--teal); }
+
+  /* SUMMARY CARDS */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .card {
+    background: var(--navy2); border-radius: var(--radius); padding: 20px;
+    border: 1px solid var(--navy3);
+  }
+  .card-label { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+  .card-value { font-size: 28px; font-weight: 700; }
+  .card-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+  /* CHART */
+  .chart-wrap {
+    background: var(--navy2); border-radius: var(--radius); padding: 24px;
+    border: 1px solid var(--navy3); margin-bottom: 24px;
+  }
+  .chart-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--text2); }
+  .chart-canvas { max-height: 260px; }
+
+  /* TABLES */
+  .table-wrap {
+    background: var(--navy2); border-radius: var(--radius);
+    border: 1px solid var(--navy3); margin-bottom: 24px; overflow: hidden;
+  }
+  .table-header { padding: 16px 20px; font-size: 15px; font-weight: 600; color: var(--text2);
+    border-bottom: 1px solid var(--navy3); }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 10px 20px; text-align: left; font-size: 12px; color: var(--text2);
+    text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--navy3); }
+  td { padding: 10px 20px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,.04); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+  .badge-green { background: rgba(34,197,94,.15); color: var(--green); }
+  .badge-red { background: rgba(239,68,68,.15); color: var(--red); }
+  .badge-yellow { background: rgba(245,158,11,.15); color: var(--yellow); }
+
+  /* FLEET */
+  .fleet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding: 16px 20px; }
+  .fleet-card {
+    background: var(--navy3); border-radius: 8px; padding: 12px; text-align: center;
+    border: 1px solid transparent;
+  }
+  .fleet-card.online { border-color: rgba(20,184,166,.3); }
+  .fleet-card .car-id { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .fleet-card .fuel { font-size: 20px; font-weight: 800; }
+  .fleet-card .fuel.low { color: var(--red); }
+  .fleet-card .fuel.mid { color: var(--yellow); }
+  .fleet-card .fuel.ok { color: var(--green); }
+  .fleet-card .status { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  .loading { color: var(--text2); font-size: 14px; padding: 40px; text-align: center; }
+  .section-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-logo">🐳</div>
+  <div class="login-title">Кашалот — Партнёрский дашборд</div>
+  <div class="login-sub">Войдите через Google-аккаунт, к которому привязан доступ</div>
+  <a id="btn-login" class="btn-google" href="https://kashalot-proxy.vegano-argentino-ru.workers.dev/auth/google">
+    <img src="https://www.google.com/favicon.ico" alt="G">
+    Войти через Google
+  </a>
+  <div id="error-msg" class="error-msg" style="display:none"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <header>
+    <div class="header-left">
+      <div class="header-logo">🐳 Кашалот</div>
+      <div class="header-subtitle">Партнёрский дашборд</div>
+    </div>
+    <div class="header-right">
+      <div class="user-badge" id="user-badge"></div>
+      <button class="btn-logout" onclick="logout()">Выйти</button>
+    </div>
+  </header>
+  <main>
+    <div class="company-bar" id="company-bar"></div>
+    <div class="period-bar" id="period-bar">
+      <button class="period-btn" data-p="7">7 дн</button>
+      <button class="period-btn active" data-p="30">30 дн</button>
+      <button class="period-btn" data-p="90">90 дн</button>
+      <button class="period-btn" data-p="365">1 год</button>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="cards" id="summary-cards">
+      <div class="card"><div class="card-label">Выручка</div><div class="card-value loading">…</div></div>
+      <div class="card"><div class="card-label">Заказов</div><div class="card-value loading">…</div></div>
+      <div class="card"><div class="card-label">Активных КШ</div><div class="card-value loading">…</div></div>
+      <div class="card"><div class="card-label">Выручка/КШ</div><div class="card-value loading">…</div></div>
+    </div>
+
+    <!-- Revenue chart -->
+    <div class="chart-wrap">
+      <div class="chart-title">Выручка по дням</div>
+      <canvas id="revenue-chart" class="chart-canvas"></canvas>
+    </div>
+
+    <!-- Devices table -->
+    <div class="section-title">Устройства</div>
+    <div class="table-wrap">
+      <div class="table-header">Топ устройств по выручке</div>
+      <table id="devices-table">
+        <thead><tr><th>#</th><th>КШ</th><th>Выручка</th><th>Заказов</th><th>Компания</th></tr></thead>
+        <tbody><tr><td colspan="5" class="loading">Загрузка…</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- Fleet -->
+    <div class="section-title">Парк · заряд</div>
+    <div class="table-wrap">
+      <div class="table-header">Онлайн-устройства</div>
+      <div class="fleet-grid" id="fleet-grid"><div class="loading">Загрузка…</div></div>
+    </div>
+  </main>
+</div>
+
+<script>
+const WORKER = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev';
+let partnerToken = null;
+let session = null;
+let currentCompanyId = null; // null = все
+let currentPeriod = 30;
+let revenueChart = null;
+
+// --- Init ---
+function init() {
+  const params = new URLSearchParams(location.search);
+  const error = params.get('error');
+  const token = params.get('token');
+
+  if (error) {
+    const msgs = {
+      access_denied: 'Доступ отклонён.',
+      no_access: 'Ваш Google-аккаунт не имеет доступа к дашборду. Обратитесь к Антону.',
+      token_failed: 'Ошибка авторизации Google. Попробуйте ещё раз.',
+      invalid_state: 'Истёк токен запроса. Попробуйте ещё раз.',
+    };
+    showError(msgs[error] || 'Ошибка авторизации: ' + error);
+    return;
+  }
+
+  if (token) {
+    partnerToken = token;
+    sessionStorage.setItem('ks_partner_token', token);
+    history.replaceState({}, '', location.pathname);
+    showDashboard();
+    return;
+  }
+
+  const saved = sessionStorage.getItem('ks_partner_token');
+  if (saved) {
+    partnerToken = saved;
+    showDashboard();
+    return;
+  }
+
+  // Показываем экран входа
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function logout() {
+  sessionStorage.removeItem('ks_partner_token');
+  location.href = location.pathname;
+}
+
+// --- Dashboard ---
+async function showDashboard() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+
+  // Первый запрос для получения session info
+  const resp = await api('summary', { period: currentPeriod });
+  if (!resp || resp.error === 'Unauthorized') {
+    sessionStorage.removeItem('ks_partner_token');
+    location.reload();
+    return;
+  }
+
+  session = resp.session;
+  document.getElementById('user-badge').textContent = session.name || session.email;
+
+  buildCompanyBar(resp.rows);
+  buildPeriodBar();
+  await loadAll();
+}
+
+function buildCompanyBar(summaryRows) {
+  const bar = document.getElementById('company-bar');
+  bar.innerHTML = '';
+
+  const btn = document.createElement('button');
+  btn.className = 'company-btn active';
+  btn.textContent = 'Все компании';
+  btn.dataset.id = '';
+  btn.onclick = () => switchCompany(null, btn);
+  bar.appendChild(btn);
+
+  (summaryRows || []).forEach(r => {
+    const b = document.createElement('button');
+    b.className = 'company-btn';
+    b.textContent = shortName(r.company_name);
+    b.dataset.id = r.company_id;
+    b.onclick = () => switchCompany(r.company_id, b);
+    bar.appendChild(b);
+  });
+}
+
+function shortName(name) {
+  // "Красногорск [ИП Баранова Агент АО КШ]" → "Красногорск"
+  return name.replace(/\s*\[.*?\]/, '').trim();
+}
+
+function switchCompany(id, btn) {
+  currentCompanyId = id ? Number(id) : null;
+  document.querySelectorAll('.company-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadAll();
+}
+
+function buildPeriodBar() {
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.onclick = () => {
+      currentPeriod = Number(btn.dataset.p);
+      document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadAll();
+    };
+  });
+}
+
+async function loadAll() {
+  await Promise.all([
+    loadSummary(),
+    loadRevenue(),
+    loadDevices(),
+    loadFleet(),
+  ]);
+}
+
+// --- API ---
+async function api(type, extra = {}) {
+  const body = { type, period: currentPeriod, ...extra };
+  if (currentCompanyId) body.company_id = currentCompanyId;
+  try {
+    const r = await fetch(`${WORKER}/partner-data`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Partner-Token': partnerToken },
+      body: JSON.stringify(body),
+    });
+    return await r.json();
+  } catch { return null; }
+}
+
+function fmt(n) {
+  return Number(n).toLocaleString('ru-RU');
+}
+
+// --- Summary cards ---
+async function loadSummary() {
+  const resp = await api('summary');
+  const cards = document.getElementById('summary-cards');
+  if (!resp || !resp.rows) {
+    cards.innerHTML = '<div class="card"><div class="card-label">Ошибка загрузки</div></div>';
+    return;
+  }
+  const totRev = resp.rows.reduce((s, r) => s + Number(r.revenue), 0);
+  const totOrders = resp.rows.reduce((s, r) => s + Number(r.orders), 0);
+  const totDevices = resp.rows.reduce((s, r) => s + Number(r.active_devices), 0);
+  const perDevice = totDevices ? Math.round(totRev / totDevices) : 0;
+
+  cards.innerHTML = `
+    <div class="card">
+      <div class="card-label">Выручка</div>
+      <div class="card-value">${fmt(totRev)} ₽</div>
+      <div class="card-sub">за ${currentPeriod} дн.</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Заказов</div>
+      <div class="card-value">${fmt(totOrders)}</div>
+      <div class="card-sub">оплаченных</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Активных КШ</div>
+      <div class="card-value">${totDevices}</div>
+      <div class="card-sub">уникальных за период</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Выручка / КШ</div>
+      <div class="card-value">${fmt(perDevice)} ₽</div>
+      <div class="card-sub">среднее за период</div>
+    </div>
+  `;
+}
+
+// --- Revenue chart ---
+async function loadRevenue() {
+  const resp = await api('revenue');
+  if (!resp || !resp.rows) return;
+  const labels = resp.rows.map(r => r.date);
+  const data = resp.rows.map(r => Number(r.revenue));
+
+  if (revenueChart) revenueChart.destroy();
+  const ctx = document.getElementById('revenue-chart').getContext('2d');
+  revenueChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Выручка, ₽',
+        data,
+        backgroundColor: 'rgba(13,148,136,.7)',
+        borderColor: '#0d9488',
+        borderWidth: 1,
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#94a3b8', maxTicksLimit: 14 }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y: { ticks: { color: '#94a3b8', callback: v => fmt(v) + ' ₽' }, grid: { color: 'rgba(255,255,255,.06)' } },
+      },
+    },
+  });
+}
+
+// --- Devices table ---
+async function loadDevices() {
+  const resp = await api('devices');
+  const tbody = document.querySelector('#devices-table tbody');
+  if (!resp || !resp.rows) {
+    tbody.innerHTML = '<tr><td colspan="5">Ошибка загрузки</td></tr>';
+    return;
+  }
+  const rows = resp.rows;
+  const revenues = rows.map(r => Number(r.revenue));
+  const med = median(revenues);
+
+  tbody.innerHTML = rows.slice(0, 30).map((r, i) => {
+    const rev = Number(r.revenue);
+    const badgeCls = rev >= med * 1.2 ? 'badge-green' : rev < med * 0.5 ? 'badge-red' : 'badge-yellow';
+    return `<tr>
+      <td>${i + 1}</td>
+      <td>КШ-${r.car_id}</td>
+      <td><span class="badge ${badgeCls}">${fmt(rev)} ₽</span></td>
+      <td>${r.orders}</td>
+      <td>${shortName(r.company_name)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function median(arr) {
+  if (!arr.length) return 0;
+  const s = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 === 0 ? (s[m - 1] + s[m]) / 2 : s[m];
+}
+
+// --- Fleet ---
+async function loadFleet() {
+  const resp = await api('fleet');
+  const grid = document.getElementById('fleet-grid');
+  if (!resp || !resp.rows) {
+    grid.innerHTML = '<div class="loading">Ошибка загрузки</div>';
+    return;
+  }
+  const online = resp.rows.filter(r => r.online);
+  if (!online.length) {
+    grid.innerHTML = '<div class="loading">Нет онлайн-устройств</div>';
+    return;
+  }
+  grid.innerHTML = online.map(r => {
+    const fuel = Number(r.fuel);
+    const fuelCls = fuel < 20 ? 'low' : fuel < 50 ? 'mid' : 'ok';
+    return `<div class="fleet-card online">
+      <div class="car-id">КШ-${r.car_id}</div>
+      <div class="fuel ${fuelCls}">${fuel}%</div>
+      <div class="status">🟢 Онлайн</div>
+    </div>`;
+  }).join('');
+}
+
+init();
+</script>
+</body>
+</html>
