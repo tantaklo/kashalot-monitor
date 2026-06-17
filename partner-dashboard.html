@@ -228,6 +228,15 @@
       <div class="card"><div class="card-label">Выручка/КШ</div><div class="card-value loading">…</div></div>
     </div>
 
+    <!-- Company breakdown -->
+    <div class="table-wrap" id="company-breakdown-wrap" style="display:none;margin-bottom:24px">
+      <div class="table-header">По компаниям</div>
+      <table id="company-breakdown-table">
+        <thead><tr><th>Локация</th><th>Выручка</th><th>КШ</th><th>В сутки / КШ</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
     <!-- Revenue chart -->
     <div class="chart-wrap">
       <div class="chart-title">Выручка по дням</div>
@@ -467,6 +476,11 @@ async function loadSummary(revenueResp) {
       <div class="card-sub">по ${activeDays} активным дням</div>
     </div>
     <div class="card">
+      <div class="card-label">В сутки / КШ</div>
+      <div class="card-value">${totDevices && activeDays ? fmt(Math.round(totRev / activeDays / totDevices)) : 0} ₽</div>
+      <div class="card-sub">среднее на устройство</div>
+    </div>
+    <div class="card">
       <div class="card-label">Заказов</div>
       <div class="card-value">${fmt(totOrders)}</div>
       <div class="card-sub">оплаченных</div>
@@ -477,6 +491,27 @@ async function loadSummary(revenueResp) {
       <div class="card-sub">уникальных за период</div>
     </div>
   `;
+
+  // Таблица по локациям (если больше одной компании)
+  const wrap = document.getElementById('company-breakdown-wrap');
+  const tbody = document.querySelector('#company-breakdown-table tbody');
+  if (resp.rows.length > 1) {
+    tbody.innerHTML = resp.rows.map(r => {
+      const loc = shortName(r.company_name);
+      const rev = Number(r.revenue);
+      const ksh = Number(r.active_devices);
+      const perDayKsh = ksh && activeDays ? Math.round(rev / activeDays / ksh) : 0;
+      return `<tr>
+        <td>${loc}</td>
+        <td>${fmt(rev)} ₽</td>
+        <td>${ksh}</td>
+        <td>${fmt(perDayKsh)} ₽</td>
+      </tr>`;
+    }).join('');
+    wrap.style.display = '';
+  } else {
+    wrap.style.display = 'none';
+  }
 }
 
 // --- Revenue chart ---
