@@ -329,9 +329,11 @@ function buildPeriodBar() {
 }
 
 async function loadAll() {
+  // Грузим revenue первым — данные нужны и для графика, и для карточки «В сутки»
+  const revenueResp = await api('revenue');
   await Promise.all([
-    loadSummary(),
-    loadRevenue(),
+    loadSummary(revenueResp),
+    renderRevenue(revenueResp),
     loadDevices(),
     loadFleet(),
   ]);
@@ -356,7 +358,7 @@ function fmt(n) {
 }
 
 // --- Summary cards ---
-async function loadSummary() {
+async function loadSummary(revenueResp) {
   const resp = await api('summary');
   const cards = document.getElementById('summary-cards');
   if (!resp || !resp.rows) {
@@ -366,13 +368,21 @@ async function loadSummary() {
   const totRev = resp.rows.reduce((s, r) => s + Number(r.revenue), 0);
   const totOrders = resp.rows.reduce((s, r) => s + Number(r.orders), 0);
   const totDevices = resp.rows.reduce((s, r) => s + Number(r.active_devices), 0);
-  const perDevice = totDevices ? Math.round(totRev / totDevices) : 0;
+
+  // Средняя выручка в сутки — по дням с активностью из revenue
+  const activeDays = revenueResp?.rows?.length || 0;
+  const perDay = activeDays ? Math.round(totRev / activeDays) : 0;
 
   cards.innerHTML = `
     <div class="card">
-      <div class="card-label">Выручка</div>
+      <div class="card-label">Выручка за период</div>
       <div class="card-value">${fmt(totRev)} ₽</div>
       <div class="card-sub">за ${currentPeriod} дн.</div>
+    </div>
+    <div class="card">
+      <div class="card-label">В сутки (ср.)</div>
+      <div class="card-value">${fmt(perDay)} ₽</div>
+      <div class="card-sub">по ${activeDays} активным дням</div>
     </div>
     <div class="card">
       <div class="card-label">Заказов</div>
@@ -384,17 +394,11 @@ async function loadSummary() {
       <div class="card-value">${totDevices}</div>
       <div class="card-sub">уникальных за период</div>
     </div>
-    <div class="card">
-      <div class="card-label">Выручка / КШ</div>
-      <div class="card-value">${fmt(perDevice)} ₽</div>
-      <div class="card-sub">среднее за период</div>
-    </div>
   `;
 }
 
 // --- Revenue chart ---
-async function loadRevenue() {
-  const resp = await api('revenue');
+async function renderRevenue(resp) {
   if (!resp || !resp.rows) return;
   const labels = resp.rows.map(r => r.date);
   const data = resp.rows.map(r => Number(r.revenue));

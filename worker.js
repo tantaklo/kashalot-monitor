@@ -874,7 +874,7 @@ export default {
         if (type === 'revenue') {
           rows = await grafanaSQL(`
             SELECT DATE(o.start_time) AS date,
-              ROUND(SUM(b.amount)/100) AS revenue,
+              ROUND(SUM(b.sum_card)/100) AS revenue,
               COUNT(DISTINCT o.id) AS orders,
               COUNT(DISTINCT o.car_id) AS active_devices
             FROM orders o JOIN bills b ON b.order_id = o.id
@@ -885,7 +885,7 @@ export default {
         } else if (type === 'summary') {
           rows = await grafanaSQL(`
             SELECT o.company_id, co.name AS company_name,
-              ROUND(SUM(b.amount)/100) AS revenue,
+              ROUND(SUM(b.sum_card)/100) AS revenue,
               COUNT(DISTINCT o.id) AS orders,
               COUNT(DISTINCT o.car_id) AS active_devices
             FROM orders o JOIN bills b ON b.order_id = o.id
@@ -896,7 +896,7 @@ export default {
           `, env);
         } else if (type === 'devices') {
           rows = await grafanaSQL(`
-            SELECT o.car_id, ROUND(SUM(b.amount)/100) AS revenue,
+            SELECT o.car_id, ROUND(SUM(b.sum_card)/100) AS revenue,
               COUNT(DISTINCT o.id) AS orders,
               o.company_id, co.name AS company_name
             FROM orders o JOIN bills b ON b.order_id = o.id
