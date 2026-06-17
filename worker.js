@@ -784,54 +784,69 @@ export default {
     // --- Роут: Google OAuth — callback ---
     if (url.pathname === '/auth/callback' && request.method === 'GET') {
       const DASH = 'https://tantaklo.github.io/kashalot-monitor/partner-dashboard.html';
-      const code = url.searchParams.get('code');
-      const state = url.searchParams.get('state');
+      try {
+        const code = url.searchParams.get('code');
+        const state = url.searchParams.get('state');
 
-      if (url.searchParams.get('error')) {
-        return Response.redirect(`${DASH}?error=access_denied`, 302);
+        if (url.searchParams.get('error')) {
+          return Response.redirect(`${DASH}?error=access_denied`, 302);
+        }
+        if (!code || !state) {
+          return Response.redirect(`${DASH}?error=invalid_state`, 302);
+        }
+
+        // Проверяем state (KV может быть rate-limited — пропускаем без краша)
+        if (env.IGN_CACHE) {
+          try {
+            const stateVal = await env.IGN_CACHE.get(`oauth_state:${state}`);
+            if (!stateVal) return Response.redirect(`${DASH}?error=invalid_state`, 302);
+            // Не удаляем и не перезаписываем — TTL 600s уберёт сам, избегаем KV лимитов
+          } catch (_) { /* KV недоступен — продолжаем */ }
+        }
+
+        // Обмен code → access_token
+        const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            code, grant_type: 'authorization_code',
+            client_id: env.GOOGLE_CLIENT_ID,
+            client_secret: env.GOOGLE_CLIENT_SECRET,
+            redirect_uri: env.PARTNER_REDIRECT_URI,
+          }),
+        });
+        if (!tokenResp.ok) return Response.redirect(`${DASH}?error=token_failed`, 302);
+        const tokenData = await tokenResp.json();
+        const access_token = tokenData.access_token;
+        if (!access_token) return Response.redirect(`${DASH}?error=token_failed`, 302);
+
+        // Получаем email партнёра
+        const userResp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+          headers: { 'Authorization': `Bearer ${access_token}` },
+        });
+        if (!userResp.ok) return Response.redirect(`${DASH}?error=userinfo_failed`, 302);
+        const userData = await userResp.json();
+        const email = userData.email;
+        const gname = userData.name;
+        if (!email) return Response.redirect(`${DASH}?error=userinfo_failed`, 302);
+
+        // Проверяем доступ в KV
+        const accessRaw = await env.IGN_CACHE.get(`partner_access:${email}`);
+        if (!accessRaw) return Response.redirect(`${DASH}?error=no_access`, 302);
+        const access = JSON.parse(accessRaw);
+
+        // Создаём сессию (TTL 24 ч)
+        const sessionToken = randomHex(32);
+        await env.IGN_CACHE.put(`session:${sessionToken}`, JSON.stringify({
+          email,
+          name: access.name || gname || email,
+          company_ids: access.companies,
+        }), { expirationTtl: 86400 });
+
+        return Response.redirect(`${DASH}?token=${sessionToken}`, 302);
+      } catch (e) {
+        return Response.redirect(`${DASH}?error=server_error&msg=${encodeURIComponent(e.message)}`, 302);
       }
-      if (!state || !env.IGN_CACHE) {
-        return Response.redirect(`${DASH}?error=invalid_state`, 302);
-      }
-      const stateOk = await env.IGN_CACHE.get(`oauth_state:${state}`);
-      if (!stateOk) return Response.redirect(`${DASH}?error=invalid_state`, 302);
-      await env.IGN_CACHE.delete(`oauth_state:${state}`);
-
-      // Обмен code → access_token
-      const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          code, grant_type: 'authorization_code',
-          client_id: env.GOOGLE_CLIENT_ID,
-          client_secret: env.GOOGLE_CLIENT_SECRET,
-          redirect_uri: env.PARTNER_REDIRECT_URI,
-        }),
-      });
-      if (!tokenResp.ok) return Response.redirect(`${DASH}?error=token_failed`, 302);
-      const { access_token } = await tokenResp.json();
-
-      // Получаем email партнёра
-      const userResp = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-        headers: { 'Authorization': `Bearer ${access_token}` },
-      });
-      if (!userResp.ok) return Response.redirect(`${DASH}?error=userinfo_failed`, 302);
-      const { email, name: gname } = await userResp.json();
-
-      // Проверяем доступ в KV
-      const accessRaw = await env.IGN_CACHE.get(`partner_access:${email}`);
-      if (!accessRaw) return Response.redirect(`${DASH}?error=no_access`, 302);
-      const access = JSON.parse(accessRaw);
-
-      // Создаём сессию (TTL 24 ч)
-      const sessionToken = randomHex(32);
-      await env.IGN_CACHE.put(`session:${sessionToken}`, JSON.stringify({
-        email,
-        name: access.name || gname || email,
-        company_ids: access.companies,
-      }), { expirationTtl: 86400 });
-
-      return Response.redirect(`${DASH}?token=${sessionToken}`, 302);
     }
 
     // --- Роут: Данные для партнёрского дашборда ---
@@ -897,6 +912,13 @@ export default {
             WHERE o.company_id IN (${idList})
               AND o.start_time >= DATE_SUB(NOW(), INTERVAL 90 DAY)
             ORDER BY c.fuel ASC
+          `, env);
+        } else if (type === 'companies') {
+          rows = await grafanaSQL(`
+            SELECT id AS company_id, name AS company_name
+            FROM companies
+            WHERE id IN (${ids.map(Number).join(',')})
+            ORDER BY name ASC
           `, env);
         } else {
           return new Response(JSON.stringify({ error: 'Unknown type' }), {

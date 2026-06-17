@@ -223,6 +223,7 @@ function init() {
       no_access: 'Ваш Google-аккаунт не имеет доступа к дашборду. Обратитесь к Антону.',
       token_failed: 'Ошибка авторизации Google. Попробуйте ещё раз.',
       invalid_state: 'Истёк токен запроса. Попробуйте ещё раз.',
+      server_error: 'Ошибка сервера. Попробуйте ещё раз.',
     };
     showError(msgs[error] || 'Ошибка авторизации: ' + error);
     return;
@@ -263,23 +264,27 @@ async function showDashboard() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
 
-  // Первый запрос для получения session info
-  const resp = await api('summary', { period: currentPeriod });
-  if (!resp || resp.error === 'Unauthorized') {
+  // Получаем session info и список компаний параллельно
+  const [sessionResp, companiesResp] = await Promise.all([
+    api('summary', { period: currentPeriod }),
+    api('companies'),
+  ]);
+
+  if (!sessionResp || sessionResp.error === 'Unauthorized') {
     sessionStorage.removeItem('ks_partner_token');
     location.reload();
     return;
   }
 
-  session = resp.session;
+  session = sessionResp.session;
   document.getElementById('user-badge').textContent = session.name || session.email;
 
-  buildCompanyBar(resp.rows);
+  buildCompanyBar(companiesResp?.rows || []);
   buildPeriodBar();
   await loadAll();
 }
 
-function buildCompanyBar(summaryRows) {
+function buildCompanyBar(companyRows) {
   const bar = document.getElementById('company-bar');
   bar.innerHTML = '';
 
@@ -290,7 +295,7 @@ function buildCompanyBar(summaryRows) {
   btn.onclick = () => switchCompany(null, btn);
   bar.appendChild(btn);
 
-  (summaryRows || []).forEach(r => {
+  (companyRows || []).forEach(r => {
     const b = document.createElement('button');
     b.className = 'company-btn';
     b.textContent = shortName(r.company_name);
