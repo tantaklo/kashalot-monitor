@@ -482,7 +482,11 @@ async function loadSummary(revenueResp) {
 // --- Revenue chart ---
 async function renderRevenue(resp) {
   if (!resp || !resp.rows) return;
-  const labels = resp.rows.map(r => r.date);
+  const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  const labels = resp.rows.map(r => {
+    const d = new Date(typeof r.date === 'number' ? r.date : r.date + 'T00:00:00Z');
+    return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  });
   const data = resp.rows.map(r => Number(r.revenue));
 
   if (revenueChart) revenueChart.destroy();
