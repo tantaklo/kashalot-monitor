@@ -133,6 +133,39 @@
 
   .loading { color: var(--text2); font-size: 14px; padding: 40px; text-align: center; }
   .section-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+
+  /* FEEDBACK */
+  .feedback-btn {
+    position: fixed; bottom: 28px; right: 28px; z-index: 100;
+    background: var(--teal); color: #fff; border: none; border-radius: 24px;
+    padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(13,148,136,.4); display: none;
+  }
+  .feedback-btn:hover { background: var(--teal2); }
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--navy2); border: 1px solid var(--navy3); border-radius: 16px;
+    padding: 28px; width: 100%; max-width: 480px; margin: 16px;
+  }
+  .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .modal p { color: var(--text2); font-size: 13px; margin-bottom: 16px; }
+  .modal textarea {
+    width: 100%; background: var(--navy3); border: 1px solid var(--navy3);
+    border-radius: 8px; color: var(--text); padding: 12px; font-size: 14px;
+    resize: vertical; min-height: 100px; outline: none; font-family: inherit;
+  }
+  .modal textarea:focus { border-color: var(--teal); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 14px; justify-content: flex-end; }
+  .btn-cancel { background: none; border: 1px solid var(--navy3); color: var(--text2);
+    padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .btn-send { background: var(--teal); border: none; color: #fff;
+    padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
+  .btn-send:disabled { opacity: .5; cursor: default; }
+  .feedback-success { color: var(--green); font-size: 13px; margin-top: 10px; text-align: center; }
 </style>
 </head>
 <body>
@@ -161,6 +194,23 @@
       <button class="btn-logout" onclick="logout()">Выйти</button>
     </div>
   </header>
+  <!-- Feedback button -->
+  <button class="feedback-btn" id="feedback-btn" onclick="openFeedback()">💬 Идея?</button>
+
+  <!-- Feedback modal -->
+  <div class="modal-overlay" id="feedback-modal">
+    <div class="modal">
+      <h3>Предложение по дашборду</h3>
+      <p>Что можно улучшить? Какие данные не хватает? Напишите — разработчик получит уведомление и предложит изменения.</p>
+      <textarea id="feedback-text" placeholder="Например: хочу видеть выручку по дням недели…"></textarea>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeFeedback()">Отмена</button>
+        <button class="btn-send" id="btn-send" onclick="sendFeedback()">Отправить</button>
+      </div>
+      <div class="feedback-success" id="feedback-success" style="display:none">✅ Спасибо! Уведомление отправлено.</div>
+    </div>
+  </div>
+
   <main>
     <div class="company-bar" id="company-bar"></div>
     <div class="period-bar" id="period-bar">
@@ -207,9 +257,40 @@
 const WORKER = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev';
 let partnerToken = null;
 let session = null;
-let currentCompanyId = null; // null = все
+let currentCompanyId = null;
 let currentPeriod = 30;
 let revenueChart = null;
+
+// --- Feedback ---
+function openFeedback() {
+  document.getElementById('feedback-text').value = '';
+  document.getElementById('feedback-success').style.display = 'none';
+  document.getElementById('btn-send').disabled = false;
+  document.getElementById('feedback-modal').classList.add('open');
+  setTimeout(() => document.getElementById('feedback-text').focus(), 50);
+}
+function closeFeedback() {
+  document.getElementById('feedback-modal').classList.remove('open');
+}
+async function sendFeedback() {
+  const msg = document.getElementById('feedback-text').value.trim();
+  if (!msg) return;
+  const btn = document.getElementById('btn-send');
+  btn.disabled = true;
+  btn.textContent = 'Отправка…';
+  try {
+    await fetch(`${WORKER}/partner-feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Partner-Token': partnerToken },
+      body: JSON.stringify({ message: msg }),
+    });
+    document.getElementById('feedback-success').style.display = 'block';
+    setTimeout(closeFeedback, 2000);
+  } catch {
+    btn.disabled = false;
+    btn.textContent = 'Отправить';
+  }
+}
 
 // --- Init ---
 function init() {
@@ -278,6 +359,7 @@ async function showDashboard() {
 
   session = sessionResp.session;
   document.getElementById('user-badge').textContent = session.name || session.email;
+  document.getElementById('feedback-btn').style.display = 'block';
 
   buildCompanyBar(companiesResp?.rows || []);
   buildPeriodBar();

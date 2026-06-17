@@ -989,6 +989,34 @@ export default {
       return new Response('Method Not Allowed', { status: 405, headers: CORS });
     }
 
+    // --- Роут: Обратная связь от партнёров ---
+    if (url.pathname === '/partner-feedback' && request.method === 'POST') {
+      const session = await getPartnerSession(env, request.headers.get('X-Partner-Token'));
+      if (!session) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+      let body;
+      try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+      const { message } = body;
+      if (!message || !message.trim()) {
+        return new Response(JSON.stringify({ error: 'Empty message' }), {
+          status: 400, headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+      const ids = session.company_ids || [];
+      const text =
+        `💬 <b>Обратная связь · Партнёрский дашборд</b>\n\n` +
+        `👤 <b>${session.name}</b> (${session.email})\n` +
+        `🏢 Компании: ${ids.join(', ')}\n\n` +
+        `📝 ${message.trim()}`;
+      await tg(text, env);
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { 'Content-Type': 'application/json', ...CORS },
+      });
+    }
+
     return new Response('Not found', { status: 404 });
   },
 
