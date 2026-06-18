@@ -924,10 +924,9 @@ export default {
           `, env);
         } else if (type === 'fleet') {
           rows = await grafanaSQL(`
-            SELECT DISTINCT c.id AS car_id, c.gosnomer, c.fuel, c.online
-            FROM cars c JOIN orders o ON o.car_id = c.id
-            WHERE o.company_id IN (${idList})
-              AND o.start_time >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            SELECT c.id AS car_id, c.gosnomer, c.fuel, c.online
+            FROM cars c
+            WHERE c.company_id IN (${idList})
             ORDER BY c.fuel ASC
           `, env);
         } else if (type === 'companies') {
