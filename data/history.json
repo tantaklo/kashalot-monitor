@@ -77,6 +77,12 @@
   },
   {
     "date": "2026-06-18",
-    "active_objects": 5
+    "active_objects": 5,
+    "max_available": 190,
+    "min_available": 190,
+    "peak_rented": 0,
+    "offline": 1807,
+    "total": 1997,
+    "scans": 1
   }
 ]
