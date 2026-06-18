@@ -902,14 +902,25 @@ export default {
           `, env);
         } else if (type === 'devices') {
           rows = await grafanaSQL(`
-            SELECT o.car_id, ROUND(SUM(b.sum_card)/100) AS revenue,
-              COUNT(DISTINCT o.id) AS orders,
-              o.company_id, co.name AS company_name
-            FROM orders o JOIN bills b ON b.order_id = o.id
-            JOIN companies co ON o.company_id = co.id
-            WHERE b.status = 'PAID' AND o.company_id IN (${idList})
-              AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
-            GROUP BY o.car_id, o.company_id, co.name ORDER BY revenue DESC
+            SELECT c.id AS car_id, co.name AS company_name,
+              COALESCE(d.orders, 0) AS orders,
+              COALESCE(d.revenue, 0) AS revenue,
+              COALESCE(d.avg_check, 0) AS avg_check
+            FROM cars c
+            JOIN companies co ON c.company_id = co.id
+            LEFT JOIN (
+              SELECT o.car_id,
+                COUNT(*) AS orders,
+                ROUND(SUM(b.sum_card)/100) AS revenue,
+                ROUND(AVG(b.sum_card)/100) AS avg_check
+              FROM orders o JOIN bills b ON b.order_id = o.id
+              WHERE b.status = 'PAID'
+                AND o.company_id IN (${idList})
+                AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
+              GROUP BY o.car_id
+            ) d ON d.car_id = c.id
+            WHERE c.company_id IN (${idList})
+            ORDER BY revenue DESC, orders DESC
           `, env);
         } else if (type === 'fleet') {
           rows = await grafanaSQL(`
