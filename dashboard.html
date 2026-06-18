@@ -1184,6 +1184,47 @@
       <div class="found-list" id="foundList"></div>
     </div>
 
+  <!-- Партнёрский доступ -->
+  <div class="chart-card" style="margin-top:24px">
+    <div class="chart-header collapsible" onclick="toggleSection('partnerAccessBody','partnerAccessArrow'); if(!window._paLoaded) loadPartnerAccess()">
+      <div class="chart-title">Доступ партнёров <span class="toggle-arrow" id="partnerAccessArrow">▶</span></div>
+    </div>
+    <div class="section-body" id="partnerAccessBody">
+      <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button onclick="openAddPartner()" style="padding:7px 16px;background:#3b82f6;border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer">+ Добавить партнёра</button>
+        <span id="pa-status" style="font-size:12px;color:#4b5563"></span>
+      </div>
+
+      <!-- Список партнёров -->
+      <div id="pa-list" style="display:grid;gap:10px"></div>
+
+      <!-- Форма добавления/редактирования -->
+      <div id="pa-form" style="display:none;background:#12121c;border:1px solid #1e1e2a;border-radius:12px;padding:20px;margin-top:16px">
+        <div style="font-size:15px;font-weight:700;margin-bottom:14px" id="pa-form-title">Новый партнёр</div>
+        <div style="display:grid;gap:10px;margin-bottom:14px">
+          <div>
+            <div style="font-size:11px;color:#4b5563;margin-bottom:4px">EMAIL (Google-аккаунт партнёра)</div>
+            <input id="pa-email" type="email" placeholder="partner@gmail.com"
+              style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:8px 12px;font-size:14px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:11px;color:#4b5563;margin-bottom:4px">ИМЯ</div>
+            <input id="pa-name" type="text" placeholder="ИП Иванов"
+              style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:8px 12px;font-size:14px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:11px;color:#4b5563;margin-bottom:6px">ЛОКАЦИИ (компании)</div>
+            <div id="pa-companies" style="display:flex;flex-wrap:wrap;gap:6px;max-height:200px;overflow-y:auto"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="savePartner()" style="padding:8px 20px;background:#3b82f6;border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer">Сохранить</button>
+          <button onclick="document.getElementById('pa-form').style.display='none'" style="padding:8px 16px;background:none;border:1px solid #374151;border-radius:8px;color:#6b7280;font-size:13px;cursor:pointer">Отмена</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   </div>
 
   <script>
@@ -3788,6 +3829,136 @@
     }
 
     loadPartnerStatuses();
+
+    // --- Партнёрский доступ ---
+    const PA_WORKER = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev';
+    const PA_TOKEN  = GRAFANA_TOKEN;
+    let _paPartners  = [];
+    let _paCompanies = [];
+
+    async function loadPartnerAccess() {
+      window._paLoaded = true;
+      document.getElementById('pa-status').textContent = 'Загрузка…';
+
+      const [pResp, cResp] = await Promise.all([
+        fetch(`${PA_WORKER}/admin/partner-access`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json()),
+        fetch(GRAFANA_PROXY, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
+          body: JSON.stringify({ sql: "SELECT id, name FROM companies WHERE name LIKE '%Агент АО КШ%' ORDER BY name ASC LIMIT 200" }),
+        }).then(r => r.json()),
+      ]);
+
+      _paPartners = pResp.partners || [];
+
+      // Разбираем Grafana frame
+      const frame = cResp?.results?.A?.frames?.[0];
+      if (frame) {
+        const fields = frame.schema.fields.map(f => f.name);
+        const cols   = frame.data.values;
+        _paCompanies = [];
+        for (let i = 0; i < (cols[0]?.length || 0); i++) {
+          const row = {};
+          fields.forEach((f, j) => { row[f] = cols[j][i]; });
+          _paCompanies.push(row);
+        }
+      }
+
+      document.getElementById('pa-status').textContent = `${_paPartners.length} партнёр(ов)`;
+      renderPartnerList();
+    }
+
+    function locName(fullName) {
+      return (fullName || '').replace(/\s*\[.*?\]/, '').trim();
+    }
+
+    function renderPartnerList() {
+      const list = document.getElementById('pa-list');
+      if (!_paPartners.length) {
+        list.innerHTML = '<div style="color:#4b5563;font-size:13px">Нет партнёров. Добавьте первого.</div>';
+        return;
+      }
+      list.innerHTML = _paPartners.map(p => {
+        const locs = (p.companies || []).map(id => {
+          const c = _paCompanies.find(c => c.id === id);
+          return c ? `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${locName(c.name)}</span>` : `<span style="color:#4b5563;font-size:11px">#${id}</span>`;
+        }).join(' ');
+        return `
+          <div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:2px">${p.name || p.email}</div>
+              <div style="font-size:11px;color:#4b5563;margin-bottom:8px">${p.email}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px">${locs || '<span style="color:#4b5563;font-size:11px">Нет локаций</span>'}</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              <button onclick="openEditPartner('${p.email}')" style="padding:5px 12px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#94a3b8;font-size:12px;cursor:pointer">✏️ Изменить</button>
+              <button onclick="deletePartner('${p.email}')" style="padding:5px 12px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#ef4444;font-size:12px;cursor:pointer">✕</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function renderCompanyCheckboxes(selected = []) {
+      const wrap = document.getElementById('pa-companies');
+      wrap.innerHTML = _paCompanies.map(c => {
+        const checked = selected.includes(c.id) ? 'checked' : '';
+        return `<label style="display:flex;align-items:center;gap:6px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;color:#94a3b8">
+          <input type="checkbox" value="${c.id}" ${checked} style="accent-color:#3b82f6">
+          ${locName(c.name)}
+        </label>`;
+      }).join('');
+    }
+
+    function openAddPartner() {
+      document.getElementById('pa-form-title').textContent = 'Новый партнёр';
+      document.getElementById('pa-email').value = '';
+      document.getElementById('pa-email').disabled = false;
+      document.getElementById('pa-name').value = '';
+      renderCompanyCheckboxes([]);
+      document.getElementById('pa-form').style.display = 'block';
+      document.getElementById('pa-email').focus();
+    }
+
+    function openEditPartner(email) {
+      const p = _paPartners.find(p => p.email === email);
+      if (!p) return;
+      document.getElementById('pa-form-title').textContent = 'Редактировать доступ';
+      document.getElementById('pa-email').value = p.email;
+      document.getElementById('pa-email').disabled = true;
+      document.getElementById('pa-name').value = p.name || '';
+      renderCompanyCheckboxes(p.companies || []);
+      document.getElementById('pa-form').style.display = 'block';
+    }
+
+    async function savePartner() {
+      const email = document.getElementById('pa-email').value.trim();
+      const name  = document.getElementById('pa-name').value.trim();
+      const companies = [...document.querySelectorAll('#pa-companies input:checked')].map(el => Number(el.value));
+      if (!email) { alert('Введите email'); return; }
+      if (!companies.length) { alert('Выберите хотя бы одну локацию'); return; }
+      const resp = await fetch(`${PA_WORKER}/admin/partner-access`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
+        body: JSON.stringify({ email, name, companies }),
+      }).then(r => r.json());
+      if (resp.ok) {
+        document.getElementById('pa-form').style.display = 'none';
+        await loadPartnerAccess();
+      } else {
+        alert('Ошибка: ' + (resp.error || 'unknown'));
+      }
+    }
+
+    async function deletePartner(email) {
+      if (!confirm(`Удалить доступ для ${email}?`)) return;
+      await fetch(`${PA_WORKER}/admin/partner-access`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
+        body: JSON.stringify({ email }),
+      });
+      await loadPartnerAccess();
+    }
+
   </script>
 </body>
 </html>
