@@ -38,5 +38,13 @@
     "avgCheck": 404,
     "activeObjects": 5,
     "totalObjects": null
+  },
+  {
+    "date": "2026-06-19",
+    "revenue": 1320,
+    "orders": 3,
+    "avgCheck": 440,
+    "activeObjects": 3,
+    "totalObjects": null
   }
 ]
