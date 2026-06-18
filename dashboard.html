@@ -1214,7 +1214,10 @@
           </div>
           <div>
             <div style="font-size:11px;color:#4b5563;margin-bottom:6px">ЛОКАЦИИ (компании)</div>
-            <div id="pa-companies" style="display:flex;flex-wrap:wrap;gap:6px;max-height:200px;overflow-y:auto"></div>
+            <input id="pa-search" type="text" placeholder="Поиск по названию…"
+              oninput="filterCompanies(this.value)"
+              style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:7px 12px;font-size:13px;outline:none;margin-bottom:8px">
+            <div id="pa-companies" style="display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow-y:auto"></div>
           </div>
         </div>
         <div style="display:flex;gap:8px">
@@ -3845,7 +3848,7 @@
         fetch(GRAFANA_PROXY, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
-          body: JSON.stringify({ sql: "SELECT id, name FROM companies WHERE name LIKE '%Агент АО КШ%' ORDER BY name ASC LIMIT 200" }),
+          body: JSON.stringify({ sql: "SELECT id, name FROM companies ORDER BY name ASC LIMIT 500" }),
         }).then(r => r.json()),
       ]);
 
@@ -3898,15 +3901,29 @@
       }).join('');
     }
 
-    function renderCompanyCheckboxes(selected = []) {
+    function renderCompanyCheckboxes(selected = [], filter = '') {
       const wrap = document.getElementById('pa-companies');
-      wrap.innerHTML = _paCompanies.map(c => {
+      const q = filter.toLowerCase();
+      const visible = q
+        ? _paCompanies.filter(c => c.name.toLowerCase().includes(q))
+        : _paCompanies;
+      if (!visible.length) {
+        wrap.innerHTML = '<span style="color:#4b5563;font-size:12px">Ничего не найдено</span>';
+        return;
+      }
+      wrap.innerHTML = visible.map(c => {
         const checked = selected.includes(c.id) ? 'checked' : '';
         return `<label style="display:flex;align-items:center;gap:6px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;color:#94a3b8">
           <input type="checkbox" value="${c.id}" ${checked} style="accent-color:#3b82f6">
           ${locName(c.name)}
         </label>`;
       }).join('');
+    }
+
+    function filterCompanies(q) {
+      // Сохраняем текущий выбор перед перерисовкой
+      const selected = [...document.querySelectorAll('#pa-companies input:checked')].map(el => Number(el.value));
+      renderCompanyCheckboxes(selected, q);
     }
 
     function openAddPartner() {
