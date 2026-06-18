@@ -554,6 +554,8 @@ function renderRevenue(resp) {
     return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
   });
   const revenues    = resp.rows.map(r => Number(r.revenue));
+  const meanRev     = revenues.length ? Math.round(revenues.reduce((s, v) => s + v, 0) / revenues.length) : 0;
+  const meanLine    = revenues.map(() => meanRev);
   const perActive   = resp.rows.map(r => {
     const act = Number(r.active_devices);
     return act ? Math.round(Number(r.revenue) / act) : null;
@@ -573,6 +575,19 @@ function renderRevenue(resp) {
       borderRadius: 3,
       yAxisID: 'y',
       order: 3,
+    },
+    {
+      type: 'line',
+      label: `Среднее ${fmt(meanRev)} ₽`,
+      data: meanLine,
+      borderColor: 'rgba(245,158,11,.7)',
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: [6, 4],
+      pointRadius: 0,
+      tension: 0,
+      yAxisID: 'y',
+      order: 2,
     },
     {
       type: 'line',
@@ -803,17 +818,22 @@ async function loadFleet() {
   // fleet size = total distinct cars associated with this company
   _fleetSize = resp.rows.length;
 
-  const online = resp.rows.filter(r => r.online);
-  if (!online.length) {
-    grid.innerHTML = '<div class="loading">Нет онлайн-устройств</div>';
+  if (!resp.rows.length) {
+    grid.innerHTML = '<div class="loading">Нет устройств</div>';
   } else {
-    grid.innerHTML = online.map(r => {
-      const fuel = Number(r.fuel);
+    // online first, then offline; within each group sort by fuel desc
+    const sorted = [...resp.rows].sort((a, b) => {
+      if (!!b.online !== !!a.online) return b.online ? 1 : -1;
+      return Number(b.fuel) - Number(a.fuel);
+    });
+    grid.innerHTML = sorted.map(r => {
+      const fuel    = Number(r.fuel);
       const fuelCls = fuel < 20 ? 'low' : fuel < 50 ? 'mid' : 'ok';
-      return `<div class="fleet-card online">
+      const isOnline = !!r.online;
+      return `<div class="fleet-card ${isOnline ? 'online' : ''}" style="${isOnline ? '' : 'opacity:.5'}">
         <div class="car-id">КШ-${r.car_id}</div>
         <div class="fuel ${fuelCls}">${fuel}%</div>
-        <div class="status">🟢 Онлайн</div>
+        <div class="status">${isOnline ? '🟢 Онлайн' : '⚫ Офлайн'}</div>
       </div>`;
     }).join('');
   }
