@@ -79,9 +79,12 @@
   /* TOP KPI GRID */
   .tkpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 10px;
     margin-bottom: 24px;
+  }
+  @media (max-width: 700px) {
+    .tkpi-grid { grid-template-columns: repeat(2, 1fr); }
   }
   .tkpi-cell {
     background: var(--navy2); border: 1px solid var(--navy3);
@@ -233,12 +236,13 @@
       <button class="period-btn" data-p="365">1 год</button>
     </div>
 
-    <!-- Top KPI grid -->
+    <!-- Top KPI grid: row 1 = fleet/activity/revenue, row 2 = per-KSH/tariff -->
     <div class="tkpi-grid" id="kpi-grid">
       <div class="tkpi-cell"><div class="tkpi-val" style="color:#6b7280">…</div><div class="tkpi-lbl">Парк · КШ</div></div>
       <div class="tkpi-cell"><div class="tkpi-val" style="color:#2dd4bf">…</div><div class="tkpi-lbl">Активных КШ · ср/сут</div></div>
       <div class="tkpi-cell"><div class="tkpi-val" style="color:#f59e0b">…</div><div class="tkpi-lbl">% активных от парка</div></div>
       <div class="tkpi-cell"><div class="tkpi-val" style="color:#4ade80">…</div><div class="tkpi-lbl">Выручка за период</div></div>
+      <div class="tkpi-cell"><div class="tkpi-val" style="color:#94a3b8">…</div><div class="tkpi-lbl">Заказов</div></div>
       <div class="tkpi-cell"><div class="tkpi-val" style="color:#94a3b8">…</div><div class="tkpi-lbl">В сутки · ср.</div></div>
       <div class="tkpi-cell"><div class="tkpi-val" style="color:#6b7280">…</div><div class="tkpi-lbl">Выр/КШ парк · сут</div></div>
       <div class="tkpi-cell"><div class="tkpi-val" style="color:#2dd4bf">…</div><div class="tkpi-lbl">Выр/КШ актив · сут</div></div>
@@ -496,14 +500,16 @@ async function loadSummary(revenueResp) {
 
   const periodLabel = currentPeriod === 7 ? '7 дн.' : currentPeriod === 30 ? '30 дн.' : currentPeriod === 90 ? '90 дн.' : '1 год';
 
+  // Row 1: fleet · activity · revenue  |  Row 2: per-day · per-KSH · tariff
   grid.innerHTML =
-    cell(_fleetSize || '…', null, 'Парк · КШ', '#6b7280') +
-    cell(Math.round(avgActive), null, `Активных КШ · ср/сут · ${periodLabel}`, '#2dd4bf') +
-    cell(_fleetSize ? activePct + '%' : '…', null, '% активных от парка', '#f59e0b') +
-    cell(fmt(totRev) + ' ₽', null, `Выручка · ${periodLabel}`, '#4ade80') +
-    cell(fmt(perDay) + ' ₽', null, 'В сутки · ср.', '#94a3b8') +
-    cell(_fleetSize ? fmt(perParkKsh) + ' ₽' : '…', null, 'Выр/КШ парк · сут', '#6b7280') +
-    cell(fmt(perActKsh) + ' ₽', null, 'Выр/КШ актив · сут', '#2dd4bf') +
+    cell(_fleetSize || '…',           null, 'Парк · КШ',                           '#6b7280') +
+    cell(Math.round(avgActive),        null, `Активных КШ · ср/сут · ${periodLabel}`,'#2dd4bf') +
+    cell(_fleetSize ? activePct + '%' : '…', null, '% активных от парка',           '#f59e0b') +
+    cell(fmt(totRev) + ' ₽',          null, `Выручка · ${periodLabel}`,             '#4ade80') +
+    cell(fmt(totOrders),               null, 'Заказов',                              '#94a3b8') +
+    cell(fmt(perDay) + ' ₽',          null, 'В сутки · ср.',                        '#94a3b8') +
+    cell(_fleetSize ? fmt(perParkKsh) + ' ₽' : '…', null, 'Выр/КШ парк · сут',    '#6b7280') +
+    cell(fmt(perActKsh) + ' ₽',       null, 'Выр/КШ актив · сут',                  '#2dd4bf') +
     '<div class="tkpi-cell" id="kpi-price-detskiy"><div class="tkpi-val" style="color:#f472b6">…</div><div class="tkpi-lbl">Цена мин · Детский</div></div>' +
     '<div class="tkpi-cell" id="kpi-price-bystry"><div class="tkpi-val" style="color:#f472b6">…</div><div class="tkpi-lbl">Цена мин · Быстрый</div></div>';
 
@@ -746,11 +752,12 @@ async function loadSummaryFleetCells() {
   const perParkKsh = _fleetSize  ? Math.round(totRev / activeDays / _fleetSize)  : 0;
   const activePct  = _fleetSize  ? Math.round(avgActive / _fleetSize * 100)      : 0;
 
+  // indices: 0=Парк, 1=Актив, 2=%актив, 3=Выручка, 4=Заказов, 5=Сутки, 6=Парк/кш, 7=Актив/кш
   const cells = document.getElementById('kpi-grid').querySelectorAll('.tkpi-cell');
   if (cells[0]) cells[0].querySelector('.tkpi-val').textContent = _fleetSize;
   if (cells[2]) cells[2].querySelector('.tkpi-val').textContent = activePct + '%';
-  if (cells[5]) cells[5].querySelector('.tkpi-val').textContent = fmt(perParkKsh) + ' ₽';
-  if (cells[6]) cells[6].querySelector('.tkpi-val').textContent = fmt(perActKsh)  + ' ₽';
+  if (cells[6]) cells[6].querySelector('.tkpi-val').textContent = fmt(perParkKsh) + ' ₽';
+  if (cells[7]) cells[7].querySelector('.tkpi-val').textContent = fmt(perActKsh)  + ' ₽';
 }
 
 // Patch loadSummary to cache responses
@@ -783,6 +790,7 @@ async function loadSummaryWithResp(revenueResp, resp) {
   }
 
   const totRev     = resp.rows.reduce((s, r) => s + Number(r.revenue), 0);
+  const totOrders  = resp.rows.reduce((s, r) => s + Number(r.orders), 0);
   const activeDays = revenueResp?.rows?.length || 1;
   const avgActive  = revenueResp?.rows?.length
     ? revenueResp.rows.reduce((s, r) => s + Number(r.active_devices), 0) / revenueResp.rows.length
@@ -802,14 +810,16 @@ async function loadSummaryWithResp(revenueResp, resp) {
 
   const periodLabel = currentPeriod === 7 ? '7 дн.' : currentPeriod === 30 ? '30 дн.' : currentPeriod === 90 ? '90 дн.' : '1 год';
 
+  // Row 1: fleet · activity · revenue  |  Row 2: per-day · per-KSH · tariff
   grid.innerHTML =
-    cell(_fleetSize || '…', null, 'Парк · КШ', '#6b7280') +
-    cell(Math.round(avgActive), null, `Активных КШ · ср/сут · ${periodLabel}`, '#2dd4bf') +
-    cell(_fleetSize ? activePct + '%' : '…', null, '% активных от парка', '#f59e0b') +
-    cell(fmt(totRev) + ' ₽', null, `Выручка · ${periodLabel}`, '#4ade80') +
-    cell(fmt(perDay) + ' ₽', null, 'В сутки · ср.', '#94a3b8') +
-    cell(_fleetSize ? fmt(perParkKsh) + ' ₽' : '…', null, 'Выр/КШ парк · сут', '#6b7280') +
-    cell(fmt(perActKsh) + ' ₽', null, 'Выр/КШ актив · сут', '#2dd4bf') +
+    cell(_fleetSize || '…',           null, 'Парк · КШ',                           '#6b7280') +
+    cell(Math.round(avgActive),        null, `Активных КШ · ср/сут · ${periodLabel}`,'#2dd4bf') +
+    cell(_fleetSize ? activePct + '%' : '…', null, '% активных от парка',           '#f59e0b') +
+    cell(fmt(totRev) + ' ₽',          null, `Выручка · ${periodLabel}`,             '#4ade80') +
+    cell(fmt(totOrders),               null, 'Заказов',                              '#94a3b8') +
+    cell(fmt(perDay) + ' ₽',          null, 'В сутки · ср.',                        '#94a3b8') +
+    cell(_fleetSize ? fmt(perParkKsh) + ' ₽' : '…', null, 'Выр/КШ парк · сут',    '#6b7280') +
+    cell(fmt(perActKsh) + ' ₽',       null, 'Выр/КШ актив · сут',                  '#2dd4bf') +
     '<div class="tkpi-cell" id="kpi-price-detskiy"><div class="tkpi-val" style="color:#f472b6">…</div><div class="tkpi-lbl">Цена мин · Детский</div></div>' +
     '<div class="tkpi-cell" id="kpi-price-bystry"><div class="tkpi-val" style="color:#f472b6">…</div><div class="tkpi-lbl">Цена мин · Быстрый</div></div>';
 
