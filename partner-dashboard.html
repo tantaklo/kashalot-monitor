@@ -259,10 +259,19 @@
       </table>
     </div>
 
-    <!-- Revenue + activity chart -->
+    <!-- Revenue chart -->
     <div class="chart-wrap">
-      <div class="chart-title" id="revenue-chart-title">Выручка по дням</div>
+      <div class="chart-title">Выручка по дням</div>
       <canvas id="revenue-chart" class="chart-canvas"></canvas>
+    </div>
+
+    <!-- Activity % chart -->
+    <div class="chart-wrap" id="activity-chart-wrap" style="display:none">
+      <div class="chart-title">
+        Активных КШ в % от парка · по дням
+        <span id="activity-chart-avg" style="font-size:12px;font-weight:500;color:#2dd4bf;margin-left:10px"></span>
+      </div>
+      <canvas id="activity-chart" class="chart-canvas"></canvas>
     </div>
 
     <!-- Tariff section -->
@@ -537,60 +546,88 @@ async function loadSummary(revenueResp) {
 // --- Revenue chart with active devices line ---
 async function renderRevenue(resp) {
   if (!resp || !resp.rows) return;
+  _lastRevenueRows = resp.rows;
   const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-  const labels = resp.rows.map(r => {
+  const labels   = resp.rows.map(r => {
     const d = new Date(typeof r.date === 'number' ? r.date : r.date + 'T00:00:00Z');
     return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
   });
-  const revenues      = resp.rows.map(r => Number(r.revenue));
-  const activeDevices = resp.rows.map(r => Number(r.active_devices));
-
-  document.getElementById('revenue-chart-title').textContent =
-    `Выручка по дням  ·  активные КШ`;
+  const revenues = resp.rows.map(r => Number(r.revenue));
 
   if (revenueChart) revenueChart.destroy();
   const ctx = document.getElementById('revenue-chart').getContext('2d');
   revenueChart = new Chart(ctx, {
+    type: 'bar',
     data: {
       labels,
-      datasets: [
-        {
-          type: 'bar',
-          label: 'Выручка, ₽',
-          data: revenues,
-          backgroundColor: 'rgba(13,148,136,.65)',
-          borderColor: '#0d9488',
-          borderWidth: 1,
-          borderRadius: 4,
-          yAxisID: 'y',
-        },
-        {
-          type: 'line',
-          label: 'Активных КШ',
-          data: activeDevices,
-          borderColor: '#60a5fa',
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          pointRadius: 3,
-          pointBackgroundColor: '#60a5fa',
-          tension: 0.3,
-          yAxisID: 'y2',
-        },
-      ],
+      datasets: [{
+        label: 'Выручка, ₽',
+        data: revenues,
+        backgroundColor: 'rgba(13,148,136,.65)',
+        borderColor: '#0d9488',
+        borderWidth: 1,
+        borderRadius: 4,
+      }],
     },
     options: {
       responsive: true,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: {
-          display: true,
-          labels: { color: '#94a3b8', font: { size: 12 }, boxWidth: 14 },
-        },
-      },
+      plugins: { legend: { display: false } },
       scales: {
-        x:  { ticks: { color: '#94a3b8', maxTicksLimit: 14 }, grid: { color: 'rgba(255,255,255,.04)' } },
-        y:  { ticks: { color: '#94a3b8', callback: v => fmt(v) + ' ₽' }, grid: { color: 'rgba(255,255,255,.06)' }, position: 'left' },
-        y2: { ticks: { color: '#60a5fa' }, grid: { display: false }, position: 'right' },
+        x: { ticks: { color: '#94a3b8', maxTicksLimit: 14 }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y: { ticks: { color: '#94a3b8', callback: v => fmt(v) + ' ₽' }, grid: { color: 'rgba(255,255,255,.06)' } },
+      },
+    },
+  });
+  // Render activity chart if fleet size already known
+  if (_fleetSize) renderActivityChart();
+}
+
+let activityChart = null;
+let _lastRevenueRows = null;
+
+function renderActivityChart() {
+  if (!_fleetSize || !_lastRevenueRows) return;
+  const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  const labels = _lastRevenueRows.map(r => {
+    const d = new Date(typeof r.date === 'number' ? r.date : r.date + 'T00:00:00Z');
+    return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  });
+  const pcts = _lastRevenueRows.map(r => Math.round(Number(r.active_devices) / _fleetSize * 100));
+  const avg  = pcts.length ? Math.round(pcts.reduce((s, v) => s + v, 0) / pcts.length) : 0;
+
+  const avgEl = document.getElementById('activity-chart-avg');
+  if (avgEl) avgEl.textContent = `· среднее: ${avg}%`;
+  document.getElementById('activity-chart-wrap').style.display = '';
+
+  if (activityChart) activityChart.destroy();
+  const ctx = document.getElementById('activity-chart').getContext('2d');
+  activityChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: '% активных КШ',
+        data: pcts,
+        borderColor: '#2dd4bf',
+        backgroundColor: 'rgba(45,212,191,.08)',
+        fill: true,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#2dd4bf',
+        tension: 0.3,
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#94a3b8', maxTicksLimit: 14 }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y: {
+          ticks: { color: '#94a3b8', callback: v => v + '%' },
+          grid: { color: 'rgba(255,255,255,.06)' },
+          min: 0,
+          suggestedMax: 100,
+        },
       },
     },
   });
@@ -719,17 +756,8 @@ async function loadFleet() {
     }).join('');
   }
 
-  // Update KPI cells that depend on fleet size — trigger summary reload
-  // Summary re-read already called in loadAll; here we just re-render the fleet-dependent cells
-  const kpiGrid = document.getElementById('kpi-grid');
-  if (kpiGrid) {
-    const perActEl  = kpiGrid.querySelectorAll('.tkpi-cell')[5];
-    const pctEl     = kpiGrid.querySelectorAll('.tkpi-cell')[2];
-    // Re-trigger summary to fill fleet-based KPIs correctly
-    // (fleet loads async with summary; re-call after fleet size is known)
-    // Use a lightweight re-render of only fleet-dependent cells
-    loadSummaryFleetCells();
-  }
+  loadSummaryFleetCells();
+  renderActivityChart();
 }
 
 // Re-render fleet-dependent KPI cells after fleet size is available
