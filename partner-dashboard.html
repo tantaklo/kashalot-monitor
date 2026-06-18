@@ -544,41 +544,99 @@ async function loadSummary(revenueResp) {
 }
 
 // --- Revenue chart with active devices line ---
-async function renderRevenue(resp) {
+function renderRevenue(resp) {
   if (!resp || !resp.rows) return;
   _lastRevenueRows = resp.rows;
+
   const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-  const labels   = resp.rows.map(r => {
+  const labels = resp.rows.map(r => {
     const d = new Date(typeof r.date === 'number' ? r.date : r.date + 'T00:00:00Z');
     return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
   });
-  const revenues = resp.rows.map(r => Number(r.revenue));
+  const revenues    = resp.rows.map(r => Number(r.revenue));
+  const perActive   = resp.rows.map(r => {
+    const act = Number(r.active_devices);
+    return act ? Math.round(Number(r.revenue) / act) : null;
+  });
+  const perPark = _fleetSize
+    ? resp.rows.map(r => Math.round(Number(r.revenue) / _fleetSize))
+    : null;
+
+  const datasets = [
+    {
+      type: 'bar',
+      label: 'Выручка, ₽',
+      data: revenues,
+      backgroundColor: 'rgba(13,148,136,.55)',
+      borderColor: '#0d9488',
+      borderWidth: 1,
+      borderRadius: 3,
+      yAxisID: 'y',
+      order: 3,
+    },
+    {
+      type: 'line',
+      label: 'На активный КШ, ₽',
+      data: perActive,
+      borderColor: '#4ade80',
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: 3,
+      pointBackgroundColor: '#4ade80',
+      tension: 0.35,
+      yAxisID: 'y2',
+      order: 1,
+      spanGaps: true,
+    },
+  ];
+  if (perPark) {
+    datasets.push({
+      type: 'line',
+      label: 'На КШ парка, ₽',
+      data: perPark,
+      borderColor: '#6b7280',
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: [4, 3],
+      pointRadius: 2,
+      pointBackgroundColor: '#6b7280',
+      tension: 0.35,
+      yAxisID: 'y2',
+      order: 2,
+      spanGaps: true,
+    });
+  }
 
   if (revenueChart) revenueChart.destroy();
   const ctx = document.getElementById('revenue-chart').getContext('2d');
   revenueChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Выручка, ₽',
-        data: revenues,
-        backgroundColor: 'rgba(13,148,136,.65)',
-        borderColor: '#0d9488',
-        borderWidth: 1,
-        borderRadius: 4,
-      }],
-    },
+    data: { labels, datasets },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: '#94a3b8', font: { size: 12 }, boxWidth: 14, padding: 16 },
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.raw;
+              if (v == null) return null;
+              return `${ctx.dataset.label}: ${fmt(v)} ₽`;
+            },
+          },
+        },
+      },
       scales: {
-        x: { ticks: { color: '#94a3b8', maxTicksLimit: 14 }, grid: { color: 'rgba(255,255,255,.04)' } },
-        y: { ticks: { color: '#94a3b8', callback: v => fmt(v) + ' ₽' }, grid: { color: 'rgba(255,255,255,.06)' } },
+        x:  { ticks: { color: '#94a3b8', maxTicksLimit: 14 }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y:  { ticks: { color: '#94a3b8', callback: v => fmt(v) + ' ₽' }, grid: { color: 'rgba(255,255,255,.06)' }, position: 'left' },
+        y2: { ticks: { color: '#6b7280', callback: v => fmt(v) + ' ₽' }, grid: { display: false }, position: 'right' },
       },
     },
   });
-  // Render activity chart if fleet size already known
+
   if (_fleetSize) renderActivityChart();
 }
 
@@ -757,7 +815,8 @@ async function loadFleet() {
   }
 
   loadSummaryFleetCells();
-  renderActivityChart();
+  if (_lastRevenueRows) renderRevenue({ rows: _lastRevenueRows });
+  else renderActivityChart();
 }
 
 // Re-render fleet-dependent KPI cells after fleet size is available
