@@ -861,7 +861,13 @@ export default {
       try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
 
       const { type, period = 30, company_id } = body;
-      const ids = company_id ? [company_id] : session.company_ids;
+      // Always re-read partner_access to pick up any changes since login
+      let sessionIds = session.company_ids;
+      if (session.email && env.IGN_CACHE) {
+        const freshRaw = await env.IGN_CACHE.get(`partner_access:${session.email}`);
+        if (freshRaw) { try { sessionIds = JSON.parse(freshRaw).companies || sessionIds; } catch {} }
+      }
+      const ids = company_id ? [company_id] : sessionIds;
       if (!ids || !ids.length) {
         return new Response(JSON.stringify({ error: 'No companies' }), {
           status: 403, headers: { 'Content-Type': 'application/json', ...CORS },
@@ -919,6 +925,29 @@ export default {
             FROM companies
             WHERE id IN (${ids.map(Number).join(',')})
             ORDER BY name ASC
+          `, env);
+        } else if (type === 'tariffs') {
+          rows = await grafanaSQL(`
+            SELECT a.description AS tariff,
+              ROUND(a.cost/100) AS listed_price,
+              COUNT(*) AS orders,
+              ROUND(SUM(b.sum_card)/COUNT(*)/100) AS avg_paid,
+              ROUND(SUM(b.sum_card)/100) AS revenue
+            FROM orders o
+            JOIN abonements a ON o.abonement_id = a.id
+            JOIN bills b ON b.order_id = o.id
+            WHERE b.status = 'PAID' AND o.company_id IN (${idList})
+              AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
+            GROUP BY o.abonement_id, a.description, a.cost
+            ORDER BY orders DESC
+            LIMIT 50
+          `, env);
+        } else if (type === 'fleet-size') {
+          rows = await grafanaSQL(`
+            SELECT COUNT(DISTINCT o.car_id) AS fleet_size
+            FROM orders o
+            WHERE o.company_id IN (${idList})
+              AND o.start_time >= DATE_SUB(NOW(), INTERVAL 90 DAY)
           `, env);
         } else {
           return new Response(JSON.stringify({ error: 'Unknown type' }), {

@@ -17,6 +17,8 @@
     --red: #ef4444;
     --yellow: #f59e0b;
     --green: #22c55e;
+    --blue: #60a5fa;
+    --pink: #f472b6;
     --radius: 12px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -59,37 +61,43 @@
   main { max-width: 1200px; margin: 0 auto; padding: 24px; }
 
   /* COMPANY SWITCHER */
-  .company-bar {
-    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px;
-  }
+  .company-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
   .company-btn {
     background: var(--navy2); border: 1px solid var(--navy3); color: var(--text2);
-    padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px;
-    transition: all .15s;
+    padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all .15s;
   }
-  .company-btn.active, .company-btn:hover {
-    background: var(--teal); border-color: var(--teal); color: #fff;
-  }
+  .company-btn.active, .company-btn:hover { background: var(--teal); border-color: var(--teal); color: #fff; }
 
   /* PERIOD SELECTOR */
-  .period-bar {
-    display: flex; gap: 6px; margin-bottom: 24px;
-  }
+  .period-bar { display: flex; gap: 6px; margin-bottom: 24px; }
   .period-btn {
     background: var(--navy2); border: 1px solid var(--navy3); color: var(--text2);
     padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
   }
   .period-btn.active { background: var(--navy3); color: var(--text); border-color: var(--teal); }
 
-  /* SUMMARY CARDS */
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
-  .card {
-    background: var(--navy2); border-radius: var(--radius); padding: 20px;
-    border: 1px solid var(--navy3);
+  /* TOP KPI GRID */
+  .tkpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
   }
-  .card-label { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
-  .card-value { font-size: 28px; font-weight: 700; }
-  .card-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .tkpi-cell {
+    background: var(--navy2); border: 1px solid var(--navy3);
+    border-radius: var(--radius); padding: 16px 16px 14px;
+    display: flex; flex-direction: column;
+  }
+  .tkpi-val {
+    font-size: 22px; font-weight: 800; line-height: 1.1;
+  }
+  .tkpi-val2 {
+    font-size: 14px; font-weight: 700; opacity: .7; margin-top: 3px;
+  }
+  .tkpi-lbl {
+    font-size: 11px; color: var(--text2); text-transform: uppercase;
+    letter-spacing: .04em; margin-top: 8px; line-height: 1.4;
+  }
 
   /* CHART */
   .chart-wrap {
@@ -116,6 +124,9 @@
   .badge-green { background: rgba(34,197,94,.15); color: var(--green); }
   .badge-red { background: rgba(239,68,68,.15); color: var(--red); }
   .badge-yellow { background: rgba(245,158,11,.15); color: var(--yellow); }
+  .badge-teal { background: rgba(20,184,166,.15); color: var(--teal2); }
+  .badge-blue { background: rgba(96,165,250,.15); color: var(--blue); }
+  .badge-pink { background: rgba(244,114,182,.15); color: var(--pink); }
 
   /* FLEET */
   .fleet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding: 16px 20px; }
@@ -166,6 +177,10 @@
     padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
   .btn-send:disabled { opacity: .5; cursor: default; }
   .feedback-success { color: var(--green); font-size: 13px; margin-top: 10px; text-align: center; }
+
+  /* TARIFF BAR */
+  .tariff-bar-wrap { height: 6px; background: var(--navy3); border-radius: 3px; margin-top: 4px; min-width: 60px; }
+  .tariff-bar { height: 6px; border-radius: 3px; }
 </style>
 </head>
 <body>
@@ -194,10 +209,8 @@
       <button class="btn-logout" onclick="logout()">Выйти</button>
     </div>
   </header>
-  <!-- Feedback button -->
   <button class="feedback-btn" id="feedback-btn" onclick="openFeedback()">💬 Идея?</button>
 
-  <!-- Feedback modal -->
   <div class="modal-overlay" id="feedback-modal">
     <div class="modal">
       <h3>Предложение по дашборду</h3>
@@ -220,12 +233,17 @@
       <button class="period-btn" data-p="365">1 год</button>
     </div>
 
-    <!-- Summary cards -->
-    <div class="cards" id="summary-cards">
-      <div class="card"><div class="card-label">Выручка</div><div class="card-value loading">…</div></div>
-      <div class="card"><div class="card-label">Заказов</div><div class="card-value loading">…</div></div>
-      <div class="card"><div class="card-label">Активных КШ</div><div class="card-value loading">…</div></div>
-      <div class="card"><div class="card-label">Выручка/КШ</div><div class="card-value loading">…</div></div>
+    <!-- Top KPI grid -->
+    <div class="tkpi-grid" id="kpi-grid">
+      <div class="tkpi-cell"><div class="tkpi-val" style="color:#6b7280">…</div><div class="tkpi-lbl">Парк · КШ</div></div>
+      <div class="tkpi-cell"><div class="tkpi-val" style="color:#2dd4bf">…</div><div class="tkpi-lbl">Активных КШ · ср/сут</div></div>
+      <div class="tkpi-cell"><div class="tkpi-val" style="color:#f59e0b">…</div><div class="tkpi-lbl">% активных от парка</div></div>
+      <div class="tkpi-cell"><div class="tkpi-val" style="color:#4ade80">…</div><div class="tkpi-lbl">Выручка за период</div></div>
+      <div class="tkpi-cell"><div class="tkpi-val" style="color:#94a3b8">…</div><div class="tkpi-lbl">В сутки · ср.</div></div>
+      <div class="tkpi-cell"><div class="tkpi-val" style="color:#6b7280">…</div><div class="tkpi-lbl">Выр/КШ парк · сут</div></div>
+      <div class="tkpi-cell"><div class="tkpi-val" style="color:#2dd4bf">…</div><div class="tkpi-lbl">Выр/КШ актив · сут</div></div>
+      <div class="tkpi-cell"><div class="tkpi-val" style="color:#f472b6">…</div><div class="tkpi-lbl">Цена мин · Детский</div></div>
+      <div class="tkpi-cell"><div class="tkpi-val" style="color:#f472b6">…</div><div class="tkpi-lbl">Цена мин · Быстрый</div></div>
     </div>
 
     <!-- Company breakdown -->
@@ -237,10 +255,29 @@
       </table>
     </div>
 
-    <!-- Revenue chart -->
+    <!-- Revenue + activity chart -->
     <div class="chart-wrap">
-      <div class="chart-title">Выручка по дням</div>
+      <div class="chart-title" id="revenue-chart-title">Выручка по дням</div>
       <canvas id="revenue-chart" class="chart-canvas"></canvas>
+    </div>
+
+    <!-- Tariff section -->
+    <div class="table-wrap" id="tariff-wrap">
+      <div class="table-header">Тарифы клиентов</div>
+      <table id="tariff-table">
+        <thead>
+          <tr>
+            <th>Тариф</th>
+            <th>Слот</th>
+            <th>Прейскурант</th>
+            <th>Ср. оплата</th>
+            <th>₽/мин</th>
+            <th>Заказов</th>
+            <th>Доля</th>
+          </tr>
+        </thead>
+        <tbody><tr><td colspan="7" class="loading">Загрузка…</td></tr></tbody>
+      </table>
     </div>
 
     <!-- Devices table -->
@@ -269,6 +306,7 @@ let session = null;
 let currentCompanyId = null;
 let currentPeriod = 30;
 let revenueChart = null;
+let _fleetSize = 0;
 
 // --- Feedback ---
 function openFeedback() {
@@ -278,15 +316,12 @@ function openFeedback() {
   document.getElementById('feedback-modal').classList.add('open');
   setTimeout(() => document.getElementById('feedback-text').focus(), 50);
 }
-function closeFeedback() {
-  document.getElementById('feedback-modal').classList.remove('open');
-}
+function closeFeedback() { document.getElementById('feedback-modal').classList.remove('open'); }
 async function sendFeedback() {
   const msg = document.getElementById('feedback-text').value.trim();
   if (!msg) return;
   const btn = document.getElementById('btn-send');
-  btn.disabled = true;
-  btn.textContent = 'Отправка…';
+  btn.disabled = true; btn.textContent = 'Отправка…';
   try {
     await fetch(`${WORKER}/partner-feedback`, {
       method: 'POST',
@@ -295,10 +330,7 @@ async function sendFeedback() {
     });
     document.getElementById('feedback-success').style.display = 'block';
     setTimeout(closeFeedback, 2000);
-  } catch {
-    btn.disabled = false;
-    btn.textContent = 'Отправить';
-  }
+  } catch { btn.disabled = false; btn.textContent = 'Отправить'; }
 }
 
 // --- Init ---
@@ -328,20 +360,14 @@ function init() {
   }
 
   const saved = sessionStorage.getItem('ks_partner_token');
-  if (saved) {
-    partnerToken = saved;
-    showDashboard();
-    return;
-  }
+  if (saved) { partnerToken = saved; showDashboard(); return; }
 
-  // Показываем экран входа
   document.getElementById('login-screen').style.display = 'flex';
 }
 
 function showError(msg) {
   const el = document.getElementById('error-msg');
-  el.textContent = msg;
-  el.style.display = 'block';
+  el.textContent = msg; el.style.display = 'block';
 }
 
 function logout() {
@@ -354,19 +380,18 @@ async function showDashboard() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
 
-  // Получаем session info и список компаний параллельно
-  const [sessionResp, companiesResp] = await Promise.all([
+  const [summaryResp, companiesResp] = await Promise.all([
     api('summary', { period: currentPeriod }),
     api('companies'),
   ]);
 
-  if (!sessionResp || sessionResp.error === 'Unauthorized') {
+  if (!summaryResp || summaryResp.error === 'Unauthorized') {
     sessionStorage.removeItem('ks_partner_token');
     location.reload();
     return;
   }
 
-  session = sessionResp.session;
+  session = summaryResp.session;
   document.getElementById('user-badge').textContent = session.name || session.email;
   document.getElementById('feedback-btn').style.display = 'block';
 
@@ -378,28 +403,19 @@ async function showDashboard() {
 function buildCompanyBar(companyRows) {
   const bar = document.getElementById('company-bar');
   bar.innerHTML = '';
-
   const btn = document.createElement('button');
-  btn.className = 'company-btn active';
-  btn.textContent = 'Все компании';
-  btn.dataset.id = '';
-  btn.onclick = () => switchCompany(null, btn);
+  btn.className = 'company-btn active'; btn.textContent = 'Все компании';
+  btn.dataset.id = ''; btn.onclick = () => switchCompany(null, btn);
   bar.appendChild(btn);
-
   (companyRows || []).forEach(r => {
     const b = document.createElement('button');
-    b.className = 'company-btn';
-    b.textContent = shortName(r.company_name);
-    b.dataset.id = r.company_id;
-    b.onclick = () => switchCompany(r.company_id, b);
+    b.className = 'company-btn'; b.textContent = shortName(r.company_name);
+    b.dataset.id = r.company_id; b.onclick = () => switchCompany(r.company_id, b);
     bar.appendChild(b);
   });
 }
 
-function shortName(name) {
-  // "Красногорск [ИП Баранова Агент АО КШ]" → "Красногорск"
-  return name.replace(/\s*\[.*?\]/, '').trim();
-}
+function shortName(name) { return (name || '').replace(/\s*\[.*?\]/, '').trim(); }
 
 function switchCompany(id, btn) {
   currentCompanyId = id ? Number(id) : null;
@@ -420,13 +436,13 @@ function buildPeriodBar() {
 }
 
 async function loadAll() {
-  // Грузим revenue первым — данные нужны и для графика, и для карточки «В сутки»
   const revenueResp = await api('revenue');
   await Promise.all([
     loadSummary(revenueResp),
     renderRevenue(revenueResp),
     loadDevices(),
     loadFleet(),
+    loadTariffs(),
   ]);
 }
 
@@ -444,68 +460,66 @@ async function api(type, extra = {}) {
   } catch { return null; }
 }
 
-function fmt(n) {
-  return Number(n).toLocaleString('ru-RU');
-}
+function fmt(n) { return Number(n).toLocaleString('ru-RU'); }
 
-// --- Summary cards ---
+// --- Summary + KPI grid ---
 async function loadSummary(revenueResp) {
   const resp = await api('summary');
-  const cards = document.getElementById('summary-cards');
+  const grid = document.getElementById('kpi-grid');
+
   if (!resp || !resp.rows) {
-    cards.innerHTML = '<div class="card"><div class="card-label">Ошибка загрузки</div></div>';
+    grid.innerHTML = '<div class="tkpi-cell" style="grid-column:1/-1"><div class="tkpi-lbl">Ошибка загрузки</div></div>';
     return;
   }
-  const totRev = resp.rows.reduce((s, r) => s + Number(r.revenue), 0);
-  const totOrders = resp.rows.reduce((s, r) => s + Number(r.orders), 0);
-  const totDevices = resp.rows.reduce((s, r) => s + Number(r.active_devices), 0);
 
-  // Средняя выручка в сутки — по дням с активностью из revenue
-  const activeDays = revenueResp?.rows?.length || 0;
-  const perDay = activeDays ? Math.round(totRev / activeDays) : 0;
+  const totRev     = resp.rows.reduce((s, r) => s + Number(r.revenue), 0);
+  const totOrders  = resp.rows.reduce((s, r) => s + Number(r.orders), 0);
+  const activeDays = revenueResp?.rows?.length || 1;
 
-  cards.innerHTML = `
-    <div class="card">
-      <div class="card-label">Выручка за период</div>
-      <div class="card-value">${fmt(totRev)} ₽</div>
-      <div class="card-sub">за ${currentPeriod} дн.</div>
-    </div>
-    <div class="card">
-      <div class="card-label">В сутки (ср.)</div>
-      <div class="card-value">${fmt(perDay)} ₽</div>
-      <div class="card-sub">по ${activeDays} активным дням</div>
-    </div>
-    <div class="card">
-      <div class="card-label">В сутки / КШ</div>
-      <div class="card-value">${totDevices && activeDays ? fmt(Math.round(totRev / activeDays / totDevices)) : 0} ₽</div>
-      <div class="card-sub">среднее на устройство</div>
-    </div>
-    <div class="card">
-      <div class="card-label">Заказов</div>
-      <div class="card-value">${fmt(totOrders)}</div>
-      <div class="card-sub">оплаченных</div>
-    </div>
-    <div class="card">
-      <div class="card-label">Активных КШ</div>
-      <div class="card-value">${totDevices}</div>
-      <div class="card-sub">уникальных за период</div>
-    </div>
-  `;
+  // Avg active devices per day
+  const avgActive = revenueResp?.rows?.length
+    ? revenueResp.rows.reduce((s, r) => s + Number(r.active_devices), 0) / revenueResp.rows.length
+    : 0;
 
-  // Таблица по локациям (если больше одной компании)
-  const wrap = document.getElementById('company-breakdown-wrap');
+  const perDay     = activeDays ? Math.round(totRev / activeDays) : 0;
+  const perActKsh  = avgActive ? Math.round(totRev / activeDays / avgActive) : 0;
+  const perParkKsh = _fleetSize ? Math.round(totRev / activeDays / _fleetSize) : 0;
+  const activePct  = _fleetSize ? Math.round(avgActive / _fleetSize * 100) : 0;
+
+  function cell(val, val2, lbl, color) {
+    return `<div class="tkpi-cell">
+      <div class="tkpi-val" style="color:${color}">${val}</div>
+      ${val2 ? `<div class="tkpi-val2" style="color:${color}">${val2}</div>` : ''}
+      <div class="tkpi-lbl">${lbl}</div>
+    </div>`;
+  }
+
+  const periodLabel = currentPeriod === 7 ? '7 дн.' : currentPeriod === 30 ? '30 дн.' : currentPeriod === 90 ? '90 дн.' : '1 год';
+
+  grid.innerHTML =
+    cell(_fleetSize || '…', null, 'Парк · КШ', '#6b7280') +
+    cell(Math.round(avgActive), null, `Активных КШ · ср/сут · ${periodLabel}`, '#2dd4bf') +
+    cell(_fleetSize ? activePct + '%' : '…', null, '% активных от парка', '#f59e0b') +
+    cell(fmt(totRev) + ' ₽', null, `Выручка · ${periodLabel}`, '#4ade80') +
+    cell(fmt(perDay) + ' ₽', null, 'В сутки · ср.', '#94a3b8') +
+    cell(_fleetSize ? fmt(perParkKsh) + ' ₽' : '…', null, 'Выр/КШ парк · сут', '#6b7280') +
+    cell(fmt(perActKsh) + ' ₽', null, 'Выр/КШ актив · сут', '#2dd4bf') +
+    '<div class="tkpi-cell" id="kpi-price-detskiy"><div class="tkpi-val" style="color:#f472b6">…</div><div class="tkpi-lbl">Цена мин · Детский</div></div>' +
+    '<div class="tkpi-cell" id="kpi-price-bystry"><div class="tkpi-val" style="color:#f472b6">…</div><div class="tkpi-lbl">Цена мин · Быстрый</div></div>';
+
+  // Company breakdown table
+  const wrap  = document.getElementById('company-breakdown-wrap');
   const tbody = document.querySelector('#company-breakdown-table tbody');
   if (resp.rows.length > 1) {
     tbody.innerHTML = resp.rows.map(r => {
-      const loc = shortName(r.company_name);
-      const rev = Number(r.revenue);
-      const ksh = Number(r.active_devices);
-      const perDayKsh = ksh && activeDays ? Math.round(rev / activeDays / ksh) : 0;
+      const rev      = Number(r.revenue);
+      const ksh      = Number(r.active_devices);
+      const pdKsh    = ksh && activeDays ? Math.round(rev / activeDays / ksh) : 0;
       return `<tr>
-        <td>${loc}</td>
+        <td>${shortName(r.company_name)}</td>
         <td>${fmt(rev)} ₽</td>
         <td>${ksh}</td>
-        <td>${fmt(perDayKsh)} ₽</td>
+        <td>${fmt(pdKsh)} ₽</td>
       </tr>`;
     }).join('');
     wrap.style.display = '';
@@ -514,7 +528,7 @@ async function loadSummary(revenueResp) {
   }
 }
 
-// --- Revenue chart ---
+// --- Revenue chart with active devices line ---
 async function renderRevenue(resp) {
   if (!resp || !resp.rows) return;
   const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
@@ -522,32 +536,124 @@ async function renderRevenue(resp) {
     const d = new Date(typeof r.date === 'number' ? r.date : r.date + 'T00:00:00Z');
     return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
   });
-  const data = resp.rows.map(r => Number(r.revenue));
+  const revenues      = resp.rows.map(r => Number(r.revenue));
+  const activeDevices = resp.rows.map(r => Number(r.active_devices));
+
+  document.getElementById('revenue-chart-title').textContent =
+    `Выручка по дням  ·  активные КШ`;
 
   if (revenueChart) revenueChart.destroy();
   const ctx = document.getElementById('revenue-chart').getContext('2d');
   revenueChart = new Chart(ctx, {
-    type: 'bar',
     data: {
       labels,
-      datasets: [{
-        label: 'Выручка, ₽',
-        data,
-        backgroundColor: 'rgba(13,148,136,.7)',
-        borderColor: '#0d9488',
-        borderWidth: 1,
-        borderRadius: 4,
-      }],
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Выручка, ₽',
+          data: revenues,
+          backgroundColor: 'rgba(13,148,136,.65)',
+          borderColor: '#0d9488',
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'y',
+        },
+        {
+          type: 'line',
+          label: 'Активных КШ',
+          data: activeDevices,
+          borderColor: '#60a5fa',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#60a5fa',
+          tension: 0.3,
+          yAxisID: 'y2',
+        },
+      ],
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: '#94a3b8', font: { size: 12 }, boxWidth: 14 },
+        },
+      },
       scales: {
-        x: { ticks: { color: '#94a3b8', maxTicksLimit: 14 }, grid: { color: 'rgba(255,255,255,.04)' } },
-        y: { ticks: { color: '#94a3b8', callback: v => fmt(v) + ' ₽' }, grid: { color: 'rgba(255,255,255,.06)' } },
+        x:  { ticks: { color: '#94a3b8', maxTicksLimit: 14 }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y:  { ticks: { color: '#94a3b8', callback: v => fmt(v) + ' ₽' }, grid: { color: 'rgba(255,255,255,.06)' }, position: 'left' },
+        y2: { ticks: { color: '#60a5fa' }, grid: { display: false }, position: 'right' },
       },
     },
   });
+}
+
+// --- Tariffs ---
+function parseTariff(desc) {
+  const parts = desc ? desc.split(' · ') : [];
+  const brand = parts.find(p => /детск/i.test(p)) ? 'Детский'
+              : parts.find(p => /быстр/i.test(p)) ? 'Быстрый'
+              : parts[0] || desc;
+  const durMatch = desc && desc.match(/(\d+)\s*мин/i);
+  const dur = durMatch ? Number(durMatch[1]) : null;
+  const dayType = parts.find(p => /будни|выходн/i.test(p)) || null;
+  return { brand, dur, dayType };
+}
+
+async function loadTariffs() {
+  const resp = await api('tariffs');
+  const tbody = document.querySelector('#tariff-table tbody');
+
+  if (!resp || !resp.rows || !resp.rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">Нет данных о тарифах</td></tr>';
+    return;
+  }
+
+  const totalOrders = resp.rows.reduce((s, r) => s + Number(r.orders), 0);
+  const maxOrders   = Math.max(...resp.rows.map(r => Number(r.orders)));
+
+  // Compute price-per-minute KPIs for top KPI cells
+  const tariffPM = {};
+  resp.rows.forEach(r => {
+    const { brand, dur } = parseTariff(r.tariff);
+    const pm = dur ? Math.round(Number(r.avg_paid) / dur * 10) / 10 : null;
+    if (pm && (!tariffPM[brand] || Number(r.orders) > tariffPM[brand].orders)) {
+      tariffPM[brand] = { pm, orders: Number(r.orders) };
+    }
+  });
+
+  const setKpi = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.querySelector('.tkpi-val').textContent = val ?? '—';
+    }
+  };
+  setKpi('kpi-price-detskiy', tariffPM['Детский'] ? tariffPM['Детский'].pm + ' ₽/мин' : '—');
+  setKpi('kpi-price-bystry',  tariffPM['Быстрый'] ? tariffPM['Быстрый'].pm + ' ₽/мин' : '—');
+
+  const brandColor = b => b === 'Детский' ? 'badge-teal' : b === 'Быстрый' ? 'badge-blue' : 'badge-yellow';
+
+  tbody.innerHTML = resp.rows.map(r => {
+    const { brand, dur, dayType } = parseTariff(r.tariff);
+    const orders  = Number(r.orders);
+    const sharePct = totalOrders ? Math.round(orders / totalOrders * 100) : 0;
+    const barW    = maxOrders ? Math.round(orders / maxOrders * 100) : 0;
+    const pm      = dur ? Math.round(Number(r.avg_paid) / dur * 10) / 10 : '—';
+    return `<tr>
+      <td><span class="badge ${brandColor(brand)}">${brand}</span></td>
+      <td style="color:var(--text2);font-size:13px">${dur ? dur + ' мин' : '—'}${dayType ? ' · ' + dayType : ''}</td>
+      <td>${fmt(r.listed_price)} ₽</td>
+      <td>${fmt(r.avg_paid)} ₽</td>
+      <td style="color:var(--pink)">${pm !== '—' ? pm + ' ₽/мин' : '—'}</td>
+      <td>${fmt(orders)}</td>
+      <td>
+        <span style="font-size:12px;color:var(--text2)">${sharePct}%</span>
+        <div class="tariff-bar-wrap"><div class="tariff-bar" style="width:${barW}%;background:${brand==='Детский'?'#2dd4bf':brand==='Быстрый'?'#60a5fa':'#f59e0b'}"></div></div>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 // --- Devices table ---
@@ -561,7 +667,6 @@ async function loadDevices() {
   const rows = resp.rows;
   const revenues = rows.map(r => Number(r.revenue));
   const med = median(revenues);
-
   tbody.innerHTML = rows.slice(0, 30).map((r, i) => {
     const rev = Number(r.revenue);
     const badgeCls = rev >= med * 1.2 ? 'badge-green' : rev < med * 0.5 ? 'badge-red' : 'badge-yellow';
@@ -582,7 +687,7 @@ function median(arr) {
   return s.length % 2 === 0 ? (s[m - 1] + s[m]) / 2 : s[m];
 }
 
-// --- Fleet ---
+// --- Fleet + fleet size ---
 async function loadFleet() {
   const resp = await api('fleet');
   const grid = document.getElementById('fleet-grid');
@@ -590,21 +695,147 @@ async function loadFleet() {
     grid.innerHTML = '<div class="loading">Ошибка загрузки</div>';
     return;
   }
+  // fleet size = total distinct cars associated with this company
+  _fleetSize = resp.rows.length;
+
   const online = resp.rows.filter(r => r.online);
   if (!online.length) {
     grid.innerHTML = '<div class="loading">Нет онлайн-устройств</div>';
+  } else {
+    grid.innerHTML = online.map(r => {
+      const fuel = Number(r.fuel);
+      const fuelCls = fuel < 20 ? 'low' : fuel < 50 ? 'mid' : 'ok';
+      return `<div class="fleet-card online">
+        <div class="car-id">КШ-${r.car_id}</div>
+        <div class="fuel ${fuelCls}">${fuel}%</div>
+        <div class="status">🟢 Онлайн</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Update KPI cells that depend on fleet size — trigger summary reload
+  // Summary re-read already called in loadAll; here we just re-render the fleet-dependent cells
+  const kpiGrid = document.getElementById('kpi-grid');
+  if (kpiGrid) {
+    const perActEl  = kpiGrid.querySelectorAll('.tkpi-cell')[5];
+    const pctEl     = kpiGrid.querySelectorAll('.tkpi-cell')[2];
+    // Re-trigger summary to fill fleet-based KPIs correctly
+    // (fleet loads async with summary; re-call after fleet size is known)
+    // Use a lightweight re-render of only fleet-dependent cells
+    loadSummaryFleetCells();
+  }
+}
+
+// Re-render fleet-dependent KPI cells after fleet size is available
+let _lastRevenueResp = null;
+let _lastSummaryResp = null;
+
+async function loadSummaryFleetCells() {
+  if (!_fleetSize) return;
+  const revenueResp = _lastRevenueResp;
+  const resp        = _lastSummaryResp;
+  if (!resp || !resp.rows) return;
+
+  const totRev     = resp.rows.reduce((s, r) => s + Number(r.revenue), 0);
+  const activeDays = revenueResp?.rows?.length || 1;
+  const avgActive  = revenueResp?.rows?.length
+    ? revenueResp.rows.reduce((s, r) => s + Number(r.active_devices), 0) / revenueResp.rows.length
+    : 0;
+
+  const perActKsh  = avgActive   ? Math.round(totRev / activeDays / avgActive)   : 0;
+  const perParkKsh = _fleetSize  ? Math.round(totRev / activeDays / _fleetSize)  : 0;
+  const activePct  = _fleetSize  ? Math.round(avgActive / _fleetSize * 100)      : 0;
+
+  const cells = document.getElementById('kpi-grid').querySelectorAll('.tkpi-cell');
+  if (cells[0]) cells[0].querySelector('.tkpi-val').textContent = _fleetSize;
+  if (cells[2]) cells[2].querySelector('.tkpi-val').textContent = activePct + '%';
+  if (cells[5]) cells[5].querySelector('.tkpi-val').textContent = fmt(perParkKsh) + ' ₽';
+  if (cells[6]) cells[6].querySelector('.tkpi-val').textContent = fmt(perActKsh)  + ' ₽';
+}
+
+// Patch loadSummary to cache responses
+const _origLoadAll = loadAll;
+// Override api calls to cache revenue/summary
+const _apiOrig = api;
+
+// Re-wire loadAll to cache responses for fleet-dependent re-render
+async function loadAll() {
+  const revenueResp = await api('revenue');
+  _lastRevenueResp  = revenueResp;
+
+  const summaryTask = api('summary').then(r => { _lastSummaryResp = r; return r; });
+
+  await Promise.all([
+    summaryTask.then(r => loadSummaryWithResp(revenueResp, r)),
+    renderRevenue(revenueResp),
+    loadDevices(),
+    loadFleet(),
+    loadTariffs(),
+  ]);
+}
+
+async function loadSummaryWithResp(revenueResp, resp) {
+  const grid = document.getElementById('kpi-grid');
+
+  if (!resp || !resp.rows) {
+    grid.innerHTML = '<div class="tkpi-cell" style="grid-column:1/-1"><div class="tkpi-lbl">Ошибка загрузки</div></div>';
     return;
   }
-  grid.innerHTML = online.map(r => {
-    const fuel = Number(r.fuel);
-    const fuelCls = fuel < 20 ? 'low' : fuel < 50 ? 'mid' : 'ok';
-    return `<div class="fleet-card online">
-      <div class="car-id">КШ-${r.car_id}</div>
-      <div class="fuel ${fuelCls}">${fuel}%</div>
-      <div class="status">🟢 Онлайн</div>
+
+  const totRev     = resp.rows.reduce((s, r) => s + Number(r.revenue), 0);
+  const activeDays = revenueResp?.rows?.length || 1;
+  const avgActive  = revenueResp?.rows?.length
+    ? revenueResp.rows.reduce((s, r) => s + Number(r.active_devices), 0) / revenueResp.rows.length
+    : 0;
+  const perDay     = Math.round(totRev / activeDays);
+  const perActKsh  = avgActive   ? Math.round(totRev / activeDays / avgActive)  : 0;
+  const perParkKsh = _fleetSize  ? Math.round(totRev / activeDays / _fleetSize) : 0;
+  const activePct  = _fleetSize  ? Math.round(avgActive / _fleetSize * 100)     : 0;
+
+  function cell(val, val2, lbl, color) {
+    return `<div class="tkpi-cell">
+      <div class="tkpi-val" style="color:${color}">${val}</div>
+      ${val2 ? `<div class="tkpi-val2" style="color:${color}">${val2}</div>` : ''}
+      <div class="tkpi-lbl">${lbl}</div>
     </div>`;
-  }).join('');
+  }
+
+  const periodLabel = currentPeriod === 7 ? '7 дн.' : currentPeriod === 30 ? '30 дн.' : currentPeriod === 90 ? '90 дн.' : '1 год';
+
+  grid.innerHTML =
+    cell(_fleetSize || '…', null, 'Парк · КШ', '#6b7280') +
+    cell(Math.round(avgActive), null, `Активных КШ · ср/сут · ${periodLabel}`, '#2dd4bf') +
+    cell(_fleetSize ? activePct + '%' : '…', null, '% активных от парка', '#f59e0b') +
+    cell(fmt(totRev) + ' ₽', null, `Выручка · ${periodLabel}`, '#4ade80') +
+    cell(fmt(perDay) + ' ₽', null, 'В сутки · ср.', '#94a3b8') +
+    cell(_fleetSize ? fmt(perParkKsh) + ' ₽' : '…', null, 'Выр/КШ парк · сут', '#6b7280') +
+    cell(fmt(perActKsh) + ' ₽', null, 'Выр/КШ актив · сут', '#2dd4bf') +
+    '<div class="tkpi-cell" id="kpi-price-detskiy"><div class="tkpi-val" style="color:#f472b6">…</div><div class="tkpi-lbl">Цена мин · Детский</div></div>' +
+    '<div class="tkpi-cell" id="kpi-price-bystry"><div class="tkpi-val" style="color:#f472b6">…</div><div class="tkpi-lbl">Цена мин · Быстрый</div></div>';
+
+  // Company breakdown
+  const wrap  = document.getElementById('company-breakdown-wrap');
+  const tbody = document.querySelector('#company-breakdown-table tbody');
+  if (resp.rows.length > 1) {
+    tbody.innerHTML = resp.rows.map(r => {
+      const rev   = Number(r.revenue);
+      const ksh   = Number(r.active_devices);
+      const pdKsh = ksh && activeDays ? Math.round(rev / activeDays / ksh) : 0;
+      return `<tr>
+        <td>${shortName(r.company_name)}</td>
+        <td>${fmt(rev)} ₽</td>
+        <td>${ksh}</td>
+        <td>${fmt(pdKsh)} ₽</td>
+      </tr>`;
+    }).join('');
+    wrap.style.display = '';
+  } else {
+    wrap.style.display = 'none';
+  }
 }
+
+// Remove the original loadSummary since we now use loadSummaryWithResp
+async function loadSummary() {} // kept as stub
 
 init();
 </script>
