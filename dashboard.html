@@ -3087,16 +3087,23 @@
 
       try {
         const rows = await grafanaQuery(`
-          SELECT o.car_id,
-            COUNT(*) as orders,
-            ROUND(SUM(b.sum_card)/100) as revenue,
-            ROUND(AVG(b.sum_card)/100) as avg_check
-          FROM orders o
-          JOIN bills b ON b.order_id = o.id
-          WHERE b.status='PAID' AND o.company_id = ${companyId}
-            ${interval}
-          GROUP BY o.car_id
-          ORDER BY revenue DESC
+          SELECT c.id AS car_id,
+            COALESCE(d.orders, 0) AS orders,
+            COALESCE(d.revenue, 0) AS revenue,
+            COALESCE(d.avg_check, 0) AS avg_check
+          FROM cars c
+          LEFT JOIN (
+            SELECT o.car_id,
+              COUNT(*) AS orders,
+              ROUND(SUM(b.sum_card)/100) AS revenue,
+              ROUND(AVG(b.sum_card)/100) AS avg_check
+            FROM orders o
+            JOIN bills b ON b.order_id = o.id
+            WHERE b.status='PAID' AND o.company_id = ${companyId} ${interval}
+            GROUP BY o.car_id
+          ) d ON d.car_id = c.id
+          WHERE c.company_id = ${companyId}
+          ORDER BY revenue DESC, orders DESC
         `);
 
         const company = devEffCompanies.find(c => String(c.company_id) === String(companyId));
@@ -3107,18 +3114,23 @@
           return;
         }
 
-        // Среднее и среднее
-        const sorted = [...rows].sort((a, b) => a.revenue - b.revenue);
+        const activeRows = rows.filter(r => r.revenue > 0);
+        const idleCount = rows.length - activeRows.length;
+
+        // Медиана и среднее считаем только по активным (не искажаем нулями)
+        const sorted = [...activeRows].sort((a, b) => a.revenue - b.revenue);
         const mid = Math.floor(sorted.length / 2);
-        const median = sorted.length % 2 === 0
-          ? Math.round((sorted[mid-1].revenue + sorted[mid].revenue) / 2)
-          : sorted[mid].revenue;
-        const avg = Math.round(rows.reduce((s, r) => s + r.revenue, 0) / rows.length);
-        const maxRev = rows[0].revenue;
+        const median = sorted.length === 0 ? 0
+          : sorted.length % 2 === 0
+            ? Math.round((sorted[mid-1].revenue + sorted[mid].revenue) / 2)
+            : sorted[mid].revenue;
+        const avg = activeRows.length ? Math.round(activeRows.reduce((s, r) => s + r.revenue, 0) / activeRows.length) : 0;
+        const maxRev = activeRows.length ? activeRows[0].revenue : 0;
         const totalRev = rows.reduce((s, r) => s + r.revenue, 0);
 
         // Определяем статус устройства
         function devStatus(rev) {
+          if (rev === 0) return { label: '— Простой', color: '#6b7280', bg: '#6b728025' };
           const pct = median > 0 ? rev / median : 1;
           if (pct < 0.4) return { label: 'Аутсайдер', color: '#f87171', bg: '#f8717118' };
           if (pct < 0.7) return { label: 'Ниже нормы', color: '#fbbf24', bg: '#fbbf2418' };
@@ -3144,6 +3156,10 @@
               <div style="font-size:11px;color:#6b7280;margin-bottom:3px">УСТРОЙСТВ</div>
               <div style="font-size:18px;font-weight:700;color:#e2e8f0">${rows.length}</div>
             </div>
+            ${idleCount > 0 ? `<div style="background:#0a0a10;border:1px solid #6b728050;border-radius:8px;padding:10px 16px;min-width:110px">
+              <div style="font-size:11px;color:#6b7280;margin-bottom:3px">ПРОСТОЙ</div>
+              <div style="font-size:18px;font-weight:700;color:#f87171">${idleCount}</div>
+            </div>` : ''}
           </div>
           <table style="width:100%;border-collapse:collapse;font-size:13px">
             <thead>
@@ -3161,20 +3177,20 @@
             <tbody>
               ${rows.map((r, i) => {
                 const st = devStatus(r.revenue);
+                const idle = r.revenue === 0;
                 const pctMax = maxRev > 0 ? Math.round(r.revenue / maxRev * 100) : 0;
-                const barW = pctMax;
-                return `<tr style="border-bottom:1px solid #1e1e2a;${i%2===1?'background:#111118':''};${st.bg?'background:'+st.bg:''}">
+                return `<tr style="border-bottom:1px solid #1e1e2a;${st.bg ? 'background:'+st.bg : (i%2===1 ? 'background:#111118' : '')}">
                   <td style="padding:8px 12px;color:#6b7280">${i+1}</td>
-                  <td style="padding:8px 12px;font-weight:600;color:#e2e8f0">КШ-${r.car_id}</td>
-                  <td style="padding:8px 12px;text-align:right;color:#94a3b8">${r.orders}</td>
-                  <td style="padding:8px 12px;text-align:right;font-weight:700;color:${st.color}">${r.revenue.toLocaleString('ru-RU')} ₽</td>
-                  <td style="padding:8px 12px;text-align:right;color:#94a3b8">${r.avg_check.toLocaleString('ru-RU')} ₽</td>
+                  <td style="padding:8px 12px;font-weight:600;color:${idle ? '#6b7280' : '#e2e8f0'}">КШ-${r.car_id}</td>
+                  <td style="padding:8px 12px;text-align:right;color:#94a3b8">${idle ? '—' : r.orders}</td>
+                  <td style="padding:8px 12px;text-align:right;font-weight:700;color:${st.color}">${idle ? '0 ₽' : r.revenue.toLocaleString('ru-RU') + ' ₽'}</td>
+                  <td style="padding:8px 12px;text-align:right;color:#94a3b8">${idle ? '—' : r.avg_check.toLocaleString('ru-RU') + ' ₽'}</td>
                   <td style="padding:8px 12px;text-align:right">
                     <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
                       <div style="width:60px;height:5px;background:#1e1e2a;border-radius:3px;overflow:hidden">
-                        <div style="width:${barW}%;height:100%;background:${st.color};border-radius:3px"></div>
+                        <div style="width:${pctMax}%;height:100%;background:${st.color};border-radius:3px"></div>
                       </div>
-                      <span style="color:#6b7280;min-width:30px;text-align:right">${pctMax}%</span>
+                      <span style="color:#6b7280;min-width:30px;text-align:right">${idle ? '—' : pctMax + '%'}</span>
                     </div>
                   </td>
                   <td style="padding:8px 12px;text-align:right">
