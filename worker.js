@@ -929,18 +929,19 @@ export default {
         } else if (type === 'tariffs') {
           rows = await grafanaSQL(`
             SELECT a.description AS tariff,
-              ROUND(a.cost/100) AS listed_price,
               COUNT(*) AS orders,
               ROUND(SUM(b.sum_card)/COUNT(*)/100) AS avg_paid,
-              ROUND(SUM(b.sum_card)/100) AS revenue
+              ROUND(SUM(b.sum_card)/100) AS revenue,
+              MIN(ROUND(a.cost/100)) AS min_price,
+              MAX(ROUND(a.cost/100)) AS max_price
             FROM orders o
             JOIN abonements a ON o.abonement_id = a.id
             JOIN bills b ON b.order_id = o.id
             WHERE b.status = 'PAID' AND o.company_id IN (${idList})
               AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
-            GROUP BY o.abonement_id, a.description, a.cost
+            GROUP BY a.description
             ORDER BY orders DESC
-            LIMIT 50
+            LIMIT 30
           `, env);
         } else if (type === 'fleet-size') {
           rows = await grafanaSQL(`

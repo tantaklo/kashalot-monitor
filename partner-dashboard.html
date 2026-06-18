@@ -282,8 +282,8 @@
           <tr>
             <th>Тариф</th>
             <th>Слот</th>
-            <th>Прейскурант</th>
-            <th>Ср. оплата</th>
+            <th>Диапазон цен</th>
+            <th>Ср. факт</th>
             <th>₽/мин</th>
             <th>Заказов</th>
             <th>Доля</th>
@@ -745,8 +745,12 @@ async function loadTariffs() {
     return `<tr>
       <td><span class="badge ${brandColor(brand)}">${brand}</span></td>
       <td style="color:var(--text2);font-size:13px">${dur ? dur + ' мин' : '—'}${dayType ? ' · ' + dayType : ''}</td>
-      <td>${fmt(r.listed_price)} ₽</td>
-      <td>${fmt(r.avg_paid)} ₽</td>
+      <td style="color:var(--text2);font-size:13px">${
+        r.min_price === r.max_price
+          ? fmt(r.min_price) + ' ₽'
+          : fmt(r.min_price) + '–' + fmt(r.max_price) + ' ₽'
+      }</td>
+      <td style="font-weight:600">${fmt(r.avg_paid)} ₽</td>
       <td style="color:var(--pink)">${pm !== '—' ? pm + ' ₽/мин' : '—'}</td>
       <td>${fmt(orders)}</td>
       <td>
