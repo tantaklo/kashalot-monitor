@@ -658,49 +658,106 @@ function renderRevenue(resp) {
 let activityChart = null;
 let _lastRevenueRows = null;
 
-function renderActivityChart() {
+const HISTORY_URL = 'https://tantaklo.github.io/kashalot-monitor/data/history.json';
+let _historyData = null;
+
+async function fetchHistory() {
+  if (_historyData) return _historyData;
+  try {
+    const r = await fetch(HISTORY_URL);
+    _historyData = r.ok ? await r.json() : [];
+  } catch { _historyData = []; }
+  return _historyData;
+}
+
+async function renderActivityChart() {
   if (!_fleetSize || !_lastRevenueRows) return;
+
+  const history = await fetchHistory();
+  const availByDate = {};
+  history.forEach(r => { if (r.max_available) availByDate[r.date] = r.max_available; });
+
   const MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
   const labels = _lastRevenueRows.map(r => {
     const d = new Date(typeof r.date === 'number' ? r.date : r.date + 'T00:00:00Z');
     return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
   });
-  const pcts = _lastRevenueRows.map(r => Math.round(Number(r.active_devices) / _fleetSize * 100));
-  const avg  = pcts.length ? Math.round(pcts.reduce((s, v) => s + v, 0) / pcts.length) : 0;
+
+  const dateKeys = _lastRevenueRows.map(r =>
+    typeof r.date === 'number'
+      ? new Date(r.date).toISOString().slice(0, 10)
+      : String(r.date).slice(0, 10)
+  );
+
+  const pcts      = _lastRevenueRows.map(r => Math.round(Number(r.active_devices) / _fleetSize * 100));
+  const available = dateKeys.map(d => availByDate[d] ?? null);
+  const hasAvail  = available.some(v => v != null);
+
+  const avgPct = pcts.length ? Math.round(pcts.reduce((s, v) => s + v, 0) / pcts.length) : 0;
 
   const avgEl = document.getElementById('activity-chart-avg');
-  if (avgEl) avgEl.textContent = `· среднее: ${avg}%`;
+  if (avgEl) avgEl.textContent = `· % активных ср.: ${avgPct}%`;
   document.getElementById('activity-chart-wrap').style.display = '';
+
+  const datasets = [
+    {
+      label: '% активных от парка',
+      data: pcts,
+      borderColor: '#2dd4bf',
+      backgroundColor: 'rgba(45,212,191,.08)',
+      fill: true,
+      borderWidth: 2,
+      pointRadius: 3,
+      pointBackgroundColor: '#2dd4bf',
+      tension: 0.3,
+      yAxisID: 'y',
+    },
+  ];
+  if (hasAvail) {
+    datasets.push({
+      label: 'Доступных КШ (рынок)',
+      data: available,
+      borderColor: '#60a5fa',
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: [4, 3],
+      pointRadius: 2,
+      pointBackgroundColor: '#60a5fa',
+      tension: 0.3,
+      yAxisID: 'y2',
+      spanGaps: true,
+    });
+  }
 
   if (activityChart) activityChart.destroy();
   const ctx = document.getElementById('activity-chart').getContext('2d');
   activityChart = new Chart(ctx, {
     type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: '% активных КШ',
-        data: pcts,
-        borderColor: '#2dd4bf',
-        backgroundColor: 'rgba(45,212,191,.08)',
-        fill: true,
-        borderWidth: 2,
-        pointRadius: 3,
-        pointBackgroundColor: '#2dd4bf',
-        tension: 0.3,
-      }],
-    },
+    data: { labels, datasets },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: '#94a3b8', maxTicksLimit: 14 }, grid: { color: 'rgba(255,255,255,.04)' } },
-        y: {
-          ticks: { color: '#94a3b8', callback: v => v + '%' },
-          grid: { color: 'rgba(255,255,255,.06)' },
-          min: 0,
-          suggestedMax: 100,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: hasAvail,
+          labels: { color: '#94a3b8', font: { size: 12 }, boxWidth: 14 },
         },
+      },
+      scales: {
+        x:  { ticks: { color: '#94a3b8', maxTicksLimit: 14 }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y:  {
+          ticks: { color: '#2dd4bf', callback: v => v + '%' },
+          grid: { color: 'rgba(255,255,255,.06)' },
+          min: 0, suggestedMax: 100,
+          position: 'left',
+        },
+        ...(hasAvail ? {
+          y2: {
+            ticks: { color: '#60a5fa' },
+            grid: { display: false },
+            position: 'right',
+          },
+        } : {}),
       },
     },
   });
