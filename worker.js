@@ -108,12 +108,15 @@ async function checkLowBatteryDuration(env) {
     const kvAlerted = `batt_alerted:${id}`;
 
     if (row.fuel >= THRESHOLD) {
-      // Устройство восстановилось — сбрасываем состояние
+      // Удаляем ключи только если они реально существуют — экономим KV delete-операции
       if (env.IGN_CACHE) {
-        await Promise.all([
-          env.IGN_CACHE.delete(kvLow),
-          env.IGN_CACHE.delete(kvAlerted),
-        ]);
+        const existing = await env.IGN_CACHE.get(kvLow);
+        if (existing !== null) {
+          await Promise.all([
+            env.IGN_CACHE.delete(kvLow),
+            env.IGN_CACHE.delete(kvAlerted),
+          ]);
+        }
       }
       continue;
     }
