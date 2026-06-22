@@ -2405,9 +2405,16 @@
         const activeMap = {};
         activeRows.forEach(r => { activeMap[r.date] = r.active_objects; });
 
-        fsAllData = histRes
-          .map(r => ({ ...r, active_objects: activeMap[r.date] ?? r.active_objects ?? null }))
-          .sort((a, b) => a.date.localeCompare(b.date));
+        // Объединяем: берём ВСЕ даты из Grafana (полная история),
+        // накладываем max_available только там, где есть history.json
+        const histMap = {};
+        histRes.forEach(r => { histMap[r.date] = r; });
+        const allDates = new Set([...Object.keys(histMap), ...Object.keys(activeMap)]);
+        fsAllData = [...allDates].sort().map(date => ({
+          date,
+          max_available:   histMap[date]?.max_available   ?? null,
+          active_objects:  activeMap[date] ?? histMap[date]?.active_objects ?? null,
+        }));
         if (!fsAllData.length) return;
 
         const last   = fsAllData[fsAllData.length - 1];
