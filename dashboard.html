@@ -711,7 +711,7 @@
       <!-- 4. Доля актив/доступ -->
       <div class="tkpi-cell">
         <div class="tkpi-val" style="color:#f59e0b" id="topKpiShare">—</div>
-        <div class="tkpi-lbl" id="topKpiShareLbl">Доля актив/доступ · ср.</div>
+        <div class="tkpi-lbl" id="topKpiShareLbl">Утилизация · ср.</div>
       </div>
 
       <!-- 5. Выручка -->
@@ -804,7 +804,7 @@
           </div>
           <div class="fleet-kpi">
             <div class="fleet-kpi-val share" id="fsShare">—</div>
-            <div class="fleet-kpi-label">Доля актив/доступ</div>
+            <div class="fleet-kpi-label">Утилизация</div>
           </div>
         </div>
         <div class="fleet-share-bar">
@@ -1170,7 +1170,7 @@
           <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#4b5563;margin:6px 0 12px">
             <span style="display:flex;align-items:center;gap:5px"><span style="width:20px;height:3px;background:#60a5fa;display:inline-block;border-radius:2px"></span>Доступность (из history)</span>
             <span style="display:flex;align-items:center;gap:5px"><span style="width:20px;height:3px;background:#2dd4bf;display:inline-block;border-radius:2px"></span>Активность (из Grafana)</span>
-            <span style="display:flex;align-items:center;gap:5px"><span style="width:20px;height:3px;background:#f59e0b;display:inline-block;border-radius:2px"></span>Доля актив/доступ % (прав.)</span>
+            <span style="display:flex;align-items:center;gap:5px"><span style="width:20px;height:3px;background:#f59e0b;display:inline-block;border-radius:2px"></span>Утилизация % (прав.)</span>
           </div>
           <div id="fgChart3Placeholder" style="font-size:12px;color:#4b5563;padding:12px 0">Загрузка данных доступности…</div>
           <div class="rev-chart-wrap" style="height:280px;display:none"><canvas id="fgAvailActChart"></canvas></div>
@@ -2350,7 +2350,7 @@
       const fsDatasets = [
         { label: 'Доступность', data: avail,     borderColor: '#60a5fa', backgroundColor: '#60a5fa15', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#60a5fa', fill: true, tension: 0.35, yAxisID: 'y' },
         { label: 'Активность',  data: active,    borderColor: '#2dd4bf', backgroundColor: '#2dd4bf15', borderWidth: 2, pointRadius: ptRadius, pointBackgroundColor: '#2dd4bf', fill: true, tension: 0.35, yAxisID: 'y' },
-        { label: 'Доля, %',     data: share,     borderColor: '#f59e0b', backgroundColor: 'transparent', borderWidth: 2, borderDash: [4,3], pointRadius: ptRadius, pointBackgroundColor: '#f59e0b', fill: false, tension: 0.35, yAxisID: 'y2' },
+        { label: 'Утилизация, %', data: share,     borderColor: '#f59e0b', backgroundColor: 'transparent', borderWidth: 2, borderDash: [4,3], pointRadius: ptRadius, pointBackgroundColor: '#f59e0b', fill: false, tension: 0.35, yAxisID: 'y2' },
         { label: 'Доступн. от парка, %', data: availPct, borderColor: '#a78bfa', backgroundColor: 'transparent', borderWidth: 2, borderDash: [6,3], pointRadius: ptRadius, pointBackgroundColor: '#a78bfa', fill: false, tension: 0.35, yAxisID: 'y2' },
         ...(fsMedAvail  ? [{ ...fsMedAvail,  yAxisID: 'y' }] : []),
         ...(fsMedActive ? [{ ...fsMedActive, yAxisID: 'y' }] : []),
@@ -2391,7 +2391,7 @@
         medRow.innerHTML =
           chip('Среднее доступн.', mAvail != null ? Math.round(mAvail) : null, '#60a5fa') +
           chip('Среднее актив.', mActive != null ? Math.round(mActive) : null, '#2dd4bf') +
-          chip('Доля, %', mShare != null ? Math.round(mShare) + '%' : null, '#f59e0b');
+          chip('Утилизация', mShare != null ? Math.round(mShare) + '%' : null, '#f59e0b');
       }
     }
 
@@ -3630,7 +3630,7 @@
                 label: ctx => {
                   if (ctx.datasetIndex === 0) return 'Парк: ' + ctx.parsed.y.toLocaleString('ru-RU') + ' КШ';
                   if (ctx.datasetIndex === 1) return 'Активных (7д): ' + ctx.parsed.y + ' КШ';
-                  return 'Доля: ' + ctx.parsed.y + '%';
+                  return 'Утилизация: ' + ctx.parsed.y + '%';
                 }
               }
             }},
