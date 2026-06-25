@@ -3527,6 +3527,15 @@
       });
       let startCumul = FG_BASE;
       FG_FLEET_RAW.forEach(r => { if (r.date < startDate1) startCumul += (+r.n); });
+      // Дотягиваем Chart 1 до последней даты активности — иначе ось X обрывается, если не было новых КШ
+      const lastActiveDate = activeSlice.length ? activeSlice[activeSlice.length - 1].date : null;
+      if (lastActiveDate) {
+        const [yr, mo, dy] = lastActiveDate.split('-').map(Number);
+        const dow = new Date(yr, mo - 1, dy).getDay();
+        const monD = dy - (dow === 0 ? 6 : dow - 1);
+        const lastMon = `${yr}-${String(mo).padStart(2,'0')}-${String(Math.max(1,monD)).padStart(2,'0')}`;
+        if (!weekMap[lastMon]) weekMap[lastMon] = 0;
+      }
       const weeks = Object.keys(weekMap).sort();
       let cumW = startCumul;
       const wkCumul = [], wkNew = [], wkLabels = [];
