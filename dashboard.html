@@ -2424,7 +2424,9 @@
         const lastActive = rev.find(r => r.active_objects != null);
         const avail  = lastAvail?.max_available  ?? null;
         const active = lastActive?.active_objects ?? null;
-        const share  = (avail && active) ? Math.round(active / avail * 100) : null;
+        // Долю считаем только когда оба значения с одной даты
+        const lastBoth = rev.find(r => r.max_available != null && r.active_objects != null);
+        const share  = lastBoth ? Math.round(lastBoth.active_objects / lastBoth.max_available * 100) : null;
 
         const availPctNow  = (avail  && fleetSize) ? Math.round(avail  / fleetSize * 100) : null;
         const activePctNow = (active && fleetSize) ? Math.round(active / fleetSize * 100) : null;
