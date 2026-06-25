@@ -2417,16 +2417,13 @@
         }));
         if (!fsAllData.length) return;
 
-        // Берём последнюю запись с данными отдельно для каждого поля —
-        // сегодня Grafana может иметь active_objects, но history.json ещё не обновился
+        // Все три KPI берём из одной даты — последней, где есть и доступность и активность.
+        // Иначе Grafana даёт активность за сегодня, а history.json — доступность за вчера.
         const rev = [...fsAllData].reverse();
-        const lastAvail  = rev.find(r => r.max_available  != null);
-        const lastActive = rev.find(r => r.active_objects != null);
-        const avail  = lastAvail?.max_available  ?? null;
-        const active = lastActive?.active_objects ?? null;
-        // Долю считаем только когда оба значения с одной даты
         const lastBoth = rev.find(r => r.max_available != null && r.active_objects != null);
-        const share  = lastBoth ? Math.round(lastBoth.active_objects / lastBoth.max_available * 100) : null;
+        const avail  = lastBoth?.max_available  ?? null;
+        const active = lastBoth?.active_objects ?? null;
+        const share  = (avail && active) ? Math.round(active / avail * 100) : null;
 
         const availPctNow  = (avail  && fleetSize) ? Math.round(avail  / fleetSize * 100) : null;
         const activePctNow = (active && fleetSize) ? Math.round(active / fleetSize * 100) : null;
@@ -2436,8 +2433,7 @@
         document.getElementById('fsActivePct').textContent = activePctNow != null ? activePctNow + '% от парка' : '—';
         document.getElementById('fsShare').textContent    = share  != null ? share + '%' : '—';
         document.getElementById('fsShareBar').style.width = (share ?? 0) + '%';
-        const lastDate = fsAllData[fsAllData.length - 1]?.date;
-        document.getElementById('fleetUpdated').textContent = 'последнее: ' + (lastAvail?.date ?? lastDate ?? '—');
+        document.getElementById('fleetUpdated').textContent = 'последнее: ' + (lastBoth?.date ?? '—');
 
         requestAnimationFrame(() => { fsRenderChart(raActivePeriod); updateTopKPI(raActivePeriod); fgRenderChart3(fgActivePeriod || 0); });
       } catch (e) { console.error('Fleet section:', e); }
