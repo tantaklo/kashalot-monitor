@@ -2403,7 +2403,9 @@
         ]);
 
         const activeMap = {};
-        activeRows.forEach(r => { activeMap[r.date] = r.active_objects; });
+        // Фильтруем null-даты: Grafana возвращает NULL для заказов с start_time=NULL,
+        // что попадает ключом "null" в карту и ломает метки графика ("undefined.undefined")
+        activeRows.forEach(r => { if (r.date && /^\d{4}-\d{2}-\d{2}/.test(String(r.date))) activeMap[r.date] = r.active_objects; });
 
         // Объединяем: берём ВСЕ даты из Grafana (полная история),
         // накладываем max_available только там, где есть history.json
@@ -3529,11 +3531,12 @@
       FG_FLEET_RAW.forEach(r => { if (r.date < startDate1) startCumul += (+r.n); });
       // Дотягиваем Chart 1 до последней даты активности — иначе ось X обрывается, если не было новых КШ
       const lastActiveDate = activeSlice.length ? activeSlice[activeSlice.length - 1].date : null;
-      if (lastActiveDate) {
+      if (lastActiveDate && /^\d{4}-\d{2}-\d{2}/.test(lastActiveDate)) {
         const [yr, mo, dy] = lastActiveDate.split('-').map(Number);
         const dow = new Date(yr, mo - 1, dy).getDay();
         const monD = dy - (dow === 0 ? 6 : dow - 1);
-        const lastMon = `${yr}-${String(mo).padStart(2,'0')}-${String(Math.max(1,monD)).padStart(2,'0')}`;
+        const monObj = new Date(yr, mo - 1, monD); // Date корректно обрабатывает отрицательный день (переход через месяц)
+        const lastMon = `${monObj.getFullYear()}-${String(monObj.getMonth()+1).padStart(2,'0')}-${String(monObj.getDate()).padStart(2,'0')}`;
         if (!weekMap[lastMon]) weekMap[lastMon] = 0;
       }
       const weeks = Object.keys(weekMap).sort();
