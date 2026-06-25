@@ -771,7 +771,8 @@ export default {
     // --- Роут: Google OAuth — старт ---
     if (url.pathname === '/auth/google' && request.method === 'GET') {
       const state = randomHex(16);
-      await env.IGN_CACHE.put(`oauth_state:${state}`, '1', { expirationTtl: 600 });
+      const app = url.searchParams.get('app') === 'support' ? 'support' : 'partner';
+      await env.IGN_CACHE.put(`oauth_state:${state}`, app, { expirationTtl: 600 });
       const params = new URLSearchParams({
         client_id: env.GOOGLE_CLIENT_ID,
         redirect_uri: env.PARTNER_REDIRECT_URI,
@@ -786,7 +787,8 @@ export default {
 
     // --- Роут: Google OAuth — callback ---
     if (url.pathname === '/auth/callback' && request.method === 'GET') {
-      const DASH = 'https://tantaklo.github.io/kashalot-monitor/partner-dashboard.html';
+      let DASH = 'https://tantaklo.github.io/kashalot-monitor/partner-dashboard.html';
+      const SUPPORT_DASH = 'https://tantaklo.github.io/kashalot-support-dashboard/';
       try {
         const code = url.searchParams.get('code');
         const state = url.searchParams.get('state');
@@ -803,6 +805,7 @@ export default {
           try {
             const stateVal = await env.IGN_CACHE.get(`oauth_state:${state}`);
             if (!stateVal) return Response.redirect(`${DASH}?error=invalid_state`, 302);
+            if (stateVal === 'support') DASH = SUPPORT_DASH;
             // Не удаляем и не перезаписываем — TTL 600s уберёт сам, избегаем KV лимитов
           } catch (_) { /* KV недоступен — продолжаем */ }
         }
@@ -980,6 +983,54 @@ export default {
     }
 
     // --- Роут: Управление доступами партнёров (только Антон, X-Token) ---
+    // --- Дашборд поддержки: данные (только при сессии + доступе support) ---
+    if (url.pathname === '/support-data' && request.method === 'POST') {
+      const session = await getPartnerSession(env, request.headers.get('X-Partner-Token'));
+      if (!session) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+      // перечитываем доступ — вдруг изменили после логина
+      let hasSupport = false, who = session.name || session.email;
+      if (session.email && env.IGN_CACHE) {
+        const raw = await env.IGN_CACHE.get(`partner_access:${session.email}`);
+        if (raw) { try { const a = JSON.parse(raw); hasSupport = !!a.support; who = a.name || who; } catch {} }
+      }
+      if (!hasSupport) {
+        return new Response(JSON.stringify({ error: 'no_support_access' }), {
+          status: 403, headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+      const data = await env.IGN_CACHE.get('support_dashboard_data');
+      if (!data) {
+        return new Response(JSON.stringify({ error: 'no_data' }), {
+          status: 404, headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+      return new Response(JSON.stringify({ ok: true, user: who, data: JSON.parse(data) }), {
+        headers: { 'Content-Type': 'application/json', ...CORS },
+      });
+    }
+
+    // --- Дашборд поддержки: загрузка данных билдом (под PROXY_TOKEN) ---
+    if (url.pathname === '/admin/support-data') {
+      const token = request.headers.get('X-Token');
+      if (!token || token !== env.PROXY_TOKEN) {
+        return new Response('Unauthorized', { status: 401, headers: CORS });
+      }
+      if (request.method === 'PUT' || request.method === 'POST') {
+        let body;
+        try { body = await request.text(); } catch { return new Response('Bad body', { status: 400, headers: CORS }); }
+        if (!body || body.length < 2) return new Response('Empty', { status: 400, headers: CORS });
+        await env.IGN_CACHE.put('support_dashboard_data', body);
+        return new Response(JSON.stringify({ ok: true, bytes: body.length }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+      return new Response('Method Not Allowed', { status: 405, headers: CORS });
+    }
+
     if (url.pathname === '/admin/partner-access') {
       const token = request.headers.get('X-Token');
       if (!token || token !== env.PROXY_TOKEN) {
@@ -1003,13 +1054,13 @@ export default {
       if (request.method === 'POST') {
         let body;
         try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
-        const { email, companies, name } = body;
+        const { email, companies, name, support } = body;
         if (!email || !Array.isArray(companies)) {
           return new Response(JSON.stringify({ error: 'email and companies[] required' }), {
             status: 400, headers: { 'Content-Type': 'application/json', ...CORS },
           });
         }
-        await env.IGN_CACHE.put(`partner_access:${email}`, JSON.stringify({ companies, name: name || email }));
+        await env.IGN_CACHE.put(`partner_access:${email}`, JSON.stringify({ companies, name: name || email, support: !!support }));
         return new Response(JSON.stringify({ ok: true }), {
           headers: { 'Content-Type': 'application/json', ...CORS },
         });

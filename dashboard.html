@@ -1219,6 +1219,12 @@
               style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:7px 12px;font-size:13px;outline:none;margin-bottom:8px">
             <div id="pa-companies" style="display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow-y:auto"></div>
           </div>
+          <div style="border-top:1px solid #1e1e2a;padding-top:12px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#94a3b8">
+              <input type="checkbox" id="pa-support" style="accent-color:#3b82f6;width:16px;height:16px">
+              Доступ к дашборду поддержки (внутренний — клиентская аналитика)
+            </label>
+          </div>
         </div>
         <div style="display:flex;gap:8px">
           <button onclick="savePartner()" style="padding:8px 20px;background:#3b82f6;border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer">Сохранить</button>
@@ -3927,7 +3933,7 @@
         return `
           <div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
             <div>
-              <div style="font-size:14px;font-weight:600;margin-bottom:2px">${p.name || p.email}</div>
+              <div style="font-size:14px;font-weight:600;margin-bottom:2px">${p.name || p.email}${p.support ? ' <span style="background:#1e3a2a;border:1px solid #2f5d44;border-radius:4px;padding:1px 7px;font-size:10px;color:#4ade80;vertical-align:middle">поддержка</span>' : ''}</div>
               <div style="font-size:11px;color:#4b5563;margin-bottom:8px">${p.email}</div>
               <div style="display:flex;flex-wrap:wrap;gap:4px">${locs || '<span style="color:#4b5563;font-size:11px">Нет локаций</span>'}</div>
             </div>
@@ -3970,6 +3976,7 @@
       document.getElementById('pa-email').disabled = false;
       document.getElementById('pa-name').value = '';
       renderCompanyCheckboxes([]);
+      document.getElementById('pa-support').checked = false;
       document.getElementById('pa-form').style.display = 'block';
       document.getElementById('pa-email').focus();
     }
@@ -3982,6 +3989,7 @@
       document.getElementById('pa-email').disabled = true;
       document.getElementById('pa-name').value = p.name || '';
       renderCompanyCheckboxes(p.companies || []);
+      document.getElementById('pa-support').checked = !!p.support;
       document.getElementById('pa-form').style.display = 'block';
     }
 
@@ -3989,12 +3997,13 @@
       const email = document.getElementById('pa-email').value.trim();
       const name  = document.getElementById('pa-name').value.trim();
       const companies = [...document.querySelectorAll('#pa-companies input:checked')].map(el => Number(el.value));
+      const support = document.getElementById('pa-support').checked;
       if (!email) { alert('Введите email'); return; }
-      if (!companies.length) { alert('Выберите хотя бы одну локацию'); return; }
+      if (!companies.length && !support) { alert('Выберите локацию или дайте доступ к поддержке'); return; }
       const resp = await fetch(`${PA_WORKER}/admin/partner-access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
-        body: JSON.stringify({ email, name, companies }),
+        body: JSON.stringify({ email, name, companies, support }),
       }).then(r => r.json());
       if (resp.ok) {
         document.getElementById('pa-form').style.display = 'none';
