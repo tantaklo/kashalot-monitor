@@ -2425,11 +2425,15 @@
         }));
         if (!fsAllData.length) return;
 
-        // Все три KPI берём из одной даты — последней, где есть и доступность и активность.
-        // Иначе Grafana даёт активность за сегодня, а history.json — доступность за вчера.
+        // ДОСТУПНОСТЬ — из последнего сканирования (может быть сегодня).
+        // АКТИВНОСТЬ / УТИЛИЗАЦИЯ — только из завершённых дней (не сегодня):
+        // сегодня день ещё не закончен, Grafana возвращает частичный счётчик (2–10 поездок),
+        // что даёт ложные 1% утилизации даже при реальных 80%+ вчера.
+        const todayMSK = new Date(Date.now() + 3*60*60*1000).toISOString().slice(0,10);
         const rev = [...fsAllData].reverse();
-        const lastBoth = rev.find(r => r.max_available != null && r.active_objects != null);
-        const avail  = lastBoth?.max_available  ?? null;
+        const lastAvail = rev.find(r => r.max_available != null);
+        const lastBoth  = rev.find(r => r.date < todayMSK && r.max_available != null && r.active_objects != null);
+        const avail  = lastAvail?.max_available  ?? null;
         const active = lastBoth?.active_objects ?? null;
         const share  = (avail && active) ? Math.round(active / avail * 100) : null;
 
@@ -2441,7 +2445,7 @@
         document.getElementById('fsActivePct').textContent = activePctNow != null ? activePctNow + '% от парка' : '—';
         document.getElementById('fsShare').textContent    = share  != null ? share + '%' : '—';
         document.getElementById('fsShareBar').style.width = (share ?? 0) + '%';
-        document.getElementById('fleetUpdated').textContent = 'последнее: ' + (lastBoth?.date ?? '—');
+        document.getElementById('fleetUpdated').textContent = 'последнее: ' + (lastAvail?.date ?? lastBoth?.date ?? '—');
 
         requestAnimationFrame(() => { fsRenderChart(raActivePeriod); updateTopKPI(raActivePeriod); fgRenderChart3(fgActivePeriod || 0); });
       } catch (e) { console.error('Fleet section:', e); }
