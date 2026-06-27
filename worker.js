@@ -855,6 +855,100 @@ export default {
       }
     }
 
+    // --- Роут: Yandex ID — старт ---
+    if (url.pathname === '/auth/yandex' && request.method === 'GET') {
+      const state = randomHex(16);
+      const app = url.searchParams.get('app') === 'support' ? 'support' : 'partner';
+      await env.IGN_CACHE.put(`oauth_state:${state}`, app, { expirationTtl: 600 });
+      const params = new URLSearchParams({
+        response_type: 'code',
+        client_id: env.YANDEX_CLIENT_ID,
+        redirect_uri: `${url.origin}/auth/yandex/callback`,
+        state,
+        force_confirm: 'yes',
+      });
+      return Response.redirect(`https://oauth.yandex.ru/authorize?${params}`, 302);
+    }
+
+    // --- Роут: Yandex ID — callback ---
+    if (url.pathname === '/auth/yandex/callback' && request.method === 'GET') {
+      let DASH = 'https://tantaklo.github.io/kashalot-monitor/partner-dashboard.html';
+      const SUPPORT_DASH = 'https://tantaklo.github.io/kashalot-support-dashboard/';
+      try {
+        const code = url.searchParams.get('code');
+        const state = url.searchParams.get('state');
+
+        if (url.searchParams.get('error')) {
+          return Response.redirect(`${DASH}?error=access_denied`, 302);
+        }
+        if (!code || !state) {
+          return Response.redirect(`${DASH}?error=invalid_state`, 302);
+        }
+
+        // Проверяем state (KV может быть rate-limited — пропускаем без краша)
+        if (env.IGN_CACHE) {
+          try {
+            const stateVal = await env.IGN_CACHE.get(`oauth_state:${state}`);
+            if (!stateVal) return Response.redirect(`${DASH}?error=invalid_state`, 302);
+            if (stateVal === 'support') DASH = SUPPORT_DASH;
+          } catch (_) { /* KV недоступен — продолжаем */ }
+        }
+
+        // Обмен code → access_token
+        const tokenResp = await fetch('https://oauth.yandex.ru/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            code,
+            client_id: env.YANDEX_CLIENT_ID,
+            client_secret: env.YANDEX_CLIENT_SECRET,
+          }),
+        });
+        if (!tokenResp.ok) return Response.redirect(`${DASH}?error=token_failed`, 302);
+        const tokenData = await tokenResp.json();
+        const access_token = tokenData.access_token;
+        if (!access_token) return Response.redirect(`${DASH}?error=token_failed`, 302);
+
+        // Получаем профиль партнёра у Яндекса (заголовок именно "OAuth", не "Bearer")
+        const userResp = await fetch('https://login.yandex.ru/info?format=json', {
+          headers: { 'Authorization': `OAuth ${access_token}` },
+        });
+        if (!userResp.ok) return Response.redirect(`${DASH}?error=userinfo_failed`, 302);
+        const userData = await userResp.json();
+        const yname = userData.real_name || userData.display_name || userData.login;
+
+        // Кандидаты email: основной + все привязанные к аккаунту Яндекса
+        const candidates = [];
+        if (userData.default_email) candidates.push(userData.default_email);
+        if (Array.isArray(userData.emails)) candidates.push(...userData.emails);
+
+        const seen = new Set();
+        let email = null, accessRaw = null;
+        for (const c of candidates) {
+          const addr = (c || '').toLowerCase().trim();
+          if (!addr || seen.has(addr)) continue;
+          seen.add(addr);
+          const raw = await env.IGN_CACHE.get(`partner_access:${addr}`);
+          if (raw) { email = addr; accessRaw = raw; break; }
+        }
+        if (!email) return Response.redirect(`${DASH}?error=no_access`, 302);
+        const access = JSON.parse(accessRaw);
+
+        // Создаём сессию (TTL 24 ч) — формат идентичен Google-флоу
+        const sessionToken = randomHex(32);
+        await env.IGN_CACHE.put(`session:${sessionToken}`, JSON.stringify({
+          email,
+          name: access.name || yname || email,
+          company_ids: access.companies,
+        }), { expirationTtl: 86400 });
+
+        return Response.redirect(`${DASH}?token=${sessionToken}`, 302);
+      } catch (e) {
+        return Response.redirect(`${DASH}?error=server_error&msg=${encodeURIComponent(e.message)}`, 302);
+      }
+    }
+
     // --- Роут: Данные для партнёрского дашборда ---
     if (url.pathname === '/partner-data' && request.method === 'POST') {
       const session = await getPartnerSession(env, request.headers.get('X-Partner-Token'));
@@ -1011,6 +1105,42 @@ export default {
       return new Response(JSON.stringify({ ok: true, user: who, data: JSON.parse(data) }), {
         headers: { 'Content-Type': 'application/json', ...CORS },
       });
+    }
+
+    // --- Дашборд поддержки: общая отметка «проверено» по кейсам ---
+    if (url.pathname === '/support-reviewed') {
+      const session = await getPartnerSession(env, request.headers.get('X-Partner-Token'));
+      let hasSupport = false, who = null;
+      if (session && session.email && env.IGN_CACHE) {
+        const raw = await env.IGN_CACHE.get(`partner_access:${session.email}`);
+        if (raw) { try { const a = JSON.parse(raw); hasSupport = !!a.support; who = a.name || session.email; } catch {} }
+      }
+      if (!session || !hasSupport) {
+        return new Response(JSON.stringify({ error: session ? 'no_support_access' : 'Unauthorized' }), {
+          status: session ? 403 : 401, headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+      if (request.method === 'GET') {
+        const raw = await env.IGN_CACHE.get('support_reviewed');
+        return new Response(JSON.stringify({ ok: true, reviewed: raw ? JSON.parse(raw) : {} }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+      if (request.method === 'POST') {
+        let body;
+        try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+        const { key, reviewed } = body;
+        if (!key) return new Response(JSON.stringify({ error: 'key required' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
+        const raw = await env.IGN_CACHE.get('support_reviewed');
+        const map = raw ? JSON.parse(raw) : {};
+        if (reviewed) map[key] = { by: who, at: new Date().toISOString() };
+        else delete map[key];
+        await env.IGN_CACHE.put('support_reviewed', JSON.stringify(map));
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+      return new Response('Method Not Allowed', { status: 405, headers: CORS });
     }
 
     // --- Дашборд поддержки: загрузка данных билдом (под PROXY_TOKEN) ---

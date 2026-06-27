@@ -40,6 +40,17 @@
   }
   .btn-google:hover { background: #f0f0f0; }
   .btn-google img { width: 20px; height: 20px; }
+  .btn-yandex {
+    display: flex; align-items: center; gap: 12px;
+    background: #fc3f1d; color: #fff; border: none; border-radius: 8px;
+    padding: 12px 24px; font-size: 16px; font-weight: 500; cursor: pointer;
+    text-decoration: none;
+  }
+  .btn-yandex:hover { background: #e63312; }
+  .btn-yandex .ya-badge {
+    background: #fff; color: #fc3f1d; width: 22px; height: 22px; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px;
+  }
   .error-msg { color: var(--red); font-size: 14px; text-align: center; }
 
   /* DASHBOARD */
@@ -192,10 +203,14 @@
 <div id="login-screen">
   <div class="login-logo">🐳</div>
   <div class="login-title">Кашалот — Партнёрский дашборд</div>
-  <div class="login-sub">Войдите через Google-аккаунт, к которому привязан доступ</div>
+  <div class="login-sub">Войдите через аккаунт, к которому привязан доступ</div>
   <a id="btn-login" class="btn-google" href="https://kashalot-proxy.vegano-argentino-ru.workers.dev/auth/google">
     <img src="https://www.google.com/favicon.ico" alt="G">
     Войти через Google
+  </a>
+  <a id="btn-login-ya" class="btn-yandex" href="https://kashalot-proxy.vegano-argentino-ru.workers.dev/auth/yandex">
+    <span class="ya-badge">Я</span>
+    Войти через Яндекс ID
   </a>
   <div id="error-msg" class="error-msg" style="display:none"></div>
 </div>
@@ -355,8 +370,9 @@ function init() {
   if (error) {
     const msgs = {
       access_denied: 'Доступ отклонён.',
-      no_access: 'Ваш Google-аккаунт не имеет доступа к дашборду. Обратитесь к Антону.',
-      token_failed: 'Ошибка авторизации Google. Попробуйте ещё раз.',
+      no_access: 'Ваш аккаунт не имеет доступа к дашборду. Обратитесь к Антону.',
+      token_failed: 'Ошибка авторизации. Попробуйте ещё раз.',
+      userinfo_failed: 'Не удалось получить данные аккаунта. Попробуйте ещё раз.',
       invalid_state: 'Истёк токен запроса. Попробуйте ещё раз.',
       server_error: 'Ошибка сервера. Попробуйте ещё раз.',
     };
