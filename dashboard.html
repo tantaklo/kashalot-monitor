@@ -1184,6 +1184,25 @@
       <div class="found-list" id="foundList"></div>
     </div>
 
+  <!-- Карта КШ -->
+  <div class="chart-card" id="mapSection" style="margin-top:16px">
+    <div class="chart-header collapsible" onclick="toggleSection('mapBody','mapArrow'); initMapSection()">
+      <div>
+        <div class="chart-title">🗺 Карта · КШ доступны к аренде <span class="toggle-arrow" id="mapArrow">▶</span></div>
+        <div class="chart-sub" id="mapStatus">Нажмите чтобы загрузить карту</div>
+      </div>
+      <button onclick="event.stopPropagation(); refreshMapData()" style="padding:5px 12px;background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer">↺ Обновить</button>
+    </div>
+    <div class="section-body" id="mapBody">
+      <div id="kashalotMap" style="height:500px;border-radius:10px;overflow:hidden;margin-top:4px"></div>
+      <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
+        <span style="font-size:12px;color:#4b5563;display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#4ade80;display:inline-block"></span>Заряд >50%</span>
+        <span style="font-size:12px;color:#4b5563;display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block"></span>Заряд 20–50%</span>
+        <span style="font-size:12px;color:#4b5563;display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#f87171;display:inline-block"></span>Заряд <20%</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Партнёрский доступ -->
   <div class="chart-card" style="margin-top:24px">
     <div class="chart-header collapsible" onclick="toggleSection('partnerAccessBody','partnerAccessArrow'); if(!window._paLoaded) loadPartnerAccess()">
@@ -3885,6 +3904,103 @@
     const PA_WORKER = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev';
     const PA_TOKEN  = GRAFANA_TOKEN;
     let _paPartners  = [];
+    // ─── Карта КШ ────────────────────────────────────────────────────────────
+    let _mapInited = false, _mapInstance = null, _mapMarkers = [];
+    let _mapCacheTime = 0, _mapCacheData = null;
+
+    async function initMapSection() {
+      if (_mapInited) return;
+      _mapInited = true;
+      document.getElementById('mapStatus').textContent = 'Загрузка карты…';
+
+      // Leaflet CSS + JS — грузим только один раз, лениво
+      if (!window.L) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+        await new Promise(res => {
+          const s = document.createElement('script');
+          s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          s.onload = res; document.body.appendChild(s);
+        });
+      }
+
+      // Тёмная тема тайлов (CartoDB), без API-ключа
+      _mapInstance = L.map('kashalotMap', { zoomControl: true }).setView([61, 55], 4);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO',
+        subdomains: 'abcd', maxZoom: 19
+      }).addTo(_mapInstance);
+
+      await refreshMapData();
+    }
+
+    async function refreshMapData() {
+      if (!_mapInstance) return;
+      const statusEl = document.getElementById('mapStatus');
+
+      // Кеш 5 минут — не долбим БД при каждом открытии/закрытии секции
+      const now = Date.now();
+      if (_mapCacheData && now - _mapCacheTime < 5 * 60 * 1000) {
+        renderMapMarkers(_mapCacheData);
+        return;
+      }
+
+      if (statusEl) statusEl.textContent = 'Загрузка данных…';
+      try {
+        const rows = await grafanaQuery(`
+          SELECT id, gosnomer, fuel, lat, lon
+          FROM cars
+          WHERE online = 1
+            AND cur_order_id IS NULL
+            AND lat IS NOT NULL AND lat != 0
+            AND lon IS NOT NULL AND lon != 0
+            AND (hidden IS NULL OR hidden = 0)
+            AND fuel > 5
+          ORDER BY fuel DESC
+          LIMIT 600
+        `);
+        _mapCacheData = rows;
+        _mapCacheTime = now;
+        renderMapMarkers(rows);
+      } catch(e) {
+        if (statusEl) statusEl.textContent = 'Ошибка загрузки данных';
+        console.error('Map error:', e);
+      }
+    }
+
+    function renderMapMarkers(rows) {
+      const statusEl = document.getElementById('mapStatus');
+      _mapMarkers.forEach(m => m.remove());
+      _mapMarkers = [];
+
+      rows.forEach(r => {
+        const fuel = +r.fuel || 0;
+        const color = fuel > 50 ? '#4ade80' : fuel > 20 ? '#f59e0b' : '#f87171';
+        const m = L.circleMarker([+r.lat, +r.lon], {
+          radius: 6, fillColor: color,
+          color: '#0d0d14', weight: 1.5,
+          opacity: 1, fillOpacity: 0.85
+        }).addTo(_mapInstance);
+        m.bindPopup(
+          `<b style="color:#e2e8f0">КШ-${r.id}</b>` +
+          `<br><span style="color:#94a3b8">${r.gosnomer || '—'}</span>` +
+          `<br>⚡ Заряд: <b style="color:${color}">${fuel}%</b>`
+        );
+        _mapMarkers.push(m);
+      });
+
+      if (rows.length > 1) {
+        const bounds = L.latLngBounds(rows.map(r => [+r.lat, +r.lon]));
+        _mapInstance.fitBounds(bounds, { padding: [30, 30] });
+      }
+
+      const t = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      if (statusEl) statusEl.textContent = `${rows.length} КШ доступны к аренде · обновлено ${t}`;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     let _paCompanies = [];
 
     async function loadPartnerAccess() {
