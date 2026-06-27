@@ -342,6 +342,16 @@
       </table>
     </div>
 
+    <!-- Out-of-zone -->
+    <div class="section-title">Выезды за зону · сегодня</div>
+    <div class="table-wrap" id="oz-wrap">
+      <div class="table-header" style="display:flex;align-items:center;justify-content:space-between">
+        <span id="oz-sub">Загрузка…</span>
+        <button onclick="loadOutOfZone()" style="background:none;border:1px solid var(--navy3);color:var(--text2);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px">⟳</button>
+      </div>
+      <div id="oz-table"><div class="loading">Загрузка…</div></div>
+    </div>
+
     <!-- Fleet -->
     <div class="section-title">Парк · заряд</div>
     <div class="table-wrap">
@@ -898,6 +908,92 @@ async function loadDevices() {
   }).join('');
 }
 
+// --- Out-of-zone ---
+async function loadOutOfZone() {
+  const sub = document.getElementById('oz-sub');
+  const tbl = document.getElementById('oz-table');
+  sub.textContent = 'Загрузка…';
+  tbl.innerHTML = '<div class="loading">Загрузка…</div>';
+
+  const resp = await api('out-of-zone');
+  if (!resp || !resp.rows) {
+    sub.textContent = 'Ошибка загрузки';
+    tbl.innerHTML = '';
+    return;
+  }
+
+  const now = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  const today = now.toISOString().slice(0, 10);
+  const ts = String(now.getUTCHours()).padStart(2,'0') + ':' + String(now.getUTCMinutes()).padStart(2,'0');
+
+  const rows = resp.rows;
+  if (!rows.length) {
+    sub.textContent = `Сегодня (${today}) — выездов нет`;
+    tbl.innerHTML = '<div style="padding:16px;color:var(--text2);font-size:14px">Заказов с выездом за зону не обнаружено</div>';
+    return;
+  }
+
+  const n = rows.length;
+  sub.textContent = `Сегодня (${today}) — ${n} заказ${n===1?'':n<5?'а':'ов'} с выездом за зону · данные на ${ts}`;
+
+  const statusLabel = s => {
+    if (s === 'PAID')     return ['Оплачен',  '#4ade80'];
+    if (s === 'CANCELLED' || s === 'CANCELED') return ['Отменён', '#f87171'];
+    if (s === 'FINISHED') return ['Завершён', '#94a3b8'];
+    return [s ?? '—', '#6b7280'];
+  };
+
+  const ozKey = `oz_reviewed_${today}`;
+  const ozChecked = new Set(JSON.parse(localStorage.getItem(ozKey) || '[]').map(String));
+
+  const multiCompany = new Set(rows.map(r => r.company)).size > 1;
+
+  const renderRows = () => rows.map((r, i) => {
+    const out   = Number(r.out_sec);
+    const total = Number(r.total_sec);
+    const pct   = total > 0 ? Math.round(out / total * 100) : 0;
+    const pctColor = pct >= 50 ? '#f87171' : pct >= 20 ? '#fbbf24' : '#94a3b8';
+    const [sLabel, sColor] = statusLabel(r.pay_status);
+    const done  = ozChecked.has(String(r.order_id));
+    const companyCell = multiCompany ? `<td style="padding:8px 10px;color:#cbd5e1;font-size:12px">${(r.company||'').replace(/\s*\[.*?\]/,'').trim()}</td>` : '';
+    return `<tr data-oz-id="${r.order_id}" style="border-bottom:1px solid rgba(255,255,255,.04);${i%2===1?'background:rgba(255,255,255,.02)':''};${done?'opacity:0.35':''}">
+      <td style="padding:8px 10px;text-align:center">
+        <input type="checkbox" class="oz-check" data-id="${r.order_id}" ${done?'checked':''} style="width:15px;height:15px;cursor:pointer;accent-color:#4ade80">
+      </td>
+      <td style="padding:8px 10px;font-weight:600;color:#94a3b8">#${r.order_id}</td>
+      <td style="padding:8px 10px;font-size:12px;font-weight:600;color:${sColor}">${sLabel}</td>
+      ${companyCell}
+      <td style="padding:8px 10px;text-align:right;color:#fbbf24;font-weight:600">${out} с</td>
+      <td style="padding:8px 10px;text-align:right;color:#94a3b8">${total} с</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:700;color:${pctColor}">${pct}%</td>
+    </tr>`;
+  }).join('');
+
+  const companyTh = multiCompany ? '<th style="padding:8px 10px;text-align:left">Локация</th>' : '';
+  tbl.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr style="border-bottom:1px solid var(--navy3);color:var(--text2)">
+      <th style="padding:8px 10px;width:36px">✓</th>
+      <th style="padding:8px 10px;text-align:left">Заказ</th>
+      <th style="padding:8px 10px;text-align:left">Статус</th>
+      ${companyTh}
+      <th style="padding:8px 10px;text-align:right;white-space:nowrap">За зоной</th>
+      <th style="padding:8px 10px;text-align:right;white-space:nowrap">Весь заказ</th>
+      <th style="padding:8px 10px;text-align:right;white-space:nowrap">% за зоной</th>
+    </tr></thead>
+    <tbody>${renderRows()}</tbody>
+  </table></div>`;
+
+  tbl.querySelectorAll('.oz-check').forEach(cb => {
+    cb.addEventListener('change', function() {
+      const id = String(this.dataset.id);
+      const set = new Set(JSON.parse(localStorage.getItem(ozKey) || '[]').map(String));
+      if (this.checked) set.add(id); else set.delete(id);
+      localStorage.setItem(ozKey, JSON.stringify([...set]));
+      this.closest('tr').style.opacity = this.checked ? '0.35' : '';
+    });
+  });
+}
+
 // --- Fleet + fleet size ---
 async function loadFleet() {
   const resp = await api('fleet');
@@ -980,6 +1076,7 @@ async function loadAll() {
     loadDevices(),
     loadFleet(),
     loadTariffs(),
+    loadOutOfZone(),
   ]);
 }
 
