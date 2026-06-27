@@ -313,6 +313,25 @@
       <canvas id="activity-chart" class="chart-canvas"></canvas>
     </div>
 
+    <!-- Locations analytics -->
+    <div class="chart-wrap" id="locations-wrap" style="display:none">
+      <div class="chart-title">Выручка по локациям</div>
+      <canvas id="locations-chart" style="max-height:320px"></canvas>
+    </div>
+    <div class="table-wrap" id="locations-table-wrap" style="display:none;margin-top:-20px">
+      <table id="locations-table">
+        <thead><tr>
+          <th>Локация</th>
+          <th style="text-align:right">Выручка</th>
+          <th style="text-align:right">Заказов</th>
+          <th style="text-align:right">Ср. чек</th>
+          <th style="text-align:right">КШ</th>
+          <th style="text-align:right">Доля</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
     <!-- Tariff section -->
     <div class="table-wrap" id="tariff-wrap">
       <div class="table-header">Тарифы клиентов</div>
@@ -799,6 +818,96 @@ function parseTariff(desc) {
   return { brand, dur, dayType };
 }
 
+// --- Locations ---
+let locationsChart = null;
+
+async function loadLocations() {
+  const resp = await api('locations');
+  const chartWrap = document.getElementById('locations-wrap');
+  const tableWrap = document.getElementById('locations-table-wrap');
+
+  if (!resp || !resp.rows || resp.rows.length < 2) {
+    chartWrap.style.display = 'none';
+    tableWrap.style.display = 'none';
+    return;
+  }
+
+  const rows = resp.rows;
+  const totalRev = rows.reduce((s, r) => s + Number(r.revenue), 0);
+
+  // Strip city prefix if all names share the same city
+  const cityPrefixes = rows.map(r => (r.dot_name || '').split('|')[0].trim());
+  const sameCity = new Set(cityPrefixes).size === 1;
+  const dotLabel = r => {
+    const n = r.dot_name || `Локация ${r.dot_id}`;
+    return sameCity ? n.replace(/^[^|]+\|\s*/, '') : n;
+  };
+
+  // Chart
+  chartWrap.style.display = '';
+  tableWrap.style.display = '';
+
+  const labels   = rows.map(dotLabel);
+  const revenues = rows.map(r => Number(r.revenue));
+  const maxRev   = Math.max(...revenues);
+
+  const colors = revenues.map(v => {
+    const ratio = maxRev ? v / maxRev : 0;
+    if (ratio >= 0.8) return 'rgba(45,212,191,.75)';
+    if (ratio >= 0.5) return 'rgba(45,212,191,.50)';
+    if (ratio >= 0.25) return 'rgba(45,212,191,.30)';
+    return 'rgba(107,114,128,.40)';
+  });
+
+  if (locationsChart) locationsChart.destroy();
+  const ctx = document.getElementById('locations-chart').getContext('2d');
+  locationsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: revenues,
+        backgroundColor: colors,
+        borderColor: colors.map(c => c.replace(/[\d.]+\)$/, '1)')),
+        borderWidth: 1,
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${fmt(ctx.raw)} ₽`,
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { color: '#94a3b8', callback: v => fmt(v) + ' ₽' }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y: { ticks: { color: '#f1f5f9', font: { size: 12 } }, grid: { display: false } },
+      },
+    },
+  });
+
+  // Table
+  const tbody = document.querySelector('#locations-table tbody');
+  tbody.innerHTML = rows.map(r => {
+    const rev  = Number(r.revenue);
+    const pct  = totalRev ? Math.round(rev / totalRev * 100) : 0;
+    const pctColor = pct >= 30 ? '#2dd4bf' : pct >= 10 ? '#94a3b8' : '#6b7280';
+    return `<tr>
+      <td>${dotLabel(r)}</td>
+      <td style="text-align:right;font-weight:600;color:#4ade80">${fmt(rev)} ₽</td>
+      <td style="text-align:right;color:#94a3b8">${fmt(r.orders)}</td>
+      <td style="text-align:right;color:#94a3b8">${fmt(r.avg_check)} ₽</td>
+      <td style="text-align:right;color:#6b7280">${r.active_cars}</td>
+      <td style="text-align:right;font-weight:700;color:${pctColor}">${pct}%</td>
+    </tr>`;
+  }).join('');
+}
+
 async function loadTariffs() {
   const resp = await api('tariffs');
   const tbody = document.querySelector('#tariff-table tbody');
@@ -1073,6 +1182,7 @@ async function loadAll() {
   await Promise.all([
     summaryTask.then(r => loadSummaryWithResp(revenueResp, r)),
     renderRevenue(revenueResp),
+    loadLocations(),
     loadDevices(),
     loadFleet(),
     loadTariffs(),

@@ -1060,6 +1060,42 @@ export default {
             WHERE o.company_id IN (${idList})
               AND o.start_time >= DATE_SUB(NOW(), INTERVAL 90 DAY)
           `, env);
+        } else if (type === 'locations') {
+          rows = await grafanaSQL(`
+            SELECT o.dot_id,
+              d.name AS dot_name,
+              COUNT(*) AS orders,
+              ROUND(SUM(b.sum_card)/100) AS revenue,
+              ROUND(AVG(b.sum_card)/100) AS avg_check,
+              COUNT(DISTINCT o.car_id) AS active_cars
+            FROM orders o
+            JOIN bills b ON b.order_id=o.id
+            JOIN dots d ON d.id=o.dot_id
+            WHERE b.status='PAID'
+              AND o.company_id IN (${idList})
+              AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
+            GROUP BY o.dot_id, d.name
+            ORDER BY revenue DESC
+          `, env);
+        } else if (type === 'out-of-zone') {
+          rows = await grafanaSQL(`
+            SELECT e1.order_id,
+              SUM(TIMESTAMPDIFF(SECOND, e1.time, e2.time)) AS out_sec,
+              (SELECT status FROM bills WHERE order_id=o.id ORDER BY id DESC LIMIT 1) AS pay_status,
+              c.name AS company,
+              TIMESTAMPDIFF(SECOND, o.start_time, COALESCE(o.finish_time, NOW())) AS total_sec
+            FROM order_events e1
+            JOIN order_events e2 ON e2.order_id=e1.order_id
+              AND e2.id=(SELECT MIN(id) FROM order_events WHERE order_id=e1.order_id AND id>e1.id AND reason='GEO')
+            JOIN orders o ON e1.order_id=o.id
+            JOIN companies c ON o.company_id=c.id
+            WHERE e1.reason='GEO' AND e1.geo_id=1
+              AND DATE(o.start_time)=CURDATE()
+              AND o.company_id IN (${idList})
+            GROUP BY e1.order_id, pay_status, c.name, o.start_time, o.finish_time
+            HAVING out_sec >= 10
+            ORDER BY out_sec DESC
+          `, env);
         } else {
           return new Response(JSON.stringify({ error: 'Unknown type' }), {
             status: 400, headers: { 'Content-Type': 'application/json', ...CORS },
