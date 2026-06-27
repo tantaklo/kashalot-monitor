@@ -1253,9 +1253,14 @@
     <div class="chart-header collapsible" onclick="toggleSection('outLocBody','outLocArrow'); initOutLocSection()">
       <div>
         <div class="chart-title">📍 Кашалоты не в своей локации <span class="toggle-arrow" id="outLocArrow">▶</span></div>
-        <div class="chart-sub" id="outLocStatus">Нажмите чтобы загрузить</div>
+        <div class="chart-sub" id="outLocStatus">Нажмите чтобы загрузить · заказы вне домашней локации (dot)</div>
       </div>
-      <button onclick="event.stopPropagation(); refreshOutLoc()" style="padding:5px 12px;background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer">↺ Обновить</button>
+      <div class="spt-wrap" onclick="event.stopPropagation()">
+        <button class="spt" onclick="outLocSetPeriod(this,7)">7д</button>
+        <button class="spt active" onclick="outLocSetPeriod(this,30)">30д</button>
+        <button class="spt" onclick="outLocSetPeriod(this,90)">90д</button>
+        <button onclick="refreshOutLoc(true)" style="padding:5px 12px;background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer;margin-left:8px">↺</button>
+      </div>
     </div>
     <div class="section-body" id="outLocBody">
       <div id="outLocResult"></div>
@@ -4105,21 +4110,11 @@
     }
     // ─────────────────────────────────────────────────────────────────────────
 
-    // ─── Кашалоты не в своей локации ──────────────────────────────────────────
-    let _outLocInited = false, _outLocCacheTime = 0, _outLocCache = null;
+    // ─── Кашалоты не в своей локации (по заказам и dot_id) ─────────────────────
+    // Домашняя локация = cars.dot_id. Заказ "вне локации" = orders.dot_id != cars.dot_id.
+    let _outLocInited = false, _outLocCache = {}, outLocPeriod = 30;
 
-    // Точка в полигоне (ray casting). poly = [{lat,lng}], x=lng, y=lat
-    function pointInPoly(lat, lon, poly) {
-      let inside = false;
-      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-        const xi = poly[i].lng, yi = poly[i].lat;
-        const xj = poly[j].lng, yj = poly[j].lat;
-        const intersect = ((yi > lat) !== (yj > lat)) &&
-          (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi);
-        if (intersect) inside = !inside;
-      }
-      return inside;
-    }
+    const cityOf = name => (name || '').split('|')[0].trim();
 
     async function initOutLocSection() {
       if (_outLocInited) return;
@@ -4127,116 +4122,111 @@
       await refreshOutLoc();
     }
 
+    function outLocSetPeriod(btn, days) {
+      outLocPeriod = days;
+      document.querySelectorAll('#outLocSection .spt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      refreshOutLoc();
+    }
+
     async function refreshOutLoc(force) {
       const statusEl = document.getElementById('outLocStatus');
-      const now = Date.now();
-      if (!force && _outLocCache && now - _outLocCacheTime < 5 * 60 * 1000) {
-        renderOutLoc(_outLocCache);
+      const cached = _outLocCache[outLocPeriod];
+      if (!force && cached && Date.now() - cached.t < 5 * 60 * 1000) {
+        renderOutLoc(cached.data);
         return;
       }
       if (statusEl) statusEl.textContent = 'Загрузка…';
       try {
-        const [cars, zoneRows] = await Promise.all([
-          grafanaQuery(`
-            SELECT c.id, c.gosnomer, c.lat, c.lon, c.fuel, c.company_id,
-                   (c.cur_order_id IS NOT NULL) AS in_ride, co.name AS company
-            FROM cars c
-            LEFT JOIN companies co ON co.id = c.company_id
-            WHERE c.online=1 AND c.lat IS NOT NULL AND c.lat!=0
-              AND c.lon IS NOT NULL AND c.lon!=0
-              AND (c.hidden IS NULL OR c.hidden=0)
-          `),
-          grafanaQuery(`
-            SELECT g.id AS zone_id, g.polygons_json, gc.company_id, co.name AS company
-            FROM geozones g
-            JOIN geozones_to_companies gc ON gc.geozone_id = g.id
-            LEFT JOIN companies co ON co.id = gc.company_id
-            WHERE g.uz=1 AND g.polygons_json IS NOT NULL AND g.polygons_json != ''
-          `),
-        ]);
+        // Один запрос: машина → домашняя локация (dot) + локации её заказов
+        const rows = await grafanaQuery(`
+          SELECT o.car_id AS car_id, c.gosnomer AS gosnomer,
+                 c.dot_id AS home_id, hd.name AS home,
+                 o.dot_id AS loc_id, od.name AS loc, COUNT(*) AS cnt
+          FROM orders o
+          JOIN cars c  ON c.id = o.car_id
+          JOIN dots hd ON hd.id = c.dot_id
+          LEFT JOIN dots od ON od.id = o.dot_id
+          WHERE o.start_time >= DATE_SUB(NOW(), INTERVAL ${outLocPeriod} DAY)
+            AND o.dot_id IS NOT NULL AND c.dot_id IS NOT NULL
+          GROUP BY o.car_id, c.gosnomer, c.dot_id, hd.name, o.dot_id, od.name
+        `);
 
-        // Парсим зоны, считаем bbox, исключаем глобальные (страна/регион)
-        const zonesByCompany = {};   // company_id -> [zone]
-        const allZones = [];         // все локальные зоны (для поиска фактической локации)
-        zoneRows.forEach(z => {
-          let poly;
-          try { poly = JSON.parse(z.polygons_json); } catch { return; }
-          if (!Array.isArray(poly) || poly.length < 3) return;
-          let minLat=90, maxLat=-90, minLng=180, maxLng=-180;
-          poly.forEach(p => {
-            if (p.lat < minLat) minLat = p.lat; if (p.lat > maxLat) maxLat = p.lat;
-            if (p.lng < minLng) minLng = p.lng; if (p.lng > maxLng) maxLng = p.lng;
-          });
-          // Глобальная зона (вся страна) — исключаем: реальные локации < 1.5°
-          if ((maxLat - minLat) > 1.5 || (maxLng - minLng) > 1.5) return;
-          const zone = { company_id: z.company_id, company: z.company, poly, minLat, maxLat, minLng, maxLng };
-          (zonesByCompany[z.company_id] = zonesByCompany[z.company_id] || []).push(zone);
-          allZones.push(zone);
+        // Агрегируем по машине
+        const byCar = {};
+        rows.forEach(r => {
+          const id = r.car_id;
+          if (!byCar[id]) byCar[id] = { id, gosnomer: r.gosnomer, home: r.home, home_id: r.home_id, total: 0, out: 0, breakdown: [] };
+          const o = byCar[id];
+          const cnt = +r.cnt || 0;
+          o.total += cnt;
+          if (String(r.loc_id) !== String(r.home_id)) {
+            o.out += cnt;
+            o.breakdown.push({ loc: r.loc || ('локация ' + r.loc_id), cnt, city: cityOf(r.loc) });
+          }
         });
 
-        const zoneContains = (zone, lat, lon) =>
-          lat >= zone.minLat && lat <= zone.maxLat && lon >= zone.minLng && lon <= zone.maxLng &&
-          pointInPoly(lat, lon, zone.poly);
+        const list = Object.values(byCar).filter(c => c.out > 0).map(c => {
+          c.pct = Math.round(100 * c.out / c.total);
+          c.breakdown.sort((a, b) => b.cnt - a.cnt);
+          c.homeCity = cityOf(c.home);
+          c.otherCity = c.breakdown.some(b => b.city && b.city !== c.homeCity);
+          return c;
+        }).sort((a, b) => b.out - a.out);
 
-        const out = [];
-        cars.forEach(c => {
-          const lat = +c.lat, lon = +c.lon;
-          const homeZones = zonesByCompany[c.company_id];
-          if (!homeZones || !homeZones.length) return;        // нет домашней зоны — не можем судить
-          if (homeZones.some(z => zoneContains(z, lat, lon))) return; // дома — ок
-          // Не дома. Ищем, в чьей зоне он сейчас (исключая свою компанию)
-          const actual = allZones.find(z => z.company_id !== c.company_id && zoneContains(z, lat, lon));
-          if (!actual) return;                                // вне всех зон (в пути/шум GPS) — не флагуем
-          out.push({
-            id: c.id, gosnomer: c.gosnomer, fuel: +c.fuel || 0,
-            in_ride: !!(+c.in_ride),
-            home: c.company || ('comp ' + c.company_id),
-            actualLoc: actual.company || ('comp ' + actual.company_id),
-            lat, lon,
-          });
-        });
-        out.sort((a, b) => (b.in_ride - a.in_ride) || a.home.localeCompare(b.home));
-
-        _outLocCache = out;
-        _outLocCacheTime = now;
-        renderOutLoc(out);
+        _outLocCache[outLocPeriod] = { t: Date.now(), data: list };
+        renderOutLoc(list);
         const t = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        if (statusEl) statusEl.textContent = `${out.length} КШ не в своей локации · обновлено ${t}`;
+        if (statusEl) statusEl.textContent = `${list.length} КШ с заказами вне локации · ${outLocPeriod}д · обновлено ${t}`;
       } catch (e) {
         if (statusEl) statusEl.textContent = 'Ошибка загрузки';
         console.error('OutLoc error:', e);
       }
     }
 
-    function renderOutLoc(out) {
+    function outLocToggle(id) {
+      const el = document.getElementById('olb-' + id);
+      if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+    }
+
+    function renderOutLoc(list) {
       const el = document.getElementById('outLocResult');
-      if (!out.length) {
-        el.innerHTML = `<div style="color:#4ade80;font-size:14px;padding:12px 0">✓ Все кашалоты в своих локациях</div>`;
+      if (!list.length) {
+        el.innerHTML = `<div style="color:#4ade80;font-size:14px;padding:12px 0">✓ Нет заказов вне домашних локаций за период</div>`;
         return;
       }
-      const rows = out.map(c => {
-        const fuelColor = c.fuel > 50 ? '#4ade80' : c.fuel > 20 ? '#f59e0b' : '#f87171';
-        const mapUrl = `https://www.google.com/maps?q=${c.lat},${c.lon}`;
-        const ride = c.in_ride
-          ? `<span style="background:#2dd4bf22;color:#2dd4bf;padding:2px 7px;border-radius:5px;font-size:11px">в поездке</span>`
-          : `<span style="color:#4b5563;font-size:11px">стоит</span>`;
-        return `<tr style="border-top:1px solid #1e1e2a">
-          <td style="padding:8px 10px;font-weight:600;color:#e2e8f0">КШ-${c.id}<div style="font-size:11px;color:#6b7280;font-weight:400">${c.gosnomer || '—'}</div></td>
-          <td style="padding:8px 10px;color:#94a3b8;font-size:13px">${c.home}</td>
-          <td style="padding:8px 10px;color:#f59e0b;font-size:13px">→ ${c.actualLoc}</td>
-          <td style="padding:8px 10px;color:${fuelColor};font-weight:600">${c.fuel}%</td>
-          <td style="padding:8px 10px">${ride}</td>
-          <td style="padding:8px 10px"><a href="${mapUrl}" target="_blank" rel="noopener" style="color:#60a5fa;font-size:12px;text-decoration:none">на карте ↗</a></td>
-        </tr>`;
+      const rows = list.map(c => {
+        const pctColor = c.pct >= 70 ? '#f87171' : c.pct >= 40 ? '#f59e0b' : '#fbbf24';
+        const cityBadge = c.otherCity ? `<span style="background:#f8717122;color:#f87171;padding:1px 6px;border-radius:5px;font-size:10px;margin-left:6px">другой город</span>` : '';
+        const adminUrl = `https://gw.bumerang.tech/admin/car?dot_id=${c.home_id}`;
+        const bd = c.breakdown.map(b =>
+          `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;color:#94a3b8;border-bottom:1px solid #15151f">
+            <span>${b.loc}${(b.city && b.city !== c.homeCity) ? ' <span style="color:#f87171">·' + b.city + '</span>' : ''}</span>
+            <span style="color:#e2e8f0;font-weight:600">${b.cnt}</span>
+          </div>`).join('');
+        return `
+          <tr style="border-top:1px solid #1e1e2a;cursor:pointer" onclick="outLocToggle(${c.id})">
+            <td style="padding:8px 10px;font-weight:600;color:#e2e8f0">КШ-${c.id}<div style="font-size:11px;color:#6b7280;font-weight:400">${c.gosnomer || '—'}</div></td>
+            <td style="padding:8px 10px;color:#94a3b8;font-size:13px">${c.home}${cityBadge}</td>
+            <td style="padding:8px 10px;color:#e2e8f0">${c.out} / ${c.total}</td>
+            <td style="padding:8px 10px;color:${pctColor};font-weight:700">${c.pct}%</td>
+            <td style="padding:8px 10px;color:#6b7280;font-size:11px">▾ детали</td>
+          </tr>
+          <tr id="olb-${c.id}" style="display:none;background:#12121a">
+            <td colspan="5" style="padding:8px 14px 12px">
+              <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Заказы вне домашней локации «${c.home}»</div>
+              ${bd}
+              <a href="${adminUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;color:#60a5fa;font-size:12px;text-decoration:none">↗ Локация в админке (dot ${c.home_id})</a>
+            </td>
+          </tr>`;
       }).join('');
       el.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:14px">
           <thead><tr style="text-align:left;color:#4b5563;font-size:11px;text-transform:uppercase;letter-spacing:.04em">
             <th style="padding:6px 10px">Кашалот</th>
-            <th style="padding:6px 10px">Приписан к</th>
-            <th style="padding:6px 10px">Фактически в</th>
-            <th style="padding:6px 10px">Заряд</th>
-            <th style="padding:6px 10px">Статус</th>
+            <th style="padding:6px 10px">Домашняя локация</th>
+            <th style="padding:6px 10px">Вне / всего</th>
+            <th style="padding:6px 10px">% вне</th>
             <th style="padding:6px 10px"></th>
           </tr></thead>
           <tbody>${rows}</tbody>
