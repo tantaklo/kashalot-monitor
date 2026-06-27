@@ -1253,14 +1253,9 @@
     <div class="chart-header collapsible" onclick="toggleSection('outLocBody','outLocArrow'); initOutLocSection()">
       <div>
         <div class="chart-title">📍 Кашалоты не в своей локации <span class="toggle-arrow" id="outLocArrow">▶</span></div>
-        <div class="chart-sub" id="outLocStatus">Нажмите чтобы загрузить · поездки за день вне домашней локации</div>
+        <div class="chart-sub" id="outLocStatus">Нажмите чтобы загрузить · текущая геозона ≠ домашняя локация</div>
       </div>
-      <div class="spt-wrap" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px">
-        <button onclick="outLocShiftDay(-1)" style="padding:5px 10px;background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#94a3b8;font-size:13px;cursor:pointer">←</button>
-        <input type="date" id="outLocDate" onchange="outLocPickDate(this.value)" style="background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#e2e8f0;padding:4px 8px;font-size:12px;color-scheme:dark">
-        <button onclick="outLocShiftDay(1)" style="padding:5px 10px;background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#94a3b8;font-size:13px;cursor:pointer">→</button>
-        <button onclick="refreshOutLoc(true)" style="padding:5px 12px;background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer;margin-left:4px">↺</button>
-      </div>
+      <button onclick="event.stopPropagation(); refreshOutLoc(true)" style="padding:5px 12px;background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer">↺ Обновить</button>
     </div>
     <div class="section-body" id="outLocBody">
       <div id="outLocResult"></div>
@@ -4110,180 +4105,94 @@
     }
     // ─────────────────────────────────────────────────────────────────────────
 
-    // ─── Кашалоты не в своей локации (по заказам и dot_id) ─────────────────────
-    // Домашняя локация = cars.dot_id. Заказ "вне локации" = orders.dot_id != cars.dot_id.
-    let _outLocInited = false, _outLocCache = {}, outLocDate = null;
+    // ─── Кашалоты не в своей локации (по текущей геозоне) ──────────────────────
+    // Дом = cars.dot_id (имя из dots). Текущее положение = cars.geozones (платформа
+    // считает сама). "Не в своей локации" = имя текущей рабочей геозоны (uz=1) не
+    // совпадает с именем домашней локации. У заказов нет GPS, а order.dot_id просто
+    // дублирует прописку — поэтому по заказам это не определить, только по геозонам.
+    let _outLocInited = false, _outLocCache = null, _outLocCacheTime = 0;
 
-    const cityOf = name => (name || '').split('|')[0].trim();
-
-    function kmBetween(lat1, lon1, lat2, lon2) {
-      const R = 6371, rad = x => x * Math.PI / 180;
-      const dLa = rad(lat2 - lat1), dLo = rad(lon2 - lon1);
-      const h = Math.sin(dLa / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLo / 2) ** 2;
-      return 2 * R * Math.asin(Math.sqrt(h));
-    }
-
-    // Дописывает каждой машине из списка текущее положение (дома / в отъезде)
-    async function annotateCurrentPosition(list) {
-      if (!list.length) return;
-      const ids = list.map(c => c.id).join(',');
-      try {
-        const [pos, dotsRows] = await Promise.all([
-          grafanaQuery(`SELECT id, lat, lon FROM cars WHERE id IN (${ids})`),
-          grafanaQuery(`SELECT id, name, lat, lon FROM dots WHERE lat IS NOT NULL AND lat!=0 AND lon IS NOT NULL AND lon!=0`),
-        ]);
-        const carPos = {}; pos.forEach(r => { carPos[r.id] = { lat: +r.lat, lon: +r.lon }; });
-        const dotById = {}; const dotsArr = [];
-        dotsRows.forEach(d => { const o = { id: d.id, name: d.name, lat: +d.lat, lon: +d.lon }; dotById[d.id] = o; dotsArr.push(o); });
-        list.forEach(c => {
-          const p = carPos[c.id], home = dotById[c.home_id];
-          if (!p || !p.lat || !home) { c.nowLabel = '—'; return; }
-          const hk = kmBetween(p.lat, p.lon, home.lat, home.lon);
-          c.homeKm = Math.round(hk * 10) / 10;
-          if (hk <= 2) { c.nowHome = true; c.nowLabel = '🟢 дома'; return; }
-          // ближайшая локация к текущей точке
-          let best = null, bd = 1e9;
-          dotsArr.forEach(d => { const dd = kmBetween(p.lat, p.lon, d.lat, d.lon); if (dd < bd) { bd = dd; best = d; } });
-          c.nowHome = false;
-          c.nowLabel = '🔴 ' + ((best && bd <= 3) ? best.name : 'в пути') + ' · ' + c.homeKm + ' км';
-        });
-      } catch (e) { console.warn('annotate pos failed', e); }
-    }
+    const olNorm = s => (s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const olCity = s => olNorm(s).split('|')[0].trim();
 
     async function initOutLocSection() {
       if (_outLocInited) return;
       _outLocInited = true;
-      outLocDate = new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 10); // сегодня по МСК
-      const inp = document.getElementById('outLocDate');
-      if (inp) { inp.value = outLocDate; inp.max = outLocDate; }
       await refreshOutLoc();
-    }
-
-    function outLocPickDate(v) {
-      if (!v) return;
-      outLocDate = v;
-      refreshOutLoc();
-    }
-
-    function outLocShiftDay(delta) {
-      const d = new Date(outLocDate + 'T00:00:00');
-      d.setDate(d.getDate() + delta);
-      const today = new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 10);
-      const next = d.toISOString().slice(0, 10);
-      if (next > today) return; // не уходим в будущее
-      outLocDate = next;
-      const inp = document.getElementById('outLocDate');
-      if (inp) inp.value = outLocDate;
-      refreshOutLoc();
     }
 
     async function refreshOutLoc(force) {
       const statusEl = document.getElementById('outLocStatus');
-      const cached = _outLocCache[outLocDate];
-      if (!force && cached && Date.now() - cached.t < 5 * 60 * 1000) {
-        renderOutLoc(cached.data);
+      if (!force && _outLocCache && Date.now() - _outLocCacheTime < 5 * 60 * 1000) {
+        renderOutLoc(_outLocCache);
         return;
       }
       if (statusEl) statusEl.textContent = 'Загрузка…';
       try {
-        // Поездки за один день. Считаем только реальные: FINISHED и длительность ≥ 60 сек
-        // (отклонённые/1-секундные попытки не поездки).
-        const rows = await grafanaQuery(`
-          SELECT o.car_id AS car_id, c.gosnomer AS gosnomer,
-                 c.dot_id AS home_id, hd.name AS home,
-                 o.dot_id AS loc_id, od.name AS loc, COUNT(*) AS cnt
-          FROM orders o
-          JOIN cars c  ON c.id = o.car_id
-          JOIN dots hd ON hd.id = c.dot_id
-          LEFT JOIN dots od ON od.id = o.dot_id
-          WHERE DATE(o.start_time) = '${outLocDate}'
-            AND o.status = 'FINISHED'
-            AND TIMESTAMPDIFF(SECOND, o.start_time, o.finish_time) >= 60
-            AND o.dot_id IS NOT NULL AND c.dot_id IS NOT NULL
-          GROUP BY o.car_id, c.gosnomer, c.dot_id, hd.name, o.dot_id, od.name
-        `);
+        const [cars, gz] = await Promise.all([
+          grafanaQuery(`
+            SELECT c.id, c.gosnomer, c.online, hd.name AS home, c.geozones AS gz
+            FROM cars c
+            JOIN dots hd ON hd.id = c.dot_id
+            WHERE c.geozones IS NOT NULL AND c.geozones != '' AND c.geozones != '[]'
+              AND (c.hidden IS NULL OR c.hidden = 0)
+          `),
+          grafanaQuery(`SELECT id, name, uz FROM geozones`),
+        ]);
+        const gzName = {}, gzUz = {};
+        gz.forEach(g => { gzName[g.id] = g.name; gzUz[g.id] = +g.uz; });
+        // Имена существующих рабочих зон (uz=1, без глобальной RU id=1)
+        const uzNames = new Set();
+        gz.forEach(g => { if (+g.uz === 1 && +g.id !== 1) uzNames.add(olNorm(g.name)); });
 
-        // Агрегируем по машине
-        const byCar = {};
-        rows.forEach(r => {
-          const id = r.car_id;
-          if (!byCar[id]) byCar[id] = { id, gosnomer: r.gosnomer, home: r.home, home_id: r.home_id, total: 0, out: 0, breakdown: [] };
-          const o = byCar[id];
-          const cnt = +r.cnt || 0;
-          o.total += cnt;
-          if (String(r.loc_id) !== String(r.home_id)) {
-            o.out += cnt;
-            o.breakdown.push({ loc: r.loc || ('локация ' + r.loc_id), cnt, city: cityOf(r.loc) });
-          }
+        const out = [];
+        cars.forEach(c => {
+          const hn = olNorm(c.home);
+          if (hn === 'ru' || !uzNames.has(hn)) return;     // дом без рабочей зоны — не с чем сравнивать
+          let zones; try { zones = JSON.parse(c.gz); } catch { return; }
+          const cur = zones.filter(z => z !== 1 && gzUz[z] === 1 && gzName[z]).map(z => gzName[z]);
+          if (!cur.length) return;                          // только глобальная зона — вне рабочих зон, пропуск
+          if (cur.some(x => olNorm(x) === hn)) return;      // дома
+          const diffCity = cur.some(x => olCity(x) !== olCity(c.home));
+          out.push({ id: c.id, gosnomer: c.gosnomer, online: !!(+c.online), home: c.home, cur: cur.join(', '), diffCity });
         });
+        out.sort((a, b) => (b.online - a.online) || (b.diffCity - a.diffCity) || a.home.localeCompare(b.home));
 
-        const list = Object.values(byCar).filter(c => c.out > 0).map(c => {
-          c.pct = Math.round(100 * c.out / c.total);
-          c.breakdown.sort((a, b) => b.cnt - a.cnt);
-          c.homeCity = cityOf(c.home);
-          c.otherCity = c.breakdown.some(b => b.city && b.city !== c.homeCity);
-          return c;
-        }).sort((a, b) => b.out - a.out);
-
-        // Текущее положение каждой машины (дома / в отъезде)
-        await annotateCurrentPosition(list);
-
-        _outLocCache[outLocDate] = { t: Date.now(), data: list };
-        renderOutLoc(list);
+        _outLocCache = out; _outLocCacheTime = Date.now();
+        renderOutLoc(out);
+        const onl = out.filter(o => o.online).length;
         const t = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        if (statusEl) statusEl.textContent = `${list.length} КШ с поездками вне локации · ${outLocDate} · обновлено ${t}`;
+        if (statusEl) statusEl.textContent = `${out.length} КШ не в своей локации (${onl} онлайн) · обновлено ${t}`;
       } catch (e) {
         if (statusEl) statusEl.textContent = 'Ошибка загрузки';
         console.error('OutLoc error:', e);
       }
     }
 
-    function outLocToggle(id) {
-      const el = document.getElementById('olb-' + id);
-      if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
-    }
-
-    function renderOutLoc(list) {
+    function renderOutLoc(out) {
       const el = document.getElementById('outLocResult');
-      if (!list.length) {
-        el.innerHTML = `<div style="color:#4ade80;font-size:14px;padding:12px 0">✓ Нет поездок вне домашних локаций за этот день</div>`;
+      if (!out.length) {
+        el.innerHTML = `<div style="color:#4ade80;font-size:14px;padding:12px 0">✓ Все кашалоты в своих локациях</div>`;
         return;
       }
-      const rows = list.map(c => {
-        const pctColor = c.pct >= 70 ? '#f87171' : c.pct >= 40 ? '#f59e0b' : '#fbbf24';
-        const cityBadge = c.otherCity ? `<span style="background:#f8717122;color:#f87171;padding:1px 6px;border-radius:5px;font-size:10px;margin-left:6px">другой город</span>` : '';
+      const rows = out.map(c => {
         const carUrl = `https://gw.bumerang.tech/admin/car/${c.id}`;
-        const bd = c.breakdown.map(b =>
-          `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;color:#94a3b8;border-bottom:1px solid #15151f">
-            <span>${b.loc}${(b.city && b.city !== c.homeCity) ? ' <span style="color:#f87171">·' + b.city + '</span>' : ''}</span>
-            <span style="color:#e2e8f0;font-weight:600">${b.cnt}</span>
-          </div>`).join('');
-        return `
-          <tr style="border-top:1px solid #1e1e2a;cursor:pointer" onclick="outLocToggle(${c.id})">
-            <td style="padding:8px 10px;font-weight:600"><a href="${carUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#60a5fa;text-decoration:none">КШ-${c.id}</a><div style="font-size:11px;color:#6b7280;font-weight:400">${c.gosnomer || '—'}</div></td>
-            <td style="padding:8px 10px;color:#94a3b8;font-size:13px">${c.home}${cityBadge}</td>
-            <td style="padding:8px 10px;color:#e2e8f0">${c.out} / ${c.total}</td>
-            <td style="padding:8px 10px;color:${pctColor};font-weight:700">${c.pct}%</td>
-            <td style="padding:8px 10px;font-size:12px;color:${c.nowHome ? '#4ade80' : '#f87171'}">${c.nowLabel || '—'}</td>
-            <td style="padding:8px 10px;color:#6b7280;font-size:11px">▾ детали</td>
-          </tr>
-          <tr id="olb-${c.id}" style="display:none;background:#12121a">
-            <td colspan="6" style="padding:8px 14px 12px">
-              <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Поездки вне домашней локации «${c.home}» за ${outLocDate}</div>
-              ${bd}
-              <a href="${carUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;color:#60a5fa;font-size:12px;text-decoration:none">↗ Открыть КШ-${c.id} в админке</a>
-            </td>
-          </tr>`;
+        const cityBadge = c.diffCity ? `<span style="background:#f8717122;color:#f87171;padding:1px 6px;border-radius:5px;font-size:10px;margin-left:6px">другой город</span>` : '';
+        const online = c.online ? `<span style="color:#4ade80">● онлайн</span>` : `<span style="color:#6b7280">○ офлайн</span>`;
+        return `<tr style="border-top:1px solid #1e1e2a">
+          <td style="padding:8px 10px;font-weight:600"><a href="${carUrl}" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:none">КШ-${c.id}</a><div style="font-size:11px;color:#6b7280;font-weight:400">${c.gosnomer || '—'}</div></td>
+          <td style="padding:8px 10px;color:#94a3b8;font-size:13px">${c.home}</td>
+          <td style="padding:8px 10px;color:#f59e0b;font-size:13px">→ ${c.cur}${cityBadge}</td>
+          <td style="padding:8px 10px;font-size:12px">${online}</td>
+        </tr>`;
       }).join('');
       el.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:14px">
           <thead><tr style="text-align:left;color:#4b5563;font-size:11px;text-transform:uppercase;letter-spacing:.04em">
             <th style="padding:6px 10px">Кашалот</th>
-            <th style="padding:6px 10px">Домашняя локация</th>
-            <th style="padding:6px 10px">Поездок вне / всего</th>
-            <th style="padding:6px 10px">% вне</th>
-            <th style="padding:6px 10px">Сейчас</th>
-            <th style="padding:6px 10px"></th>
+            <th style="padding:6px 10px">Приписан к (локация)</th>
+            <th style="padding:6px 10px">Сейчас в геозоне</th>
+            <th style="padding:6px 10px">Связь</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
