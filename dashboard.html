@@ -1253,13 +1253,13 @@
     <div class="chart-header collapsible" onclick="toggleSection('outLocBody','outLocArrow'); initOutLocSection()">
       <div>
         <div class="chart-title">📍 Кашалоты не в своей локации <span class="toggle-arrow" id="outLocArrow">▶</span></div>
-        <div class="chart-sub" id="outLocStatus">Нажмите чтобы загрузить · заказы вне домашней локации (dot)</div>
+        <div class="chart-sub" id="outLocStatus">Нажмите чтобы загрузить · поездки за день вне домашней локации</div>
       </div>
-      <div class="spt-wrap" onclick="event.stopPropagation()">
-        <button class="spt" onclick="outLocSetPeriod(this,7)">7д</button>
-        <button class="spt active" onclick="outLocSetPeriod(this,30)">30д</button>
-        <button class="spt" onclick="outLocSetPeriod(this,90)">90д</button>
-        <button onclick="refreshOutLoc(true)" style="padding:5px 12px;background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer;margin-left:8px">↺</button>
+      <div class="spt-wrap" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px">
+        <button onclick="outLocShiftDay(-1)" style="padding:5px 10px;background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#94a3b8;font-size:13px;cursor:pointer">←</button>
+        <input type="date" id="outLocDate" onchange="outLocPickDate(this.value)" style="background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#e2e8f0;padding:4px 8px;font-size:12px;color-scheme:dark">
+        <button onclick="outLocShiftDay(1)" style="padding:5px 10px;background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#94a3b8;font-size:13px;cursor:pointer">→</button>
+        <button onclick="refreshOutLoc(true)" style="padding:5px 12px;background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer;margin-left:4px">↺</button>
       </div>
     </div>
     <div class="section-body" id="outLocBody">
@@ -4112,7 +4112,7 @@
 
     // ─── Кашалоты не в своей локации (по заказам и dot_id) ─────────────────────
     // Домашняя локация = cars.dot_id. Заказ "вне локации" = orders.dot_id != cars.dot_id.
-    let _outLocInited = false, _outLocCache = {}, outLocPeriod = 30;
+    let _outLocInited = false, _outLocCache = {}, outLocDate = null;
 
     const cityOf = name => (name || '').split('|')[0].trim();
 
@@ -4153,26 +4153,41 @@
     async function initOutLocSection() {
       if (_outLocInited) return;
       _outLocInited = true;
+      outLocDate = new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 10); // сегодня по МСК
+      const inp = document.getElementById('outLocDate');
+      if (inp) { inp.value = outLocDate; inp.max = outLocDate; }
       await refreshOutLoc();
     }
 
-    function outLocSetPeriod(btn, days) {
-      outLocPeriod = days;
-      document.querySelectorAll('#outLocSection .spt').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+    function outLocPickDate(v) {
+      if (!v) return;
+      outLocDate = v;
+      refreshOutLoc();
+    }
+
+    function outLocShiftDay(delta) {
+      const d = new Date(outLocDate + 'T00:00:00');
+      d.setDate(d.getDate() + delta);
+      const today = new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 10);
+      const next = d.toISOString().slice(0, 10);
+      if (next > today) return; // не уходим в будущее
+      outLocDate = next;
+      const inp = document.getElementById('outLocDate');
+      if (inp) inp.value = outLocDate;
       refreshOutLoc();
     }
 
     async function refreshOutLoc(force) {
       const statusEl = document.getElementById('outLocStatus');
-      const cached = _outLocCache[outLocPeriod];
+      const cached = _outLocCache[outLocDate];
       if (!force && cached && Date.now() - cached.t < 5 * 60 * 1000) {
         renderOutLoc(cached.data);
         return;
       }
       if (statusEl) statusEl.textContent = 'Загрузка…';
       try {
-        // Один запрос: машина → домашняя локация (dot) + локации её заказов
+        // Поездки за один день. Считаем только реальные: FINISHED и длительность ≥ 60 сек
+        // (отклонённые/1-секундные попытки не поездки).
         const rows = await grafanaQuery(`
           SELECT o.car_id AS car_id, c.gosnomer AS gosnomer,
                  c.dot_id AS home_id, hd.name AS home,
@@ -4181,7 +4196,9 @@
           JOIN cars c  ON c.id = o.car_id
           JOIN dots hd ON hd.id = c.dot_id
           LEFT JOIN dots od ON od.id = o.dot_id
-          WHERE o.start_time >= DATE_SUB(NOW(), INTERVAL ${outLocPeriod} DAY)
+          WHERE DATE(o.start_time) = '${outLocDate}'
+            AND o.status = 'FINISHED'
+            AND TIMESTAMPDIFF(SECOND, o.start_time, o.finish_time) >= 60
             AND o.dot_id IS NOT NULL AND c.dot_id IS NOT NULL
           GROUP BY o.car_id, c.gosnomer, c.dot_id, hd.name, o.dot_id, od.name
         `);
@@ -4211,10 +4228,10 @@
         // Текущее положение каждой машины (дома / в отъезде)
         await annotateCurrentPosition(list);
 
-        _outLocCache[outLocPeriod] = { t: Date.now(), data: list };
+        _outLocCache[outLocDate] = { t: Date.now(), data: list };
         renderOutLoc(list);
         const t = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        if (statusEl) statusEl.textContent = `${list.length} КШ с заказами вне локации · ${outLocPeriod}д · обновлено ${t}`;
+        if (statusEl) statusEl.textContent = `${list.length} КШ с поездками вне локации · ${outLocDate} · обновлено ${t}`;
       } catch (e) {
         if (statusEl) statusEl.textContent = 'Ошибка загрузки';
         console.error('OutLoc error:', e);
@@ -4229,7 +4246,7 @@
     function renderOutLoc(list) {
       const el = document.getElementById('outLocResult');
       if (!list.length) {
-        el.innerHTML = `<div style="color:#4ade80;font-size:14px;padding:12px 0">✓ Нет заказов вне домашних локаций за период</div>`;
+        el.innerHTML = `<div style="color:#4ade80;font-size:14px;padding:12px 0">✓ Нет поездок вне домашних локаций за этот день</div>`;
         return;
       }
       const rows = list.map(c => {
@@ -4252,7 +4269,7 @@
           </tr>
           <tr id="olb-${c.id}" style="display:none;background:#12121a">
             <td colspan="6" style="padding:8px 14px 12px">
-              <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Заказы вне домашней локации «${c.home}»</div>
+              <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Поездки вне домашней локации «${c.home}» за ${outLocDate}</div>
               ${bd}
               <a href="${adminUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;color:#60a5fa;font-size:12px;text-decoration:none">↗ Локация в админке (dot ${c.home_id})</a>
             </td>
@@ -4263,7 +4280,7 @@
           <thead><tr style="text-align:left;color:#4b5563;font-size:11px;text-transform:uppercase;letter-spacing:.04em">
             <th style="padding:6px 10px">Кашалот</th>
             <th style="padding:6px 10px">Домашняя локация</th>
-            <th style="padding:6px 10px">Вне / всего</th>
+            <th style="padding:6px 10px">Поездок вне / всего</th>
             <th style="padding:6px 10px">% вне</th>
             <th style="padding:6px 10px">Сейчас</th>
             <th style="padding:6px 10px"></th>
