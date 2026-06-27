@@ -168,11 +168,11 @@
   {
     "date": "2026-06-27",
     "active_objects": 1,
-    "max_available": 207,
+    "max_available": 209,
     "min_available": 207,
-    "peak_rented": 0,
+    "peak_rented": 2,
     "offline": 1785,
-    "total": 1992,
-    "scans": 1
+    "total": 1994,
+    "scans": 2
   }
 ]
