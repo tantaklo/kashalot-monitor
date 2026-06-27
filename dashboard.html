@@ -1184,6 +1184,51 @@
       <div class="found-list" id="foundList"></div>
     </div>
 
+  <!-- Прошивки трекеров -->
+  <div class="chart-card" id="firmwareSection" style="margin-top:16px">
+    <div class="chart-header collapsible" onclick="toggleSection('firmwareBody','firmwareArrow'); initFirmwareSection()">
+      <div>
+        <div class="chart-title">🔧 Прошивки трекеров <span class="toggle-arrow" id="firmwareArrow">▶</span></div>
+        <div class="chart-sub" id="firmwareStatus">Нажмите чтобы загрузить</div>
+      </div>
+      <div class="spt-wrap" onclick="event.stopPropagation()">
+        <button class="spt active" id="fwPeriod7"  onclick="fwSetPeriod(this,7)">7д</button>
+        <button class="spt" id="fwPeriod30" onclick="fwSetPeriod(this,30)">30д</button>
+        <button class="spt" id="fwPeriod90" onclick="fwSetPeriod(this,90)">90д</button>
+        <button class="spt" id="fwPeriodAll" onclick="fwSetPeriod(this,0)">Всё</button>
+      </div>
+    </div>
+    <div class="section-body" id="firmwareBody">
+      <!-- KPI -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:4px 0 16px">
+        <div class="fleet-kpi">
+          <div class="fleet-kpi-val" style="color:#e2e8f0" id="fwTotal">—</div>
+          <div class="fleet-kpi-label">Всего трекеров</div>
+        </div>
+        <div class="fleet-kpi">
+          <div class="fleet-kpi-val" style="color:#4ade80" id="fwConnected">—</div>
+          <div class="fleet-kpi-label">С прошивкой</div>
+        </div>
+        <div class="fleet-kpi">
+          <div class="fleet-kpi-val" style="color:#6b7280" id="fwBlank">—</div>
+          <div class="fleet-kpi-label">Болванки (не подключены)</div>
+        </div>
+        <div class="fleet-kpi">
+          <div class="fleet-kpi-val" style="color:#60a5fa" id="fwVersions">—</div>
+          <div class="fleet-kpi-label">Уникальных версий</div>
+        </div>
+      </div>
+
+      <!-- Динамика во времени -->
+      <div class="rev-chart-title" style="margin-bottom:6px">Динамика версий во времени <span style="color:#6b7280;font-size:11px">· накапливается ежедневно</span></div>
+      <div class="rev-chart-wrap" style="height:300px"><canvas id="fwTrendChart"></canvas></div>
+
+      <!-- Текущее распределение -->
+      <div class="rev-chart-title" style="margin:18px 0 6px">Текущее распределение по версиям</div>
+      <div class="rev-chart-wrap" style="height:360px"><canvas id="fwDistChart"></canvas></div>
+    </div>
+  </div>
+
   <!-- Карта КШ -->
   <div class="chart-card" id="mapSection" style="margin-top:16px">
     <div class="chart-header collapsible" onclick="toggleSection('mapBody','mapArrow'); initMapSection()">
@@ -3904,6 +3949,148 @@
     const PA_WORKER = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev';
     const PA_TOKEN  = GRAFANA_TOKEN;
     let _paPartners  = [];
+    // ─── Прошивки трекеров ────────────────────────────────────────────────────
+    let _fwInited = false, _fwTrendChart = null, _fwDistChart = null;
+    let fwCurrent = null, fwHistory = [], fwTrendPeriod = 7;
+
+    // Палитра: SCO2 (новое поколение) — холодные, SCO (старое) — тёплые
+    const FW_PALETTE = ['#60a5fa','#2dd4bf','#a78bfa','#4ade80','#38bdf8','#818cf8','#34d399','#22d3ee','#f59e0b','#fb923c','#f87171','#fbbf24'];
+    function fwColor(name, i) {
+      if (name === 'Болванки') return '#374151';
+      if (name === 'Прочие')   return '#6b7280';
+      return FW_PALETTE[i % FW_PALETTE.length];
+    }
+
+    async function initFirmwareSection() {
+      if (_fwInited) return;
+      _fwInited = true;
+      await loadFirmwareData();
+    }
+
+    async function loadFirmwareData() {
+      const statusEl = document.getElementById('firmwareStatus');
+      if (statusEl) statusEl.textContent = 'Загрузка…';
+      try {
+        // Текущее распределение — живой запрос (всегда актуально)
+        const rows = await grafanaQuery(`
+          SELECT JSON_UNQUOTE(JSON_EXTRACT(params, '$.version')) AS fw, COUNT(*) AS cnt
+          FROM cars GROUP BY fw ORDER BY cnt DESC
+        `);
+        let total = 0, blank = 0; const versions = {};
+        rows.forEach(r => {
+          const c = +r.cnt || 0; total += c;
+          if (r.fw == null || String(r.fw).toLowerCase() === 'null') blank += c;
+          else versions[r.fw] = c;
+        });
+        fwCurrent = { total, blank, connected: total - blank, versions };
+
+        // История — для динамики во времени (накапливается ежедневно)
+        fwHistory = await fetch('./data/firmware-history.json?t=' + Date.now())
+          .then(r => r.ok ? r.json() : []).catch(() => []);
+
+        renderFirmwareKPI();
+        renderFwDist();
+        renderFwTrend();
+
+        const t = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        if (statusEl) statusEl.textContent = `${total.toLocaleString('ru-RU')} трекеров · обновлено ${t}`;
+      } catch (e) {
+        if (statusEl) statusEl.textContent = 'Ошибка загрузки';
+        console.error('Firmware error:', e);
+      }
+    }
+
+    function renderFirmwareKPI() {
+      if (!fwCurrent) return;
+      document.getElementById('fwTotal').textContent     = fwCurrent.total.toLocaleString('ru-RU');
+      document.getElementById('fwConnected').textContent = fwCurrent.connected.toLocaleString('ru-RU');
+      document.getElementById('fwBlank').textContent     = fwCurrent.blank.toLocaleString('ru-RU');
+      document.getElementById('fwVersions').textContent  = Object.keys(fwCurrent.versions).length;
+    }
+
+    function renderFwDist() {
+      if (!fwCurrent) return;
+      const entries = Object.entries(fwCurrent.versions).sort((a, b) => b[1] - a[1]);
+      const labels = entries.map(e => e[0]);
+      const data   = entries.map(e => e[1]);
+      // SCO2 — синий, SCO — оранжевый (разные поколения)
+      const colors = labels.map(l => l.startsWith('SCO2') ? '#60a5fa' : '#f59e0b');
+
+      if (_fwDistChart) { _fwDistChart.destroy(); _fwDistChart = null; }
+      _fwDistChart = new Chart(document.getElementById('fwDistChart'), {
+        type: 'bar',
+        data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 4 }] },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { backgroundColor: '#1a1a24', borderColor: '#2d2d3d', borderWidth: 1,
+              callbacks: { label: ctx => ctx.parsed.x + ' КШ' } }
+          },
+          scales: {
+            x: { grid: { color: 'rgba(148,163,184,0.06)' }, ticks: { color: '#6b7280' } },
+            y: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } }
+          }
+        }
+      });
+    }
+
+    function renderFwTrend() {
+      const slice = fwTrendPeriod > 0 ? fwHistory.slice(-fwTrendPeriod) : fwHistory;
+      const labels = slice.map(r => { const [,m,d] = r.date.split('-'); return d + '.' + m; });
+
+      // Берём топ-8 версий по последнему снимку, остальное — «Прочие»
+      const last = slice[slice.length - 1] || { versions: {} };
+      const topVers = Object.entries(last.versions || {}).sort((a, b) => b[1] - a[1]).slice(0, 8).map(e => e[0]);
+
+      const datasets = topVers.map((v, i) => ({
+        label: v,
+        data: slice.map(r => r.versions?.[v] ?? 0),
+        borderColor: fwColor(v, i), backgroundColor: fwColor(v, i) + '55',
+        borderWidth: 2, pointRadius: slice.length < 20 ? 2 : 0, fill: true, tension: 0.3
+      }));
+      // Прочие версии
+      datasets.push({
+        label: 'Прочие',
+        data: slice.map(r => {
+          const all = Object.entries(r.versions || {});
+          return all.filter(([k]) => !topVers.includes(k)).reduce((s, [, v]) => s + v, 0);
+        }),
+        borderColor: fwColor('Прочие'), backgroundColor: fwColor('Прочие') + '55',
+        borderWidth: 1.5, pointRadius: 0, fill: true, tension: 0.3
+      });
+
+      if (_fwTrendChart) { _fwTrendChart.destroy(); _fwTrendChart = null; }
+      _fwTrendChart = new Chart(document.getElementById('fwTrendChart'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { color: '#6b7280', boxWidth: 12, padding: 10, font: { size: 11 } } },
+            tooltip: { backgroundColor: '#1a1a24', borderColor: '#2d2d3d', borderWidth: 1 }
+          },
+          scales: {
+            x: { stacked: true, grid: { color: 'rgba(148,163,184,0.06)' }, ticks: { color: '#6b7280', maxTicksLimit: 14 } },
+            y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(148,163,184,0.06)' }, ticks: { color: '#6b7280' } }
+          }
+        }
+      });
+      if (slice.length < 2) {
+        const st = document.getElementById('firmwareStatus');
+        // подсказка: динамика появится со временем
+      }
+    }
+
+    function fwSetPeriod(btn, days) {
+      fwTrendPeriod = days;
+      document.querySelectorAll('#firmwareSection .spt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderFwTrend();
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // ─── Карта КШ ────────────────────────────────────────────────────────────
     let _mapInited = false, _mapInstance = null, _mapMarkers = [];
     let _mapCacheTime = 0, _mapCacheData = null;

@@ -134,6 +134,35 @@ async function fetchOrdersStats(date) {
   return slots;
 }
 
+async function fetchFirmware() {
+  // Распределение трекеров по версиям прошивки.
+  // Версия лежит в JSON-поле params как $.version (например "SCO-5.30", "SCO2-1.72").
+  // params = NULL → пустая болванка, ещё не подключалась.
+  const rows = await grafanaQuery(`
+    SELECT
+      JSON_UNQUOTE(JSON_EXTRACT(params, '$.version')) AS fw,
+      COUNT(*) AS cnt
+    FROM cars
+    GROUP BY fw
+    ORDER BY cnt DESC
+  `);
+
+  let total = 0, blank = 0;
+  const versions = {};
+  rows.forEach(r => {
+    const cnt = +r.cnt || 0;
+    total += cnt;
+    // NULL params (fw === null) или версия "null" — болванка без прошивки
+    if (r.fw == null || String(r.fw).toLowerCase() === 'null') {
+      blank += cnt;
+    } else {
+      versions[r.fw] = cnt;
+    }
+  });
+
+  return { total, blank, connected: total - blank, versions };
+}
+
 async function fetchTopCars(date) {
   const ids = ALL_COMPANY_IDS.join(',');
   const rows = await grafanaQuery(`
@@ -224,6 +253,25 @@ async function main() {
   }
   const n3 = saveJson(carsPath, carsHistory, today, { date: today, cars });
   console.log(`Сохранено top-cars-daily.json (${n3} записей)`);
+
+  // --- firmware-history.json: снимок версий прошивки трекеров ---
+  console.log('Запрашиваем версии прошивки трекеров...');
+  const fw = await fetchFirmware();
+  console.log(`Трекеров всего: ${fw.total} | с прошивкой: ${fw.connected} | болванок: ${fw.blank} | версий: ${Object.keys(fw.versions).length}`);
+
+  const fwPath = path.join(__dirname, 'data', 'firmware-history.json');
+  let fwHistory = [];
+  if (fs.existsSync(fwPath)) {
+    try { fwHistory = JSON.parse(fs.readFileSync(fwPath, 'utf-8')); } catch {}
+  }
+  const n4 = saveJson(fwPath, fwHistory, today, {
+    date: today,
+    total: fw.total,
+    connected: fw.connected,
+    blank: fw.blank,
+    versions: fw.versions,
+  });
+  console.log(`Сохранено firmware-history.json (${n4} записей)`);
 
   // --- history.json: дописываем активность в запись за сегодня ---
   const histPath = path.join(__dirname, 'data', 'history.json');
