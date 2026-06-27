@@ -4252,7 +4252,7 @@
       const rows = list.map(c => {
         const pctColor = c.pct >= 70 ? '#f87171' : c.pct >= 40 ? '#f59e0b' : '#fbbf24';
         const cityBadge = c.otherCity ? `<span style="background:#f8717122;color:#f87171;padding:1px 6px;border-radius:5px;font-size:10px;margin-left:6px">другой город</span>` : '';
-        const adminUrl = `https://gw.bumerang.tech/admin/car?dot_id=${c.home_id}`;
+        const carUrl = `https://gw.bumerang.tech/admin/car/${c.id}`;
         const bd = c.breakdown.map(b =>
           `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;color:#94a3b8;border-bottom:1px solid #15151f">
             <span>${b.loc}${(b.city && b.city !== c.homeCity) ? ' <span style="color:#f87171">·' + b.city + '</span>' : ''}</span>
@@ -4260,7 +4260,7 @@
           </div>`).join('');
         return `
           <tr style="border-top:1px solid #1e1e2a;cursor:pointer" onclick="outLocToggle(${c.id})">
-            <td style="padding:8px 10px;font-weight:600;color:#e2e8f0">КШ-${c.id}<div style="font-size:11px;color:#6b7280;font-weight:400">${c.gosnomer || '—'}</div></td>
+            <td style="padding:8px 10px;font-weight:600"><a href="${carUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#60a5fa;text-decoration:none">КШ-${c.id}</a><div style="font-size:11px;color:#6b7280;font-weight:400">${c.gosnomer || '—'}</div></td>
             <td style="padding:8px 10px;color:#94a3b8;font-size:13px">${c.home}${cityBadge}</td>
             <td style="padding:8px 10px;color:#e2e8f0">${c.out} / ${c.total}</td>
             <td style="padding:8px 10px;color:${pctColor};font-weight:700">${c.pct}%</td>
@@ -4271,7 +4271,7 @@
             <td colspan="6" style="padding:8px 14px 12px">
               <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Поездки вне домашней локации «${c.home}» за ${outLocDate}</div>
               ${bd}
-              <a href="${adminUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;color:#60a5fa;font-size:12px;text-decoration:none">↗ Локация в админке (dot ${c.home_id})</a>
+              <a href="${carUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;color:#60a5fa;font-size:12px;text-decoration:none">↗ Открыть КШ-${c.id} в админке</a>
             </td>
           </tr>`;
       }).join('');
