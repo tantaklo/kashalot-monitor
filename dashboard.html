@@ -3854,7 +3854,8 @@
           grafanaQuery(`SELECT COUNT(*) n FROM cars WHERE online=1 AND fuel>0 AND fuel<20 AND (hidden IS NULL OR hidden=0)`).catch(() => [{ n: 0 }]),
           grafanaQuery(`SELECT COUNT(DISTINCT o.car_id) n FROM order_events e JOIN orders o ON o.id=e.order_id WHERE e.reason='GEO' AND e.geo_id=1 AND DATE(o.start_time)='${today}'`).catch(() => [{ n: 0 }]),
         ]);
-        const outLocOnline = outLoc.filter(o => o.online).length;
+        const _fx = olFixedSet();
+        const outLocOnline = outLoc.filter(o => o.online && !_fx.has(olFixedKey(o))).length;
         const idle = +(idleRows[0]?.n || 0);
         const batt = +(battRows[0]?.n || 0);
         const oz = +(ozRows[0]?.n || 0);
@@ -4170,7 +4171,7 @@
     // Вычисляет список «не в своей локации» (кеш 5 мин). Общая для панели и секции.
     async function computeOutLoc(force) {
       if (!force && _outLocCache && Date.now() - _outLocCacheTime < 5 * 60 * 1000) return _outLocCache;
-      const [cars, gz] = await Promise.all([
+      const [cars, gz, dots] = await Promise.all([
         grafanaQuery(`
           SELECT c.id, c.gosnomer, c.online, hd.name AS home, c.geozones AS gz
           FROM cars c
@@ -4179,11 +4180,15 @@
             AND (c.hidden IS NULL OR c.hidden = 0)
         `),
         grafanaQuery(`SELECT id, name, uz FROM geozones`),
+        grafanaQuery(`SELECT id, name FROM dots`),
       ]);
       const gzName = {}, gzUz = {};
       gz.forEach(g => { gzName[g.id] = g.name; gzUz[g.id] = +g.uz; });
       const uzNames = new Set();
       gz.forEach(g => { if (+g.uz === 1 && +g.id !== 1) uzNames.add(olNorm(g.name)); });
+      // Имя локации (dot) → {id,name}, чтобы подсказать целевой dot для переназначения
+      const dotByName = {};
+      dots.forEach(d => { if (!dotByName[olNorm(d.name)]) dotByName[olNorm(d.name)] = { id: d.id, name: d.name }; });
 
       const out = [];
       cars.forEach(c => {
@@ -4194,7 +4199,9 @@
         if (!cur.length) return;                          // только глобальная зона — пропуск
         if (cur.some(x => olNorm(x) === hn)) return;      // дома
         const diffCity = cur.some(x => olCity(x) !== olCity(c.home));
-        out.push({ id: c.id, gosnomer: c.gosnomer, online: !!(+c.online), home: c.home, cur: cur.join(', '), diffCity });
+        // Целевой dot = локация с именем как у текущей геозоны (первое совпадение)
+        const target = cur.map(x => dotByName[olNorm(x)]).find(Boolean) || null;
+        out.push({ id: c.id, gosnomer: c.gosnomer, online: !!(+c.online), home: c.home, cur: cur.join(', '), target, diffCity });
       });
       out.sort((a, b) => (b.online - a.online) || (b.diffCity - a.diffCity) || a.home.localeCompare(b.home));
       _outLocCache = out; _outLocCacheTime = Date.now();
@@ -4216,33 +4223,66 @@
       }
     }
 
+    // Отметки «исправлено» хранятся в браузере. Ключ = id + текущая геозона:
+    // если ситуация изменится (новое несоответствие), отметка сбросится и строка вернётся.
+    let _outLocShowFixed = false;
+    function olFixedSet() {
+      try { return new Set(JSON.parse(localStorage.getItem('outLocFixed') || '[]')); } catch { return new Set(); }
+    }
+    function olFixedKey(c) { return c.id + '|' + olNorm(c.cur); }
+    function outLocToggleFixed(id, key, checked) {
+      const set = olFixedSet();
+      if (checked) set.add(key); else set.delete(key);
+      localStorage.setItem('outLocFixed', JSON.stringify([...set]));
+      renderOutLoc(_outLocCache || []);
+    }
+    function outLocShowFixed(v) { _outLocShowFixed = v; renderOutLoc(_outLocCache || []); }
+
     function renderOutLoc(out) {
       const el = document.getElementById('outLocResult');
       if (!out.length) {
         el.innerHTML = `<div style="color:#4ade80;font-size:14px;padding:12px 0">✓ Все кашалоты в своих локациях</div>`;
         return;
       }
-      const rows = out.map(c => {
+      const fixed = olFixedSet();
+      const hiddenCount = out.filter(c => fixed.has(olFixedKey(c))).length;
+      const visible = _outLocShowFixed ? out : out.filter(c => !fixed.has(olFixedKey(c)));
+
+      const rows = visible.map(c => {
         const carUrl = `https://gw.bumerang.tech/admin/car/${c.id}`;
         const cityBadge = c.diffCity ? `<span style="background:#f8717122;color:#f87171;padding:1px 6px;border-radius:5px;font-size:10px;margin-left:6px">другой город</span>` : '';
         const online = c.online ? `<span style="color:#4ade80">● онлайн</span>` : `<span style="color:#6b7280">○ офлайн</span>`;
-        return `<tr style="border-top:1px solid #1e1e2a">
+        const target = c.target
+          ? `<span style="color:#e2e8f0">${c.target.name}</span> <span style="color:#4b5563;font-size:11px">dot ${c.target.id}</span>`
+          : `<span style="color:#4b5563;font-size:12px">—</span>`;
+        const key = olFixedKey(c);
+        const isFixed = fixed.has(key);
+        return `<tr style="border-top:1px solid #1e1e2a${isFixed ? ';opacity:.45' : ''}">
           <td style="padding:8px 10px;font-weight:600"><a href="${carUrl}" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:none">КШ-${c.id}</a><div style="font-size:11px;color:#6b7280;font-weight:400">${c.gosnomer || '—'}</div></td>
           <td style="padding:8px 10px;color:#94a3b8;font-size:13px">${c.home}</td>
           <td style="padding:8px 10px;color:#f59e0b;font-size:13px">→ ${c.cur}${cityBadge}</td>
+          <td style="padding:8px 10px;font-size:13px">${target}</td>
           <td style="padding:8px 10px;font-size:12px">${online}</td>
+          <td style="padding:8px 10px;text-align:center"><input type="checkbox" ${isFixed ? 'checked' : ''} onclick="outLocToggleFixed(${c.id}, '${key.replace(/'/g, "\\'")}', this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:#4ade80" title="Отметить как исправленное"></td>
         </tr>`;
       }).join('');
+
+      const footer = hiddenCount
+        ? `<div style="margin-top:10px;font-size:12px;color:#6b7280">✓ Исправлено и скрыто: ${hiddenCount} · <a href="#" onclick="event.preventDefault();outLocShowFixed(${!_outLocShowFixed})" style="color:#60a5fa;text-decoration:none">${_outLocShowFixed ? 'скрыть исправленные' : 'показать все'}</a></div>`
+        : '';
+
       el.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:14px">
           <thead><tr style="text-align:left;color:#4b5563;font-size:11px;text-transform:uppercase;letter-spacing:.04em">
             <th style="padding:6px 10px">Кашалот</th>
             <th style="padding:6px 10px">Приписан к (локация)</th>
             <th style="padding:6px 10px">Сейчас в геозоне</th>
+            <th style="padding:6px 10px">Целевой dot</th>
             <th style="padding:6px 10px">Связь</th>
+            <th style="padding:6px 10px;text-align:center">Исправлено</th>
           </tr></thead>
           <tbody>${rows}</tbody>
-        </table>`;
+        </table>${footer}`;
     }
     // ─────────────────────────────────────────────────────────────────────────
 
