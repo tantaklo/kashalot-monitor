@@ -1325,6 +1325,44 @@
     </div>
   </div>
 
+  <!-- Города -->
+  <div class="chart-card" style="margin-top:24px">
+    <div class="chart-header collapsible" onclick="toggleSection('citiesBody','citiesArrow'); if(!window._citLoaded) loadCities()">
+      <div class="chart-title">Города <span class="toggle-arrow" id="citiesArrow">▶</span></div>
+    </div>
+    <div class="section-body" id="citiesBody">
+      <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button onclick="openAddCity()" style="padding:7px 16px;background:#7c3aed;border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer">+ Добавить город</button>
+        <span id="cit-status" style="font-size:12px;color:#4b5563"></span>
+      </div>
+      <div id="cit-list" style="display:grid;gap:10px"></div>
+      <div id="cit-form" style="display:none;background:#12121c;border:1px solid #1e1e2a;border-radius:12px;padding:20px;margin-top:16px">
+        <div style="font-size:15px;font-weight:700;margin-bottom:14px" id="cit-form-title">Новый город</div>
+        <div style="display:grid;gap:10px;margin-bottom:14px">
+          <div>
+            <div style="font-size:11px;color:#4b5563;margin-bottom:4px">НАЗВАНИЕ (Красногорск, Слюдянка, …)</div>
+            <input id="cit-name" type="text" placeholder="Красногорск"
+              style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:8px 12px;font-size:14px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:11px;color:#4b5563;margin-bottom:6px">КОМПАНИИ</div>
+            <div id="cit-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:4px"></div>
+            <div style="position:relative">
+              <input id="cit-search" type="text" placeholder="Начните набирать название компании…"
+                oninput="onCitSearchInput(this.value)" onblur="hideCitDropdown()" autocomplete="off"
+                style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:7px 12px;font-size:13px;outline:none">
+              <div id="cit-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1a1a2e;border:1px solid #374151;border-radius:8px;max-height:200px;overflow-y:auto;z-index:100"></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="saveCity()" style="padding:8px 20px;background:#7c3aed;border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer">Сохранить</button>
+          <button onclick="document.getElementById('cit-form').style.display='none'" style="padding:8px 16px;background:none;border:1px solid #374151;border-radius:8px;color:#6b7280;font-size:13px;cursor:pointer">Отмена</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Партнёрский доступ -->
   <div class="chart-card" style="margin-top:24px">
     <div class="chart-header collapsible" onclick="toggleSection('partnerAccessBody','partnerAccessArrow'); if(!window._paLoaded) loadPartnerAccess()">
@@ -4671,6 +4709,147 @@
         body: JSON.stringify({ id }),
       });
       await loadManagers();
+    }
+
+    // ── Города ─────────────────────────────────────────────────────────
+    let _paCities = [];
+    let _citSelected = new Set();
+
+    async function loadCities() {
+      window._citLoaded = true;
+      document.getElementById('cit-status').textContent = 'Загрузка…';
+      await ensureCompaniesLoaded();
+      const resp = await fetch(`${PA_WORKER}/admin/cities`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json());
+      _paCities = resp.cities || [];
+      document.getElementById('cit-status').textContent = `${_paCities.length} город(ов)`;
+      renderCityList();
+    }
+
+    function renderCityList() {
+      const list = document.getElementById('cit-list');
+      if (!_paCities.length) {
+        list.innerHTML = '<div style="color:#4b5563;font-size:13px">Нет городов. Добавьте первый.</div>';
+        return;
+      }
+      list.innerHTML = _paCities.map(c => {
+        const tags = (c.companies || []).map(id => {
+          const co = _paCompanies.find(co => co.id === id);
+          return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${co ? locName(co.name) : '#' + id}</span>`;
+        }).join(' ');
+        return `<div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:14px;font-weight:600;margin-bottom:6px">${c.name}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">${tags || '<span style="color:#4b5563;font-size:11px">Нет компаний</span>'}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button onclick="openEditCity('${c.id}')" style="padding:5px 12px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#94a3b8;font-size:12px;cursor:pointer">✏️ Изменить</button>
+            <button onclick="deleteCity('${c.id}')" style="padding:5px 12px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#ef4444;font-size:12px;cursor:pointer">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderCitTags() {
+      const wrap = document.getElementById('cit-tags');
+      if (!_citSelected.size) { wrap.innerHTML = ''; return; }
+      wrap.innerHTML = [..._citSelected].map(id => {
+        const c = _paCompanies.find(c => c.id === id);
+        const name = c ? locName(c.name) : '#' + id;
+        return `<span style="display:inline-flex;align-items:center;gap:5px;background:#7c3aed30;border:1px solid #7c3aed;border-radius:5px;padding:3px 8px;font-size:12px;color:#a78bfa">
+          ${name}
+          <button onmousedown="removeCitTag(${id})" style="background:none;border:none;color:#a78bfa;cursor:pointer;padding:0;font-size:13px;line-height:1">×</button>
+        </span>`;
+      }).join('');
+    }
+
+    function removeCitTag(id) { _citSelected.delete(id); renderCitTags(); }
+
+    function onCitSearchInput(q) {
+      const dd = document.getElementById('cit-dropdown');
+      if (!q.trim()) { dd.style.display = 'none'; return; }
+      const matches = _paCompanies.filter(c =>
+        !_citSelected.has(c.id) && c.name.toLowerCase().includes(q.toLowerCase())
+      ).slice(0, 12);
+      if (!matches.length) {
+        dd.innerHTML = '<div style="padding:10px 12px;color:#4b5563;font-size:12px">Ничего не найдено</div>';
+      } else {
+        dd.innerHTML = matches.map(c =>
+          `<div onmousedown="selectCitCompany(${c.id})"
+            style="padding:8px 12px;cursor:pointer;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e1e2a"
+            onmouseover="this.style.background='#1e1e2a'" onmouseout="this.style.background=''">
+            ${locName(c.name)}
+          </div>`
+        ).join('');
+      }
+      dd.style.display = 'block';
+    }
+
+    function selectCitCompany(id) {
+      _citSelected.add(id);
+      renderCitTags();
+      const inp = document.getElementById('cit-search');
+      inp.value = '';
+      document.getElementById('cit-dropdown').style.display = 'none';
+      inp.focus();
+    }
+
+    function hideCitDropdown() {
+      setTimeout(() => { document.getElementById('cit-dropdown').style.display = 'none'; }, 120);
+    }
+
+    async function openAddCity() {
+      await ensureCompaniesLoaded();
+      document.getElementById('cit-form-title').textContent = 'Новый город';
+      document.getElementById('cit-name').value = '';
+      document.getElementById('cit-name').dataset.editId = '';
+      document.getElementById('cit-search').value = '';
+      document.getElementById('cit-dropdown').style.display = 'none';
+      _citSelected = new Set();
+      renderCitTags();
+      document.getElementById('cit-form').style.display = 'block';
+      document.getElementById('cit-name').focus();
+    }
+
+    async function openEditCity(id) {
+      await ensureCompaniesLoaded();
+      const c = _paCities.find(c => c.id === id);
+      if (!c) return;
+      document.getElementById('cit-form-title').textContent = 'Редактировать город';
+      document.getElementById('cit-name').value = c.name;
+      document.getElementById('cit-name').dataset.editId = c.id;
+      document.getElementById('cit-search').value = '';
+      document.getElementById('cit-dropdown').style.display = 'none';
+      _citSelected = new Set((c.companies || []).map(Number));
+      renderCitTags();
+      document.getElementById('cit-form').style.display = 'block';
+    }
+
+    async function saveCity() {
+      const nameEl = document.getElementById('cit-name');
+      const name = nameEl.value.trim();
+      const editId = nameEl.dataset.editId || '';
+      const companies = [..._citSelected];
+      if (!name) { alert('Введите название города'); return; }
+      if (!companies.length) { alert('Выберите хотя бы одну компанию'); return; }
+      const resp = await fetch(`${PA_WORKER}/admin/cities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
+        body: JSON.stringify({ id: editId || name, name, companies }),
+      }).then(r => r.json());
+      if (resp.ok) {
+        document.getElementById('cit-form').style.display = 'none';
+        await loadCities();
+      } else { alert('Ошибка: ' + (resp.error || 'unknown')); }
+    }
+
+    async function deleteCity(id) {
+      if (!confirm(`Удалить город «${id}»?`)) return;
+      await fetch(`${PA_WORKER}/admin/cities`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
+        body: JSON.stringify({ id }),
+      });
+      await loadCities();
     }
 
     // ── Доступ партнёров ────────────────────────────────────────────────

@@ -409,7 +409,7 @@
 const WORKER = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev';
 let partnerToken = null;
 let session = null;
-let currentCompanyId = null;
+let currentCityIds = null; // null = все, array = компании выбранного города
 let currentPeriod = 30;
 let ozPeriod = 1;
 let revenueChart = null;
@@ -488,9 +488,9 @@ async function showDashboard() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
 
-  const [summaryResp, companiesResp] = await Promise.all([
+  const [summaryResp, citiesResp] = await Promise.all([
     api('summary', { period: currentPeriod }),
-    api('companies'),
+    api('cities'),
   ]);
 
   if (!summaryResp || summaryResp.error === 'Unauthorized') {
@@ -503,30 +503,45 @@ async function showDashboard() {
   document.getElementById('user-badge').textContent = session.name || session.email;
   document.getElementById('feedback-btn').style.display = 'block';
 
-  buildCompanyBar(companiesResp?.rows || []);
+  buildCityBar(citiesResp?.cities || [], citiesResp?.orphans || []);
   buildPeriodBar();
   await loadAll();
 }
 
-function buildCompanyBar(companyRows) {
+function shortName(name) { return (name || '').replace(/\s*\[.*?\]/, '').trim(); }
+
+function buildCityBar(cities, orphans) {
   const bar = document.getElementById('company-bar');
   bar.innerHTML = '';
-  const btn = document.createElement('button');
-  btn.className = 'company-btn active'; btn.textContent = 'Все компании';
-  btn.dataset.id = ''; btn.onclick = () => switchCompany(null, btn);
-  bar.appendChild(btn);
-  (companyRows || []).forEach(r => {
+
+  const all = document.createElement('button');
+  all.className = 'company-btn active';
+  all.textContent = 'Все компании';
+  all.onclick = () => switchCity(null, all);
+  bar.appendChild(all);
+
+  cities.forEach(city => {
     const b = document.createElement('button');
-    b.className = 'company-btn'; b.textContent = shortName(r.company_name);
-    b.dataset.id = r.company_id; b.onclick = () => switchCompany(r.company_id, b);
+    b.className = 'company-btn';
+    b.textContent = city.name;
+    b.onclick = () => switchCity(city.companies, b);
+    bar.appendChild(b);
+  });
+
+  // Осиротевшие компании — без города, отмечены отдельно
+  orphans.forEach(co => {
+    const b = document.createElement('button');
+    b.className = 'company-btn';
+    b.textContent = shortName(co.name);
+    b.style.cssText = 'border-style:dashed;opacity:0.7';
+    b.title = 'Не привязана к городу';
+    b.onclick = () => switchCity([co.id], b);
     bar.appendChild(b);
   });
 }
 
-function shortName(name) { return (name || '').replace(/\s*\[.*?\]/, '').trim(); }
-
-function switchCompany(id, btn) {
-  currentCompanyId = id ? Number(id) : null;
+function switchCity(ids, btn) {
+  currentCityIds = ids && ids.length ? ids.map(Number) : null;
   document.querySelectorAll('.company-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   loadAll();
@@ -557,7 +572,7 @@ async function loadAll() {
 // --- API ---
 async function api(type, extra = {}) {
   const body = { type, period: currentPeriod, ...extra };
-  if (currentCompanyId) body.company_id = currentCompanyId;
+  if (currentCityIds) body.city_ids = currentCityIds;
   try {
     const r = await fetch(`${WORKER}/partner-data`, {
       method: 'POST',

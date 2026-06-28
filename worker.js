@@ -977,7 +977,7 @@ export default {
       let body;
       try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
 
-      const { type, period = 30, company_id } = body;
+      const { type, period = 30, company_id, city_ids } = body;
       // Always re-read partner_access to pick up any changes since login (в т.ч. изменения у управляющего)
       let sessionIds = session.company_ids;
       if (session.email && env.IGN_CACHE) {
@@ -986,7 +986,16 @@ export default {
           try { sessionIds = await resolveCompanyIds(env, JSON.parse(freshRaw)); } catch {}
         }
       }
-      const ids = company_id ? [company_id] : sessionIds;
+      let ids;
+      if (Array.isArray(city_ids) && city_ids.length) {
+        // Город-фильтр: пересекаем с разрешёнными для безопасности
+        const allowed = new Set(sessionIds.map(Number));
+        ids = city_ids.map(Number).filter(id => allowed.has(id));
+      } else if (company_id) {
+        ids = [Number(company_id)];
+      } else {
+        ids = sessionIds;
+      }
       if (!ids || !ids.length) {
         return new Response(JSON.stringify({ error: 'No companies' }), {
           status: 403, headers: { 'Content-Type': 'application/json', ...CORS },
@@ -1137,6 +1146,39 @@ export default {
             }));
           }
           return new Response(JSON.stringify({ ok: true, rows: result }), {
+            headers: { 'Content-Type': 'application/json', ...CORS },
+          });
+        } else if (type === 'cities') {
+          // Возвращает города, релевантные для партнёра, + "осиротевшие" компании без города
+          const partnerIds = new Set(sessionIds.map(Number));
+          const cities = [];
+          const assignedIds = new Set();
+          if (env.IGN_CACHE) {
+            const list = await env.IGN_CACHE.list({ prefix: 'city:' });
+            for (const key of list.keys) {
+              const raw = await env.IGN_CACHE.get(key.name);
+              if (!raw) continue;
+              try {
+                const city = JSON.parse(raw);
+                const cityCompanies = (city.companies || []).map(Number).filter(id => partnerIds.has(id));
+                if (cityCompanies.length) {
+                  cities.push({ id: key.name.replace('city:', ''), name: city.name, companies: cityCompanies });
+                  cityCompanies.forEach(id => assignedIds.add(id));
+                }
+              } catch {}
+            }
+          }
+          cities.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+          // Компании без города
+          const orphans = [...partnerIds].filter(id => !assignedIds.has(id));
+          // Получаем имена осиротевших компаний
+          let orphanRows = [];
+          if (orphans.length) {
+            orphanRows = await grafanaSQL(`
+              SELECT id, name FROM companies WHERE id IN (${orphans.join(',')}) ORDER BY name ASC
+            `, env);
+          }
+          return new Response(JSON.stringify({ ok: true, cities, orphans: orphanRows }), {
             headers: { 'Content-Type': 'application/json', ...CORS },
           });
         } else {
@@ -1345,6 +1387,53 @@ export default {
         return new Response(JSON.stringify({ ok: true }), {
           headers: { 'Content-Type': 'application/json', ...CORS },
         });
+      }
+
+      return new Response('Method Not Allowed', { status: 405, headers: CORS });
+    }
+
+    // --- Роут: Города (только Антон, X-Token) ---
+    if (url.pathname === '/admin/cities') {
+      const token = request.headers.get('X-Token');
+      if (!token || token !== env.PROXY_TOKEN) {
+        return new Response('Unauthorized', { status: 401, headers: CORS });
+      }
+
+      if (request.method === 'GET') {
+        const list = await env.IGN_CACHE.list({ prefix: 'city:' });
+        const cities = [];
+        for (const key of list.keys) {
+          const raw = await env.IGN_CACHE.get(key.name);
+          if (raw) cities.push({ id: key.name.replace('city:', ''), ...JSON.parse(raw) });
+        }
+        cities.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+        return new Response(JSON.stringify({ ok: true, cities }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      if (request.method === 'POST') {
+        let body;
+        try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+        const { name, companies } = body;
+        if (!name || !Array.isArray(companies)) {
+          return new Response(JSON.stringify({ error: 'name and companies[] required' }), {
+            status: 400, headers: { 'Content-Type': 'application/json', ...CORS },
+          });
+        }
+        const id = (body.id || name).trim();
+        await env.IGN_CACHE.put(`city:${id}`, JSON.stringify({ name: name.trim(), companies }));
+        return new Response(JSON.stringify({ ok: true, id }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      if (request.method === 'DELETE') {
+        let body;
+        try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+        if (!body.id) return new Response(JSON.stringify({ error: 'id required' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
+        await env.IGN_CACHE.delete(`city:${body.id}`);
+        return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json', ...CORS } });
       }
 
       return new Response('Method Not Allowed', { status: 405, headers: CORS });
