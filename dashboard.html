@@ -4588,7 +4588,7 @@
       list.innerHTML = _paManagers.map(m => {
         const companyTags = (m.companies || []).map(id => {
           const c = _paCompanies.find(c => c.id === id);
-          return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${c ? locName(c.name) : '#' + id}</span>`;
+          return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${c ? c.name : '#' + id}</span>`;
         }).join(' ');
         return `<div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
@@ -4609,7 +4609,7 @@
       if (!_mgSelected.size) { wrap.innerHTML = ''; return; }
       wrap.innerHTML = [..._mgSelected].map(id => {
         const c = _paCompanies.find(c => c.id === id);
-        const name = c ? locName(c.name) : '#' + id;
+        const name = c ? c.name : '#' + id;
         return `<span style="display:inline-flex;align-items:center;gap:5px;background:#0d948830;border:1px solid #0d9488;border-radius:5px;padding:3px 8px;font-size:12px;color:#2dd4bf">
           ${name}
           <button onmousedown="removeMgTag(${id})" style="background:none;border:none;color:#2dd4bf;cursor:pointer;padding:0;font-size:13px;line-height:1">×</button>
@@ -4635,7 +4635,7 @@
           `<div onmousedown="selectMgCompany(${c.id})"
             style="padding:8px 12px;cursor:pointer;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e1e2a"
             onmouseover="this.style.background='#1e1e2a'" onmouseout="this.style.background=''">
-            ${locName(c.name)}
+            ${c.name}
           </div>`
         ).join('');
       }
@@ -4734,7 +4734,7 @@
       list.innerHTML = _paCities.map(c => {
         const tags = (c.companies || []).map(id => {
           const co = _paCompanies.find(co => co.id === id);
-          return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${co ? locName(co.name) : '#' + id}</span>`;
+          return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${co ? co.name : '#' + id}</span>`;
         }).join(' ');
         return `<div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
@@ -4754,7 +4754,7 @@
       if (!_citSelected.size) { wrap.innerHTML = ''; return; }
       wrap.innerHTML = [..._citSelected].map(id => {
         const c = _paCompanies.find(c => c.id === id);
-        const name = c ? locName(c.name) : '#' + id;
+        const name = c ? c.name : '#' + id;
         return `<span style="display:inline-flex;align-items:center;gap:5px;background:#7c3aed30;border:1px solid #7c3aed;border-radius:5px;padding:3px 8px;font-size:12px;color:#a78bfa">
           ${name}
           <button onmousedown="removeCitTag(${id})" style="background:none;border:none;color:#a78bfa;cursor:pointer;padding:0;font-size:13px;line-height:1">×</button>
@@ -4777,7 +4777,7 @@
           `<div onmousedown="selectCitCompany(${c.id})"
             style="padding:8px 12px;cursor:pointer;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e1e2a"
             onmouseover="this.style.background='#1e1e2a'" onmouseout="this.style.background=''">
-            ${locName(c.name)}
+            ${c.name}
           </div>`
         ).join('');
       }
@@ -4910,7 +4910,7 @@
           // Обратная совместимость: прямые компании
           accessTags = p.companies.map(id => {
             const c = _paCompanies.find(c => c.id === id);
-            return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${c ? locName(c.name) : '#' + id}</span>`;
+            return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${c ? c.name : '#' + id}</span>`;
           }).join(' ');
         }
         return `<div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
@@ -4959,7 +4959,7 @@
       if (!ids.size) { el.textContent = ''; return; }
       const names = [...ids].map(id => {
         const c = _paCompanies.find(c => c.id === id);
-        return c ? locName(c.name) : '#' + id;
+        return c ? c.name : '#' + id;
       });
       el.textContent = `→ ${names.length} компани${names.length === 1 ? 'я' : names.length < 5 ? 'и' : 'й'}: ${names.join(', ')}`;
     }
