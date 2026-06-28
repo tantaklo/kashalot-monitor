@@ -1042,6 +1042,8 @@ export default {
         } else if (type === 'tariffs') {
           rows = await grafanaSQL(`
             SELECT a.description AS tariff,
+              o.company_id AS company_id,
+              co.name AS company_name,
               COUNT(*) AS orders,
               ROUND(SUM(b.sum_card)/COUNT(*)/100) AS avg_paid,
               ROUND(SUM(b.sum_card)/100) AS revenue,
@@ -1050,11 +1052,12 @@ export default {
             FROM orders o
             JOIN abonements a ON o.abonement_id = a.id
             JOIN bills b ON b.order_id = o.id
+            JOIN companies co ON o.company_id = co.id
             WHERE b.status = 'PAID' AND o.company_id IN (${idList})
               AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
-            GROUP BY a.description
+            GROUP BY o.company_id, co.name, a.description
             ORDER BY orders DESC
-            LIMIT 30
+            LIMIT 60
           `, env);
         } else if (type === 'fleet-size') {
           rows = await grafanaSQL(`

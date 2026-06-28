@@ -222,9 +222,7 @@
     #locations-table td:nth-child(5),
     #locations-table th:nth-child(6),
     #locations-table td:nth-child(6) { display: none; }
-    /* Тарифы: скрыть min-max диапазон (3-я) на узких экранах */
-    #tariff-table th:nth-child(3),
-    #tariff-table td:nth-child(3) { display: none; }
+    /* Тарифы: горизонтальный скролл (колонка компании сдвигает индексы — не прячем) */
   }
 </style>
 </head>
@@ -345,9 +343,11 @@
     <!-- Tariff section -->
     <div class="table-wrap" id="tariff-wrap">
       <div class="table-header">Тарифы клиентов</div>
+      <div style="overflow-x:auto">
       <table id="tariff-table">
         <thead>
           <tr>
+            <th class="th-company" style="display:none">Компания</th>
             <th>Тариф</th>
             <th>Слот</th>
             <th>Диапазон цен</th>
@@ -357,8 +357,9 @@
             <th>Доля</th>
           </tr>
         </thead>
-        <tbody><tr><td colspan="7" class="loading">Загрузка…</td></tr></tbody>
+        <tbody><tr><td colspan="8" class="loading">Загрузка…</td></tr></tbody>
       </table>
+      </div>
     </div>
 
     <!-- Devices table -->
@@ -943,9 +944,21 @@ async function loadTariffs() {
   const tbody = document.querySelector('#tariff-table tbody');
 
   if (!resp || !resp.rows || !resp.rows.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="loading">Нет данных о тарифах</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="loading">Нет данных о тарифах</td></tr>';
+    document.querySelector('#tariff-table .th-company').style.display = 'none';
     return;
   }
+
+  // Multiple companies in the partner's access → show company column (tariffs differ per company)
+  const multiCompany = new Set(resp.rows.map(r => String(r.company_id))).size > 1;
+  document.querySelector('#tariff-table .th-company').style.display = multiCompany ? '' : 'none';
+
+  // When several companies, group by company then by popularity for readability
+  const sortedRows = multiCompany
+    ? [...resp.rows].sort((a, b) =>
+        shortName(a.company_name).localeCompare(shortName(b.company_name), 'ru')
+        || Number(b.orders) - Number(a.orders))
+    : resp.rows;
 
   const totalOrders = resp.rows.reduce((s, r) => s + Number(r.orders), 0);
   const maxOrders   = Math.max(...resp.rows.map(r => Number(r.orders)));
@@ -971,13 +984,17 @@ async function loadTariffs() {
 
   const brandColor = b => b === 'Детский' ? 'badge-teal' : b === 'Быстрый' ? 'badge-blue' : 'badge-yellow';
 
-  tbody.innerHTML = resp.rows.map(r => {
+  tbody.innerHTML = sortedRows.map(r => {
     const { brand, dur, dayType } = parseTariff(r.tariff);
     const orders  = Number(r.orders);
     const sharePct = totalOrders ? Math.round(orders / totalOrders * 100) : 0;
     const barW    = maxOrders ? Math.round(orders / maxOrders * 100) : 0;
     const pm      = dur ? Math.round(Number(r.avg_paid) / dur * 10) / 10 : '—';
+    const companyCell = multiCompany
+      ? `<td style="color:var(--text2);font-size:13px">${shortName(r.company_name)}</td>`
+      : '';
     return `<tr>
+      ${companyCell}
       <td><span class="badge ${brandColor(brand)}">${brand}</span></td>
       <td style="color:var(--text2);font-size:13px">${dur ? dur + ' мин' : '—'}${dayType ? ' · ' + dayType : ''}</td>
       <td style="color:var(--text2);font-size:13px">${
