@@ -771,6 +771,9 @@
       </label>
     </div>
 
+    <!-- Панель «Требует внимания» -->
+    <div id="attentionPanel" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px"></div>
+
 
     <!-- Daily revenue chart -->
 
@@ -3825,6 +3828,47 @@
       fgRenderCharts(fgActivePeriod);
     }
 
+    // ─── Панель «Требует внимания» ─────────────────────────────────────────────
+    function jumpToSection(cardId, bodyId, arrowId, initFn) {
+      const b = bodyId ? document.getElementById(bodyId) : null;
+      if (b && !b.classList.contains('open')) toggleSection(bodyId, arrowId);
+      if (initFn) { try { initFn(); } catch (e) {} }
+      const card = document.getElementById(cardId);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    async function loadAttentionPanel() {
+      const el = document.getElementById('attentionPanel');
+      if (!el) return;
+      const today = new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 10);
+      const head = `<div style="grid-column:1/-1;font-size:11px;color:#4b5563;text-transform:uppercase;letter-spacing:.05em;margin-bottom:-2px">Требует внимания</div>`;
+      const chip = (num, label, color, onclick) =>
+        `<div onclick="${onclick}" style="cursor:pointer;background:#1a1a24;border:1px solid ${num > 0 ? color : '#2d2d3d'};border-radius:12px;padding:12px 16px">
+          <div style="font-size:24px;font-weight:700;color:${num > 0 ? color : '#4b5563'}">${num}</div>
+          <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-top:3px">${label}</div>
+        </div>`;
+      try {
+        const [outLoc, idleRows, battRows, ozRows] = await Promise.all([
+          computeOutLoc().catch(() => []),
+          grafanaQuery(`SELECT COUNT(*) n FROM (SELECT o.car_id, MAX(o.start_time) last FROM orders o JOIN bills b ON b.order_id=o.id WHERE b.status='PAID' AND o.start_time >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY o.car_id HAVING last < DATE_SUB(NOW(), INTERVAL 7 DAY)) t`).catch(() => [{ n: 0 }]),
+          grafanaQuery(`SELECT COUNT(*) n FROM cars WHERE online=1 AND fuel>0 AND fuel<20 AND (hidden IS NULL OR hidden=0)`).catch(() => [{ n: 0 }]),
+          grafanaQuery(`SELECT COUNT(DISTINCT o.car_id) n FROM order_events e JOIN orders o ON o.id=e.order_id WHERE e.reason='GEO' AND e.geo_id=1 AND DATE(o.start_time)='${today}'`).catch(() => [{ n: 0 }]),
+        ]);
+        const outLocOnline = outLoc.filter(o => o.online).length;
+        const idle = +(idleRows[0]?.n || 0);
+        const batt = +(battRows[0]?.n || 0);
+        const oz = +(ozRows[0]?.n || 0);
+        el.innerHTML = head +
+          chip(outLocOnline, 'Не в локации · онлайн', '#f87171', "jumpToSection('outLocSection','outLocBody','outLocArrow',initOutLocSection)") +
+          chip(oz, 'Выехали за зону · сегодня', '#fbbf24', "jumpToSection('ozCard','ozBody','ozArrow')") +
+          chip(idle, 'В простое · 7 дней', '#f59e0b', "jumpToSection('devEffCard','devEffBody','devEffArrow')") +
+          chip(batt, 'Разряжены · онлайн', '#fb923c', "jumpToSection('mapSection','mapBody','mapArrow',initMapSection)");
+      } catch (e) {
+        el.innerHTML = head + '<div style="color:#6b7280;font-size:13px;padding:4px">Не удалось загрузить сводку</div>';
+        console.error('attention panel:', e);
+      }
+    }
+
     async function refreshGrafanaData() {
       const btn = document.getElementById('btnRefreshGrafana');
       btn.textContent = '⟳ Загрузка…';
@@ -3838,6 +3882,7 @@
         loadDevEffCompanies(),
         loadOutOfZone(),
         loadFleetGrowthCharts(),
+        loadAttentionPanel(),
       ]);
       setGrafanaTimestamp();
       await renderAndSaveInsights();
@@ -3859,6 +3904,7 @@
     });
     setGrafanaTimestamp();
     loadFleetGrowthCharts();
+    loadAttentionPanel();
     // Инсайты генерируются после загрузки данных (~3 сек)
     setTimeout(renderAndSaveInsights, 4000);
 
@@ -4121,44 +4167,45 @@
       await refreshOutLoc();
     }
 
+    // Вычисляет список «не в своей локации» (кеш 5 мин). Общая для панели и секции.
+    async function computeOutLoc(force) {
+      if (!force && _outLocCache && Date.now() - _outLocCacheTime < 5 * 60 * 1000) return _outLocCache;
+      const [cars, gz] = await Promise.all([
+        grafanaQuery(`
+          SELECT c.id, c.gosnomer, c.online, hd.name AS home, c.geozones AS gz
+          FROM cars c
+          JOIN dots hd ON hd.id = c.dot_id
+          WHERE c.geozones IS NOT NULL AND c.geozones != '' AND c.geozones != '[]'
+            AND (c.hidden IS NULL OR c.hidden = 0)
+        `),
+        grafanaQuery(`SELECT id, name, uz FROM geozones`),
+      ]);
+      const gzName = {}, gzUz = {};
+      gz.forEach(g => { gzName[g.id] = g.name; gzUz[g.id] = +g.uz; });
+      const uzNames = new Set();
+      gz.forEach(g => { if (+g.uz === 1 && +g.id !== 1) uzNames.add(olNorm(g.name)); });
+
+      const out = [];
+      cars.forEach(c => {
+        const hn = olNorm(c.home);
+        if (hn === 'ru' || !uzNames.has(hn)) return;     // дом без рабочей зоны — не с чем сравнивать
+        let zones; try { zones = JSON.parse(c.gz); } catch { return; }
+        const cur = zones.filter(z => z !== 1 && gzUz[z] === 1 && gzName[z]).map(z => gzName[z]);
+        if (!cur.length) return;                          // только глобальная зона — пропуск
+        if (cur.some(x => olNorm(x) === hn)) return;      // дома
+        const diffCity = cur.some(x => olCity(x) !== olCity(c.home));
+        out.push({ id: c.id, gosnomer: c.gosnomer, online: !!(+c.online), home: c.home, cur: cur.join(', '), diffCity });
+      });
+      out.sort((a, b) => (b.online - a.online) || (b.diffCity - a.diffCity) || a.home.localeCompare(b.home));
+      _outLocCache = out; _outLocCacheTime = Date.now();
+      return out;
+    }
+
     async function refreshOutLoc(force) {
       const statusEl = document.getElementById('outLocStatus');
-      if (!force && _outLocCache && Date.now() - _outLocCacheTime < 5 * 60 * 1000) {
-        renderOutLoc(_outLocCache);
-        return;
-      }
-      if (statusEl) statusEl.textContent = 'Загрузка…';
+      if (statusEl && !(_outLocCache && !force)) statusEl.textContent = 'Загрузка…';
       try {
-        const [cars, gz] = await Promise.all([
-          grafanaQuery(`
-            SELECT c.id, c.gosnomer, c.online, hd.name AS home, c.geozones AS gz
-            FROM cars c
-            JOIN dots hd ON hd.id = c.dot_id
-            WHERE c.geozones IS NOT NULL AND c.geozones != '' AND c.geozones != '[]'
-              AND (c.hidden IS NULL OR c.hidden = 0)
-          `),
-          grafanaQuery(`SELECT id, name, uz FROM geozones`),
-        ]);
-        const gzName = {}, gzUz = {};
-        gz.forEach(g => { gzName[g.id] = g.name; gzUz[g.id] = +g.uz; });
-        // Имена существующих рабочих зон (uz=1, без глобальной RU id=1)
-        const uzNames = new Set();
-        gz.forEach(g => { if (+g.uz === 1 && +g.id !== 1) uzNames.add(olNorm(g.name)); });
-
-        const out = [];
-        cars.forEach(c => {
-          const hn = olNorm(c.home);
-          if (hn === 'ru' || !uzNames.has(hn)) return;     // дом без рабочей зоны — не с чем сравнивать
-          let zones; try { zones = JSON.parse(c.gz); } catch { return; }
-          const cur = zones.filter(z => z !== 1 && gzUz[z] === 1 && gzName[z]).map(z => gzName[z]);
-          if (!cur.length) return;                          // только глобальная зона — вне рабочих зон, пропуск
-          if (cur.some(x => olNorm(x) === hn)) return;      // дома
-          const diffCity = cur.some(x => olCity(x) !== olCity(c.home));
-          out.push({ id: c.id, gosnomer: c.gosnomer, online: !!(+c.online), home: c.home, cur: cur.join(', '), diffCity });
-        });
-        out.sort((a, b) => (b.online - a.online) || (b.diffCity - a.diffCity) || a.home.localeCompare(b.home));
-
-        _outLocCache = out; _outLocCacheTime = Date.now();
+        const out = await computeOutLoc(force);
         renderOutLoc(out);
         const onl = out.filter(o => o.online).length;
         const t = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
