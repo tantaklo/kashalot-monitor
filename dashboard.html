@@ -1288,10 +1288,12 @@
       <div class="chart-title">Управляющие <span class="toggle-arrow" id="mgAccessArrow">▶</span></div>
     </div>
     <div class="section-body" id="mgAccessBody">
-      <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <div style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button onclick="openAddManager()" style="padding:7px 16px;background:#0d9488;border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer">+ Добавить управляющего</button>
         <span id="mg-status" style="font-size:12px;color:#4b5563"></span>
       </div>
+      <input id="mg-list-search" type="text" placeholder="Поиск по управляющим…" oninput="filterMgList(this.value)"
+        style="width:100%;max-width:340px;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:7px 12px;font-size:13px;outline:none;margin-bottom:12px;display:none">
       <div id="mg-list" style="display:grid;gap:10px"></div>
       <!-- Форма управляющего -->
       <div id="mg-form" style="display:none;background:#12121c;border:1px solid #1e1e2a;border-radius:12px;padding:20px;margin-top:16px">
@@ -1331,10 +1333,12 @@
       <div class="chart-title">Города <span class="toggle-arrow" id="citiesArrow">▶</span></div>
     </div>
     <div class="section-body" id="citiesBody">
-      <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <div style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button onclick="openAddCity()" style="padding:7px 16px;background:#7c3aed;border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer">+ Добавить город</button>
         <span id="cit-status" style="font-size:12px;color:#4b5563"></span>
       </div>
+      <input id="cit-list-search" type="text" placeholder="Поиск по городам…" oninput="filterCitList(this.value)"
+        style="width:100%;max-width:340px;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:7px 12px;font-size:13px;outline:none;margin-bottom:12px;display:none">
       <div id="cit-list" style="display:grid;gap:10px"></div>
       <div id="cit-form" style="display:none;background:#12121c;border:1px solid #1e1e2a;border-radius:12px;padding:20px;margin-top:16px">
         <div style="font-size:15px;font-weight:700;margin-bottom:14px" id="cit-form-title">Новый город</div>
@@ -4572,20 +4576,32 @@
     async function loadManagers() {
       window._mgLoaded = true;
       document.getElementById('mg-status').textContent = 'Загрузка…';
-      await ensureCompaniesLoaded();
-      const resp = await fetch(`${PA_WORKER}/admin/managers`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json());
+      const [, resp] = await Promise.all([
+        ensureCompaniesLoaded(),
+        fetch(`${PA_WORKER}/admin/managers`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json()),
+      ]);
       _paManagers = resp.managers || [];
       document.getElementById('mg-status').textContent = `${_paManagers.length} управляющих`;
+      const searchEl = document.getElementById('mg-list-search');
+      if (_paManagers.length > 4) searchEl.style.display = 'block';
       renderManagerList();
     }
 
-    function renderManagerList() {
+    function filterMgList(q) {
+      const filtered = q.trim()
+        ? _paManagers.filter(m => m.name.toLowerCase().includes(q.toLowerCase()))
+        : _paManagers;
+      renderManagerList(filtered);
+    }
+
+    function renderManagerList(items) {
       const list = document.getElementById('mg-list');
-      if (!_paManagers.length) {
+      const data = items ?? _paManagers;
+      if (!data.length) {
         list.innerHTML = '<div style="color:#4b5563;font-size:13px">Нет управляющих. Добавьте первого.</div>';
         return;
       }
-      list.innerHTML = _paManagers.map(m => {
+      list.innerHTML = data.map(m => {
         const companyTags = (m.companies || []).map(id => {
           const c = _paCompanies.find(c => c.id === id);
           return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${c ? c.name : '#' + id}</span>`;
@@ -4718,20 +4734,32 @@
     async function loadCities() {
       window._citLoaded = true;
       document.getElementById('cit-status').textContent = 'Загрузка…';
-      await ensureCompaniesLoaded();
-      const resp = await fetch(`${PA_WORKER}/admin/cities`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json());
+      const [, resp] = await Promise.all([
+        ensureCompaniesLoaded(),
+        fetch(`${PA_WORKER}/admin/cities`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json()),
+      ]);
       _paCities = resp.cities || [];
       document.getElementById('cit-status').textContent = `${_paCities.length} город(ов)`;
+      const searchEl = document.getElementById('cit-list-search');
+      if (_paCities.length > 4) searchEl.style.display = 'block';
       renderCityList();
     }
 
-    function renderCityList() {
+    function filterCitList(q) {
+      const filtered = q.trim()
+        ? _paCities.filter(c => c.name.toLowerCase().includes(q.toLowerCase()))
+        : _paCities;
+      renderCityList(filtered);
+    }
+
+    function renderCityList(items) {
       const list = document.getElementById('cit-list');
-      if (!_paCities.length) {
+      const data = items ?? _paCities;
+      if (!data.length) {
         list.innerHTML = '<div style="color:#4b5563;font-size:13px">Нет городов. Добавьте первый.</div>';
         return;
       }
-      list.innerHTML = _paCities.map(c => {
+      list.innerHTML = data.map(c => {
         const tags = (c.companies || []).map(id => {
           const co = _paCompanies.find(co => co.id === id);
           return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${co ? co.name : '#' + id}</span>`;
