@@ -63,27 +63,27 @@ async function sendBatteryReport(env) {
     byCompany[r.company].push(r);
   }
 
-  const blocks = Object.entries(byCompany).map(([company, devs]) => {
+  // Вводное сообщение
+  await tg(
+    `🔋 <b>Разряженные кашалоты · ${today}</b>\n` +
+    `Онлайн-устройства с зарядом <b>ниже 30%</b> — ${rows.length} шт.\n` +
+    `По компаниям ниже ⬇️`, env);
+
+  // Отдельное сообщение по каждой компании
+  for (const [company, devs] of Object.entries(byCompany)) {
     const lines = devs.map(d => {
       const emoji = d.fuel < 10 ? '🔴' : d.fuel < 20 ? '🟠' : '🟡';
       return `  ${emoji} КШ-${d.id}: <b>${d.fuel}%</b>`;
     });
-    return `🏢 <b>${company}</b>\n${lines.join('\n')}`;
-  });
-
-  const header = `🔋 <b>Разряженные кашалоты · ${today}</b>\n` +
-    `Онлайн-устройства с зарядом <b>ниже 30%</b> — ${rows.length} шт.\n\n`;
-
-  let current = header;
-  for (const block of blocks) {
-    if ((current + '\n\n' + block).length > 4000) {
-      await tg(current, env);
-      current = block;
-    } else {
-      current += (current === header ? '' : '\n\n') + block;
+    const head = `🏢 <b>${company}</b> — ${devs.length} шт.\n`;
+    // Если компания очень большая — бьём на части по ~3900 символов
+    let msg = head;
+    for (const line of lines) {
+      if ((msg + '\n' + line).length > 3900) { await tg(msg, env); msg = head + line; }
+      else { msg += (msg === head ? '' : '\n') + line; }
     }
+    if (msg) await tg(msg, env);
   }
-  if (current) await tg(current, env);
 }
 
 async function checkLowBatteryDuration(env) {
