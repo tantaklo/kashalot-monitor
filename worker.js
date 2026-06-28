@@ -261,6 +261,21 @@ async function getPartnerSession(env, token) {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
+// Резолвит company IDs из partner_access (поддерживает managers-режим и старый companies-режим)
+async function resolveCompanyIds(env, access) {
+  if (access.managers && access.managers.length && env.IGN_CACHE) {
+    const ids = new Set();
+    for (const mname of access.managers) {
+      const raw = await env.IGN_CACHE.get(`manager:${mname}`);
+      if (raw) {
+        try { (JSON.parse(raw).companies || []).forEach(id => ids.add(Number(id))); } catch {}
+      }
+    }
+    return [...ids];
+  }
+  return (access.companies || []).map(Number);
+}
+
 // --- bumerang.tech admin session ---
 async function adminLogin(env) {
   const BASE = 'https://gw.bumerang.tech';
@@ -843,10 +858,11 @@ export default {
 
         // Создаём сессию (TTL 24 ч)
         const sessionToken = randomHex(32);
+        const resolvedIds = await resolveCompanyIds(env, access);
         await env.IGN_CACHE.put(`session:${sessionToken}`, JSON.stringify({
           email,
           name: access.name || gname || email,
-          company_ids: access.companies,
+          company_ids: resolvedIds,
         }), { expirationTtl: 86400 });
 
         return Response.redirect(`${DASH}?token=${sessionToken}`, 302);
@@ -937,10 +953,11 @@ export default {
 
         // Создаём сессию (TTL 24 ч) — формат идентичен Google-флоу
         const sessionToken = randomHex(32);
+        const resolvedIds = await resolveCompanyIds(env, access);
         await env.IGN_CACHE.put(`session:${sessionToken}`, JSON.stringify({
           email,
           name: access.name || yname || email,
-          company_ids: access.companies,
+          company_ids: resolvedIds,
         }), { expirationTtl: 86400 });
 
         return Response.redirect(`${DASH}?token=${sessionToken}`, 302);
@@ -961,11 +978,13 @@ export default {
       try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
 
       const { type, period = 30, company_id } = body;
-      // Always re-read partner_access to pick up any changes since login
+      // Always re-read partner_access to pick up any changes since login (в т.ч. изменения у управляющего)
       let sessionIds = session.company_ids;
       if (session.email && env.IGN_CACHE) {
         const freshRaw = await env.IGN_CACHE.get(`partner_access:${session.email}`);
-        if (freshRaw) { try { sessionIds = JSON.parse(freshRaw).companies || sessionIds; } catch {} }
+        if (freshRaw) {
+          try { sessionIds = await resolveCompanyIds(env, JSON.parse(freshRaw)); } catch {}
+        }
       }
       const ids = company_id ? [company_id] : sessionIds;
       if (!ids || !ids.length) {
@@ -1084,8 +1103,13 @@ export default {
             ORDER BY revenue DESC
           `, env);
         } else if (type === 'out-of-zone') {
+          const ozDays = Math.min(Math.max(Number(period) || 1, 1), 30);
+          const ozFilter = ozDays <= 1
+            ? `DATE(CONVERT_TZ(o.start_time,'+00:00','+03:00'))=CURDATE()`
+            : `o.start_time >= DATE_SUB(NOW(), INTERVAL ${ozDays} DAY)`;
           rows = await grafanaSQL(`
             SELECT e1.order_id,
+              DATE(CONVERT_TZ(o.start_time,'+00:00','+03:00')) AS order_date,
               SUM(TIMESTAMPDIFF(SECOND, e1.time, e2.time)) AS out_sec,
               (SELECT status FROM bills WHERE order_id=o.id ORDER BY id DESC LIMIT 1) AS pay_status,
               c.name AS company,
@@ -1096,12 +1120,25 @@ export default {
             JOIN orders o ON e1.order_id=o.id
             JOIN companies c ON o.company_id=c.id
             WHERE e1.reason='GEO' AND e1.geo_id=1
-              AND DATE(o.start_time)=CURDATE()
+              AND ${ozFilter}
               AND o.company_id IN (${idList})
-            GROUP BY e1.order_id, pay_status, c.name, o.start_time, o.finish_time
+            GROUP BY e1.order_id, order_date, pay_status, c.name, o.start_time, o.finish_time
             HAVING out_sec >= 10
             ORDER BY out_sec DESC
           `, env);
+        } else if (type === 'ign-off') {
+          // Читаем KV-кэш зажигания для списка заказов (кэш заполняется admin-скрапером)
+          const orderIds = Array.isArray(body.order_ids) ? body.order_ids.slice(0, 100) : [];
+          const result = {};
+          if (env.IGN_CACHE) {
+            await Promise.all(orderIds.map(async id => {
+              const v = await env.IGN_CACHE.get(`ign:${id}`);
+              result[id] = v !== null ? JSON.parse(v) : null;
+            }));
+          }
+          return new Response(JSON.stringify({ ok: true, rows: result }), {
+            headers: { 'Content-Type': 'application/json', ...CORS },
+          });
         } else {
           return new Response(JSON.stringify({ error: 'Unknown type' }), {
             status: 400, headers: { 'Content-Type': 'application/json', ...CORS },
@@ -1226,13 +1263,16 @@ export default {
       if (request.method === 'POST') {
         let body;
         try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
-        const { email, companies, name, support } = body;
-        if (!email || !Array.isArray(companies)) {
-          return new Response(JSON.stringify({ error: 'email and companies[] required' }), {
+        const { email, managers, companies, name, support } = body;
+        if (!email || (!Array.isArray(managers) && !Array.isArray(companies))) {
+          return new Response(JSON.stringify({ error: 'email and managers[] (or companies[]) required' }), {
             status: 400, headers: { 'Content-Type': 'application/json', ...CORS },
           });
         }
-        await env.IGN_CACHE.put(`partner_access:${email}`, JSON.stringify({ companies, name: name || email, support: !!support }));
+        const payload = { name: name || email, support: !!support };
+        if (Array.isArray(managers)) payload.managers = managers;
+        else payload.companies = companies;
+        await env.IGN_CACHE.put(`partner_access:${email}`, JSON.stringify(payload));
         return new Response(JSON.stringify({ ok: true }), {
           headers: { 'Content-Type': 'application/json', ...CORS },
         });
@@ -1247,6 +1287,61 @@ export default {
           });
         }
         await env.IGN_CACHE.delete(`partner_access:${body.email}`);
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      return new Response('Method Not Allowed', { status: 405, headers: CORS });
+    }
+
+    // --- Роут: Управляющие (только Антон, X-Token) ---
+    if (url.pathname === '/admin/managers') {
+      const token = request.headers.get('X-Token');
+      if (!token || token !== env.PROXY_TOKEN) {
+        return new Response('Unauthorized', { status: 401, headers: CORS });
+      }
+
+      if (request.method === 'GET') {
+        const list = await env.IGN_CACHE.list({ prefix: 'manager:' });
+        const managers = [];
+        for (const key of list.keys) {
+          const raw = await env.IGN_CACHE.get(key.name);
+          if (raw) {
+            managers.push({ id: key.name.replace('manager:', ''), ...JSON.parse(raw) });
+          }
+        }
+        managers.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+        return new Response(JSON.stringify({ ok: true, managers }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      if (request.method === 'POST') {
+        let body;
+        try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+        const { name, companies } = body;
+        if (!name || !Array.isArray(companies)) {
+          return new Response(JSON.stringify({ error: 'name and companies[] required' }), {
+            status: 400, headers: { 'Content-Type': 'application/json', ...CORS },
+          });
+        }
+        const id = (body.id || name).trim();
+        await env.IGN_CACHE.put(`manager:${id}`, JSON.stringify({ name: name.trim(), companies }));
+        return new Response(JSON.stringify({ ok: true, id }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      if (request.method === 'DELETE') {
+        let body;
+        try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+        if (!body.id) {
+          return new Response(JSON.stringify({ error: 'id required' }), {
+            status: 400, headers: { 'Content-Type': 'application/json', ...CORS },
+          });
+        }
+        await env.IGN_CACHE.delete(`manager:${body.id}`);
         return new Response(JSON.stringify({ ok: true }), {
           headers: { 'Content-Type': 'application/json', ...CORS },
         });

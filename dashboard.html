@@ -1282,6 +1282,42 @@
     </div>
   </div>
 
+  <!-- Управляющие -->
+  <div class="chart-card" style="margin-top:24px">
+    <div class="chart-header collapsible" onclick="toggleSection('managersBody','managersArrow'); if(!window._mgLoaded) loadManagers()">
+      <div class="chart-title">Управляющие <span class="toggle-arrow" id="managersArrow">▶</span></div>
+    </div>
+    <div class="section-body" id="managersBody">
+      <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button onclick="openAddManager()" style="padding:7px 16px;background:#0d9488;border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer">+ Добавить управляющего</button>
+        <span id="mg-status" style="font-size:12px;color:#4b5563"></span>
+      </div>
+      <div id="mg-list" style="display:grid;gap:10px"></div>
+      <!-- Форма управляющего -->
+      <div id="mg-form" style="display:none;background:#12121c;border:1px solid #1e1e2a;border-radius:12px;padding:20px;margin-top:16px">
+        <div style="font-size:15px;font-weight:700;margin-bottom:14px" id="mg-form-title">Новый управляющий</div>
+        <div style="display:grid;gap:10px;margin-bottom:14px">
+          <div>
+            <div style="font-size:11px;color:#4b5563;margin-bottom:4px">НАЗВАНИЕ (Амурлык, ИП Баранова, …)</div>
+            <input id="mg-name" type="text" placeholder="Амурлык"
+              style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:8px 12px;font-size:14px;outline:none">
+          </div>
+          <div>
+            <div style="font-size:11px;color:#4b5563;margin-bottom:6px">КОМПАНИИ (ID через запятую или из списка ниже)</div>
+            <input id="mg-search" type="text" placeholder="Поиск компании…"
+              oninput="filterMgCompanies(this.value)"
+              style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:7px 12px;font-size:13px;outline:none;margin-bottom:8px">
+            <div id="mg-companies" style="display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow-y:auto"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="saveManager()" style="padding:8px 20px;background:#0d9488;border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer">Сохранить</button>
+          <button onclick="document.getElementById('mg-form').style.display='none'" style="padding:8px 16px;background:none;border:1px solid #374151;border-radius:8px;color:#6b7280;font-size:13px;cursor:pointer">Отмена</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Партнёрский доступ -->
   <div class="chart-card" style="margin-top:24px">
     <div class="chart-header collapsible" onclick="toggleSection('partnerAccessBody','partnerAccessArrow'); if(!window._paLoaded) loadPartnerAccess()">
@@ -1301,7 +1337,7 @@
         <div style="font-size:15px;font-weight:700;margin-bottom:14px" id="pa-form-title">Новый партнёр</div>
         <div style="display:grid;gap:10px;margin-bottom:14px">
           <div>
-            <div style="font-size:11px;color:#4b5563;margin-bottom:4px">EMAIL (Google-аккаунт партнёра)</div>
+            <div style="font-size:11px;color:#4b5563;margin-bottom:4px">EMAIL (Google/Yandex аккаунт партнёра)</div>
             <input id="pa-email" type="email" placeholder="partner@gmail.com"
               style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:8px 12px;font-size:14px;outline:none">
           </div>
@@ -1311,11 +1347,9 @@
               style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:8px 12px;font-size:14px;outline:none">
           </div>
           <div>
-            <div style="font-size:11px;color:#4b5563;margin-bottom:6px">ЛОКАЦИИ (компании)</div>
-            <input id="pa-search" type="text" placeholder="Поиск по названию…"
-              oninput="filterCompanies(this.value)"
-              style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:7px 12px;font-size:13px;outline:none;margin-bottom:8px">
-            <div id="pa-companies" style="display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow-y:auto"></div>
+            <div style="font-size:11px;color:#4b5563;margin-bottom:6px">УПРАВЛЯЮЩИЙ (выбери одного или нескольких)</div>
+            <div id="pa-managers" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+            <div id="pa-resolved" style="margin-top:8px;font-size:11px;color:#4b5563"></div>
           </div>
           <div style="border-top:1px solid #1e1e2a;padding-top:12px">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#94a3b8">
@@ -4468,6 +4502,112 @@
 
     let _paCompanies = [];
 
+    let _paManagers = [];
+
+    // ── Управляющие ────────────────────────────────────────────────────
+    async function loadManagers() {
+      window._mgLoaded = true;
+      document.getElementById('mg-status').textContent = 'Загрузка…';
+      const resp = await fetch(`${PA_WORKER}/admin/managers`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json());
+      _paManagers = resp.managers || [];
+      document.getElementById('mg-status').textContent = `${_paManagers.length} управляющих`;
+      renderManagerList();
+    }
+
+    function renderManagerList() {
+      const list = document.getElementById('mg-list');
+      if (!_paManagers.length) {
+        list.innerHTML = '<div style="color:#4b5563;font-size:13px">Нет управляющих. Добавьте первого.</div>';
+        return;
+      }
+      list.innerHTML = _paManagers.map(m => {
+        const companyTags = (m.companies || []).map(id => {
+          const c = _paCompanies.find(c => c.id === id);
+          return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${c ? locName(c.name) : '#' + id}</span>`;
+        }).join(' ');
+        return `<div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:14px;font-weight:600;margin-bottom:6px">${m.name}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">${companyTags || '<span style="color:#4b5563;font-size:11px">Нет компаний</span>'}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button onclick="openEditManager('${m.id}')" style="padding:5px 12px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#94a3b8;font-size:12px;cursor:pointer">✏️ Изменить</button>
+            <button onclick="deleteManager('${m.id}')" style="padding:5px 12px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#ef4444;font-size:12px;cursor:pointer">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function renderMgCompanyCheckboxes(selected = [], filter = '') {
+      const wrap = document.getElementById('mg-companies');
+      const q = filter.toLowerCase();
+      const visible = q ? _paCompanies.filter(c => c.name.toLowerCase().includes(q)) : _paCompanies;
+      if (!visible.length) { wrap.innerHTML = '<span style="color:#4b5563;font-size:12px">Ничего не найдено</span>'; return; }
+      wrap.innerHTML = visible.map(c => {
+        const checked = selected.includes(c.id) ? 'checked' : '';
+        return `<label style="display:flex;align-items:center;gap:6px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;color:#94a3b8">
+          <input type="checkbox" value="${c.id}" ${checked} style="accent-color:#0d9488">
+          ${locName(c.name)}
+        </label>`;
+      }).join('');
+    }
+
+    function filterMgCompanies(q) {
+      const selected = [...document.querySelectorAll('#mg-companies input:checked')].map(el => Number(el.value));
+      renderMgCompanyCheckboxes(selected, q);
+    }
+
+    function openAddManager() {
+      document.getElementById('mg-form-title').textContent = 'Новый управляющий';
+      document.getElementById('mg-name').value = '';
+      document.getElementById('mg-name').dataset.editId = '';
+      document.getElementById('mg-search').value = '';
+      renderMgCompanyCheckboxes([]);
+      document.getElementById('mg-form').style.display = 'block';
+      document.getElementById('mg-name').focus();
+    }
+
+    function openEditManager(id) {
+      const m = _paManagers.find(m => m.id === id);
+      if (!m) return;
+      document.getElementById('mg-form-title').textContent = 'Редактировать управляющего';
+      document.getElementById('mg-name').value = m.name;
+      document.getElementById('mg-name').dataset.editId = m.id;
+      document.getElementById('mg-search').value = '';
+      renderMgCompanyCheckboxes(m.companies || []);
+      document.getElementById('mg-form').style.display = 'block';
+    }
+
+    async function saveManager() {
+      const nameEl = document.getElementById('mg-name');
+      const name = nameEl.value.trim();
+      const editId = nameEl.dataset.editId || '';
+      const companies = [...document.querySelectorAll('#mg-companies input:checked')].map(el => Number(el.value));
+      if (!name) { alert('Введите название управляющего'); return; }
+      if (!companies.length) { alert('Выберите хотя бы одну компанию'); return; }
+      const resp = await fetch(`${PA_WORKER}/admin/managers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
+        body: JSON.stringify({ id: editId || name, name, companies }),
+      }).then(r => r.json());
+      if (resp.ok) {
+        document.getElementById('mg-form').style.display = 'none';
+        await loadManagers();
+        renderManagerPickerInForm();
+      } else { alert('Ошибка: ' + (resp.error || 'unknown')); }
+    }
+
+    async function deleteManager(id) {
+      if (!confirm(`Удалить управляющего «${id}»? Партнёры с этим управляющим потеряют доступ к его компаниям.`)) return;
+      await fetch(`${PA_WORKER}/admin/managers`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
+        body: JSON.stringify({ id }),
+      });
+      await loadManagers();
+    }
+
+    // ── Доступ партнёров ────────────────────────────────────────────────
     async function loadPartnerAccess() {
       window._paLoaded = true;
       document.getElementById('pa-status').textContent = 'Загрузка…';
@@ -4483,7 +4623,6 @@
 
       _paPartners = pResp.partners || [];
 
-      // Разбираем Grafana frame
       const frame = cResp?.results?.A?.frames?.[0];
       if (frame) {
         const fields = frame.schema.fields.map(f => f.name);
@@ -4494,6 +4633,12 @@
           fields.forEach((f, j) => { row[f] = cols[j][i]; });
           _paCompanies.push(row);
         }
+      }
+
+      // Загружаем управляющих если ещё не загружены
+      if (!_paManagers.length) {
+        const mResp = await fetch(`${PA_WORKER}/admin/managers`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json());
+        _paManagers = mResp.managers || [];
       }
 
       document.getElementById('pa-status').textContent = `${_paPartners.length} партнёр(ов)`;
@@ -4511,48 +4656,67 @@
         return;
       }
       list.innerHTML = _paPartners.map(p => {
-        const locs = (p.companies || []).map(id => {
-          const c = _paCompanies.find(c => c.id === id);
-          return c ? `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${locName(c.name)}</span>` : `<span style="color:#4b5563;font-size:11px">#${id}</span>`;
-        }).join(' ');
-        return `
-          <div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
-            <div>
-              <div style="font-size:14px;font-weight:600;margin-bottom:2px">${p.name || p.email}${p.support ? ' <span style="background:#1e3a2a;border:1px solid #2f5d44;border-radius:4px;padding:1px 7px;font-size:10px;color:#4ade80;vertical-align:middle">поддержка</span>' : ''}</div>
-              <div style="font-size:11px;color:#4b5563;margin-bottom:8px">${p.email}</div>
-              <div style="display:flex;flex-wrap:wrap;gap:4px">${locs || '<span style="color:#4b5563;font-size:11px">Нет локаций</span>'}</div>
-            </div>
-            <div style="display:flex;gap:6px;flex-shrink:0">
-              <button onclick="openEditPartner('${p.email}')" style="padding:5px 12px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#94a3b8;font-size:12px;cursor:pointer">✏️ Изменить</button>
-              <button onclick="deletePartner('${p.email}')" style="padding:5px 12px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#ef4444;font-size:12px;cursor:pointer">✕</button>
-            </div>
-          </div>`;
+        let accessTags = '';
+        if (p.managers && p.managers.length) {
+          accessTags = p.managers.map(mname =>
+            `<span style="background:#0d948820;border:1px solid #0d9488;border-radius:4px;padding:2px 7px;font-size:11px;color:#2dd4bf">${mname}</span>`
+          ).join(' ');
+        } else if (p.companies && p.companies.length) {
+          // Обратная совместимость: прямые компании
+          accessTags = p.companies.map(id => {
+            const c = _paCompanies.find(c => c.id === id);
+            return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${c ? locName(c.name) : '#' + id}</span>`;
+          }).join(' ');
+        }
+        return `<div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:14px;font-weight:600;margin-bottom:2px">${p.name || p.email}${p.support ? ' <span style="background:#1e3a2a;border:1px solid #2f5d44;border-radius:4px;padding:1px 7px;font-size:10px;color:#4ade80;vertical-align:middle">поддержка</span>' : ''}</div>
+            <div style="font-size:11px;color:#4b5563;margin-bottom:8px">${p.email}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">${accessTags || '<span style="color:#4b5563;font-size:11px">Нет доступа</span>'}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button onclick="openEditPartner('${p.email}')" style="padding:5px 12px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#94a3b8;font-size:12px;cursor:pointer">✏️ Изменить</button>
+            <button onclick="deletePartner('${p.email}')" style="padding:5px 12px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#ef4444;font-size:12px;cursor:pointer">✕</button>
+          </div>
+        </div>`;
       }).join('');
     }
 
-    function renderCompanyCheckboxes(selected = [], filter = '') {
-      const wrap = document.getElementById('pa-companies');
-      const q = filter.toLowerCase();
-      const visible = q
-        ? _paCompanies.filter(c => c.name.toLowerCase().includes(q))
-        : _paCompanies;
-      if (!visible.length) {
-        wrap.innerHTML = '<span style="color:#4b5563;font-size:12px">Ничего не найдено</span>';
+    function renderManagerPickerInForm(selectedManagers = []) {
+      const wrap = document.getElementById('pa-managers');
+      if (!_paManagers.length) {
+        wrap.innerHTML = '<span style="color:#4b5563;font-size:12px">Нет управляющих — сначала добавьте в разделе выше</span>';
+        updateResolvedCompanies([]);
         return;
       }
-      wrap.innerHTML = visible.map(c => {
-        const checked = selected.includes(c.id) ? 'checked' : '';
-        return `<label style="display:flex;align-items:center;gap:6px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;color:#94a3b8">
-          <input type="checkbox" value="${c.id}" ${checked} style="accent-color:#3b82f6">
-          ${locName(c.name)}
+      wrap.innerHTML = _paManagers.map(m => {
+        const checked = selectedManagers.includes(m.id) ? 'checked' : '';
+        return `<label style="display:flex;align-items:center;gap:6px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px;color:#94a3b8" onchange="onManagerPickerChange()">
+          <input type="checkbox" class="pa-mgr-check" value="${m.id}" ${checked} style="accent-color:#0d9488;width:15px;height:15px">
+          ${m.name}
         </label>`;
       }).join('');
+      updateResolvedCompanies(selectedManagers);
     }
 
-    function filterCompanies(q) {
-      // Сохраняем текущий выбор перед перерисовкой
-      const selected = [...document.querySelectorAll('#pa-companies input:checked')].map(el => Number(el.value));
-      renderCompanyCheckboxes(selected, q);
+    function onManagerPickerChange() {
+      const selected = [...document.querySelectorAll('.pa-mgr-check:checked')].map(el => el.value);
+      updateResolvedCompanies(selected);
+    }
+
+    function updateResolvedCompanies(selectedManagerIds) {
+      const el = document.getElementById('pa-resolved');
+      const ids = new Set();
+      selectedManagerIds.forEach(mId => {
+        const m = _paManagers.find(m => m.id === mId);
+        if (m) (m.companies || []).forEach(id => ids.add(id));
+      });
+      if (!ids.size) { el.textContent = ''; return; }
+      const names = [...ids].map(id => {
+        const c = _paCompanies.find(c => c.id === id);
+        return c ? locName(c.name) : '#' + id;
+      });
+      el.textContent = `→ ${names.length} компани${names.length === 1 ? 'я' : names.length < 5 ? 'и' : 'й'}: ${names.join(', ')}`;
     }
 
     function openAddPartner() {
@@ -4560,7 +4724,7 @@
       document.getElementById('pa-email').value = '';
       document.getElementById('pa-email').disabled = false;
       document.getElementById('pa-name').value = '';
-      renderCompanyCheckboxes([]);
+      renderManagerPickerInForm([]);
       document.getElementById('pa-support').checked = false;
       document.getElementById('pa-form').style.display = 'block';
       document.getElementById('pa-email').focus();
@@ -4573,7 +4737,7 @@
       document.getElementById('pa-email').value = p.email;
       document.getElementById('pa-email').disabled = true;
       document.getElementById('pa-name').value = p.name || '';
-      renderCompanyCheckboxes(p.companies || []);
+      renderManagerPickerInForm(p.managers || []);
       document.getElementById('pa-support').checked = !!p.support;
       document.getElementById('pa-form').style.display = 'block';
     }
@@ -4581,14 +4745,14 @@
     async function savePartner() {
       const email = document.getElementById('pa-email').value.trim();
       const name  = document.getElementById('pa-name').value.trim();
-      const companies = [...document.querySelectorAll('#pa-companies input:checked')].map(el => Number(el.value));
+      const managers = [...document.querySelectorAll('.pa-mgr-check:checked')].map(el => el.value);
       const support = document.getElementById('pa-support').checked;
       if (!email) { alert('Введите email'); return; }
-      if (!companies.length && !support) { alert('Выберите локацию или дайте доступ к поддержке'); return; }
+      if (!managers.length && !support) { alert('Выберите управляющего или дайте доступ к поддержке'); return; }
       const resp = await fetch(`${PA_WORKER}/admin/partner-access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
-        body: JSON.stringify({ email, name, companies, support }),
+        body: JSON.stringify({ email, name, managers, support }),
       }).then(r => r.json());
       if (resp.ok) {
         document.getElementById('pa-form').style.display = 'none';
