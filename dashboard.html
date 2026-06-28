@@ -1024,6 +1024,9 @@
           📂 Перетащи сюда CSV «Выручки по компаниям» — или нажми чтобы выбрать файл
           <input type="file" id="csvMgrInput" accept=".csv" />
         </div>
+        <input id="mgrSearch" type="text" placeholder="Поиск по управляющему…"
+          oninput="filterMgrSearch(this.value)"
+          style="width:100%;box-sizing:border-box;padding:8px 12px;background:#12121a;border:1px solid #1e1e2a;border-radius:8px;color:#e2e8f0;font-size:13px;outline:none;margin-bottom:12px;display:none">
         <div class="top-list" id="mgrList"></div>
       </div>
     </div>
@@ -1968,15 +1971,18 @@
     }
 
     const MEDALS = ['🥇', '🥈', '🥉'];
+    let _mgrData = null;
 
-    function renderManagers(data) {
+    function renderManagersList(managers) {
       const list = document.getElementById('mgrList');
       list.innerHTML = '';
-      const top = data.managers;
-      if (!top.length) return;
-      const maxRev = top[0].total_revenue;
+      if (!managers.length) {
+        list.innerHTML = '<div style="color:#4b5563;font-size:13px;padding:8px 0">Нет совпадений</div>';
+        return;
+      }
+      const maxRev = managers[0].total_revenue;
 
-      top.forEach((m, i) => {
+      managers.forEach((m, i) => {
         const row = document.createElement('div');
         row.className = 'mgr-row';
         row.innerHTML = `
@@ -2000,10 +2006,24 @@
         list.appendChild(row);
         list.appendChild(detail);
       });
+    }
 
+    function filterMgrSearch(q) {
+      if (!_mgrData) return;
+      const term = q.trim().toLowerCase();
+      const filtered = term
+        ? _mgrData.managers.filter(m => m.manager.toLowerCase().includes(term))
+        : _mgrData.managers;
+      renderManagersList(filtered);
+    }
+
+    function renderManagers(data) {
+      _mgrData = data;
+      const searchEl = document.getElementById('mgrSearch');
+      if (searchEl) { searchEl.style.display = ''; searchEl.value = ''; }
+      renderManagersList(data.managers);
       document.getElementById('managersUpdated').textContent =
         `${data.total_managers} управляющих · данные за всё время · обновлено ${data.updated}`;
-      // section always visible, body toggled manually
     }
 
     function handleMgrFile(file) {
@@ -4556,6 +4576,12 @@
 
     async function ensureCompaniesLoaded() {
       if (_paCompanies.length) return;
+      // Берём из sessionStorage если есть — мгновенно
+      try {
+        const cached = sessionStorage.getItem('pa_companies_cache');
+        if (cached) { _paCompanies = JSON.parse(cached); if (_paCompanies.length) return; }
+      } catch {}
+      // Иначе — запрос к Grafana (медленно, но только один раз за сессию)
       const cResp = await fetch(GRAFANA_PROXY, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
@@ -4569,6 +4595,7 @@
         for (let i = 0; i < (cols[0]?.length || 0); i++) {
           const row = {}; fields.forEach((f, j) => { row[f] = cols[j][i]; }); _paCompanies.push(row);
         }
+        try { sessionStorage.setItem('pa_companies_cache', JSON.stringify(_paCompanies)); } catch {}
       }
     }
 
