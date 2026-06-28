@@ -1400,7 +1400,7 @@
           </div>
           <div>
             <div style="font-size:11px;color:#4b5563;margin-bottom:6px">УПРАВЛЯЮЩИЙ (выбери одного или нескольких)</div>
-            <div id="pa-managers" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+            <div id="pa-managers" style="display:grid;gap:8px"></div>
             <div id="pa-resolved" style="margin-top:8px;font-size:11px;color:#4b5563"></div>
           </div>
           <div style="border-top:1px solid #1e1e2a;padding-top:12px">
@@ -3701,7 +3701,7 @@
         document.getElementById('tdInsights').innerHTML = insights.join('');
         const tdPeriodLabel = tdActiveDays === 1 ? 'сегодня' : tdActiveDays === 7 ? '7 дней' : tdActiveDays === 30 ? '30 дней' : 'всё время';
         document.getElementById('tariffDemandSub').textContent =
-          `${totalCnt.toLocaleString('ru-RU')} поездок · ${Math.round(totalRev/100).toLocaleString('ru-RU')} ₽ выручки · ${tdPeriodLabel}`;
+          `${totalCnt.toLocaleString('ru-RU')} поездок · ${Math.round(totalRev/100).toLocaleString('ru-RU')} ₽ по 4 тарифам · ${tdPeriodLabel}`;
 
       } catch(e) { console.error('loadTariffDemand:', e); }
     }
@@ -4576,12 +4576,14 @@
 
     async function ensureCompaniesLoaded() {
       if (_paCompanies.length) return;
-      // Берём из sessionStorage если есть — мгновенно
+      // localStorage с TTL 6 часов — выживает между сессиями
       try {
-        const cached = sessionStorage.getItem('pa_companies_cache');
-        if (cached) { _paCompanies = JSON.parse(cached); if (_paCompanies.length) return; }
+        const cached = JSON.parse(localStorage.getItem('pa_companies_cache') || 'null');
+        if (cached && Date.now() - cached.ts < 6 * 3600 * 1000 && cached.data?.length) {
+          _paCompanies = cached.data;
+          return;
+        }
       } catch {}
-      // Иначе — запрос к Grafana (медленно, но только один раз за сессию)
       const cResp = await fetch(GRAFANA_PROXY, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
@@ -4595,7 +4597,7 @@
         for (let i = 0; i < (cols[0]?.length || 0); i++) {
           const row = {}; fields.forEach((f, j) => { row[f] = cols[j][i]; }); _paCompanies.push(row);
         }
-        try { sessionStorage.setItem('pa_companies_cache', JSON.stringify(_paCompanies)); } catch {}
+        try { localStorage.setItem('pa_companies_cache', JSON.stringify({ ts: Date.now(), data: _paCompanies })); } catch {}
       }
     }
 
@@ -4603,11 +4605,12 @@
     async function loadManagers() {
       window._mgLoaded = true;
       document.getElementById('mg-status').textContent = 'Загрузка…';
-      const [, resp] = await Promise.all([
+      const [, combined] = await Promise.all([
         ensureCompaniesLoaded(),
-        fetch(`${PA_WORKER}/admin/managers`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json()),
+        fetch(`${PA_WORKER}/admin/combined`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json()),
       ]);
-      _paManagers = resp.managers || [];
+      _paManagers = combined.managers || [];
+      _paPartners = combined.partners || [];
       document.getElementById('mg-status').textContent = `${_paManagers.length} управляющих`;
       const searchEl = document.getElementById('mg-list-search');
       if (_paManagers.length > 4) searchEl.style.display = 'block';
@@ -4633,9 +4636,13 @@
           const c = _paCompanies.find(c => c.id === id);
           return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${c ? c.name : '#' + id}</span>`;
         }).join(' ');
+        const linkedPartners = _paPartners.filter(p => (p.managers || []).includes(m.id));
+        const partnerBadge = linkedPartners.length
+          ? `<span title="${linkedPartners.map(p => p.name || p.email).join(', ')}" style="background:#1e3a5f;border:1px solid #3b82f6;border-radius:4px;padding:2px 8px;font-size:11px;color:#60a5fa;cursor:default">👤 ${linkedPartners.length} партнёр${linkedPartners.length === 1 ? '' : linkedPartners.length < 5 ? 'а' : 'ов'}</span>`
+          : '';
         return `<div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
-            <div style="font-size:14px;font-weight:600;margin-bottom:6px">${m.name}</div>
+            <div style="font-size:14px;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:8px">${m.name}${partnerBadge}</div>
             <div style="display:flex;flex-wrap:wrap;gap:4px">${companyTags || '<span style="color:#4b5563;font-size:11px">Нет компаний</span>'}</div>
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0">
@@ -4958,9 +4965,18 @@
       list.innerHTML = _paPartners.map(p => {
         let accessTags = '';
         if (p.managers && p.managers.length) {
-          accessTags = p.managers.map(mname =>
-            `<span style="background:#0d948820;border:1px solid #0d9488;border-radius:4px;padding:2px 7px;font-size:11px;color:#2dd4bf">${mname}</span>`
-          ).join(' ');
+          accessTags = p.managers.map(mname => {
+            const restricted = p.manager_companies && p.manager_companies[mname];
+            const m = _paManagers.find(m => m.id === mname);
+            const totalCount = m ? (m.companies || []).length : null;
+            const suffix = restricted
+              ? ` <span style="color:#f59e0b;font-size:10px">${restricted.length}${totalCount != null ? '/' + totalCount : ''} гор.</span>`
+              : '';
+            const title = restricted
+              ? restricted.map(id => { const c = _paCompanies.find(c => c.id === id); return c ? c.name : '#'+id; }).join(', ')
+              : '';
+            return `<span title="${title}" style="background:#0d948820;border:1px solid #0d9488;border-radius:4px;padding:2px 7px;font-size:11px;color:#2dd4bf">${mname}${suffix}</span>`;
+          }).join(' ');
         } else if (p.companies && p.companies.length) {
           // Обратная совместимость: прямые компании
           accessTags = p.companies.map(id => {
@@ -4982,7 +4998,7 @@
       }).join('');
     }
 
-    function renderManagerPickerInForm(selectedManagers = []) {
+    function renderManagerPickerInForm(selectedManagers = [], managerCompanies = {}) {
       const wrap = document.getElementById('pa-managers');
       if (!_paManagers.length) {
         wrap.innerHTML = '<span style="color:#4b5563;font-size:12px">Нет управляющих — сначала добавьте в разделе выше</span>';
@@ -4990,16 +5006,46 @@
         return;
       }
       wrap.innerHTML = _paManagers.map(m => {
-        const checked = selectedManagers.includes(m.id) ? 'checked' : '';
-        return `<label style="display:flex;align-items:center;gap:6px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px;color:#94a3b8" onchange="onManagerPickerChange()">
-          <input type="checkbox" class="pa-mgr-check" value="${m.id}" ${checked} style="accent-color:#0d9488;width:15px;height:15px">
-          ${m.name}
-        </label>`;
+        const isChecked = selectedManagers.includes(m.id);
+        const allowedIds = managerCompanies[m.id] || null; // null = все
+        const companyItems = (m.companies || []).map(id => {
+          const c = _paCompanies.find(c => c.id === id);
+          const name = c ? c.name : '#' + id;
+          const cChecked = !allowedIds || allowedIds.map(Number).includes(Number(id)) ? 'checked' : '';
+          return `<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#94a3b8;padding:3px 0;cursor:pointer">
+            <input type="checkbox" class="pa-co-check" data-mgr="${m.id}" value="${id}" ${cChecked}
+              style="accent-color:#0d9488;width:13px;height:13px" onchange="onCompanyCheckChange()">
+            ${name}
+          </label>`;
+        }).join('');
+        return `<div style="border:1px solid #374151;border-radius:8px;overflow:hidden">
+          <label style="display:flex;align-items:center;gap:8px;background:#1e1e2a;padding:8px 12px;cursor:pointer;font-size:13px;color:#e2e8f0;user-select:none">
+            <input type="checkbox" class="pa-mgr-check" value="${m.id}" ${isChecked ? 'checked' : ''}
+              style="accent-color:#0d9488;width:15px;height:15px" onchange="onManagerPickerChange(this)">
+            ${m.name}
+          </label>
+          <div class="pa-co-list" style="padding:8px 12px 8px 34px;display:${isChecked ? 'grid' : 'none'};gap:1px;background:#0d0d14;border-top:1px solid #1e1e2a">
+            ${companyItems || '<span style="color:#4b5563;font-size:11px">Нет компаний</span>'}
+          </div>
+        </div>`;
       }).join('');
       updateResolvedCompanies(selectedManagers);
     }
 
-    function onManagerPickerChange() {
+    function onManagerPickerChange(cb) {
+      const block = cb.closest('div[style*="border-radius:8px"]');
+      const coList = block.querySelector('.pa-co-list');
+      if (cb.checked) {
+        coList.style.display = 'grid';
+        block.querySelectorAll('.pa-co-check').forEach(c => c.checked = true);
+      } else {
+        coList.style.display = 'none';
+      }
+      const selected = [...document.querySelectorAll('.pa-mgr-check:checked')].map(el => el.value);
+      updateResolvedCompanies(selected);
+    }
+
+    function onCompanyCheckChange() {
       const selected = [...document.querySelectorAll('.pa-mgr-check:checked')].map(el => el.value);
       updateResolvedCompanies(selected);
     }
@@ -5008,8 +5054,13 @@
       const el = document.getElementById('pa-resolved');
       const ids = new Set();
       selectedManagerIds.forEach(mId => {
-        const m = _paManagers.find(m => m.id === mId);
-        if (m) (m.companies || []).forEach(id => ids.add(id));
+        const checked = [...document.querySelectorAll(`.pa-co-check[data-mgr="${mId}"]:checked`)];
+        if (checked.length) {
+          checked.forEach(cb => ids.add(Number(cb.value)));
+        } else {
+          const m = _paManagers.find(m => m.id === mId);
+          if (m) (m.companies || []).forEach(id => ids.add(Number(id)));
+        }
       });
       if (!ids.size) { el.textContent = ''; return; }
       const names = [...ids].map(id => {
@@ -5037,7 +5088,7 @@
       document.getElementById('pa-email').value = p.email;
       document.getElementById('pa-email').disabled = true;
       document.getElementById('pa-name').value = p.name || '';
-      renderManagerPickerInForm(p.managers || []);
+      renderManagerPickerInForm(p.managers || [], p.manager_companies || {});
       document.getElementById('pa-support').checked = !!p.support;
       document.getElementById('pa-form').style.display = 'block';
     }
@@ -5049,10 +5100,24 @@
       const support = document.getElementById('pa-support').checked;
       if (!email) { alert('Введите email'); return; }
       if (!managers.length && !support) { alert('Выберите управляющего или дайте доступ к поддержке'); return; }
+
+      // Собираем ограничения по городам (только если не все выбраны)
+      const manager_companies = {};
+      managers.forEach(mId => {
+        const m = _paManagers.find(m => m.id === mId);
+        if (!m) return;
+        const allCount = (m.companies || []).length;
+        const checkedIds = [...document.querySelectorAll(`.pa-co-check[data-mgr="${mId}"]:checked`)].map(el => Number(el.value));
+        if (checkedIds.length < allCount) manager_companies[mId] = checkedIds;
+      });
+
+      const payload = { email, name, managers, support };
+      if (Object.keys(manager_companies).length) payload.manager_companies = manager_companies;
+
       const resp = await fetch(`${PA_WORKER}/admin/partner-access`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
-        body: JSON.stringify({ email, name, managers, support }),
+        body: JSON.stringify(payload),
       }).then(r => r.json());
       if (resp.ok) {
         document.getElementById('pa-form').style.display = 'none';
