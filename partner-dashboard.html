@@ -599,7 +599,7 @@ async function loadSummary(revenueResp) {
   // Row 1: fleet · activity · revenue  |  Row 2: per-day · per-KSH · tariff
   grid.innerHTML =
     cell(_fleetSize || '…',           null, 'Парк · КШ',                           '#6b7280') +
-    cell(Math.round(avgActive),        null, `Активных КШ · ср/сут · ${periodLabel}`,'#2dd4bf') +
+    cell(avgActive.toLocaleString('ru-RU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }), null, `Активных КШ · ср/сут · ${periodLabel}`,'#2dd4bf') +
     cell(_fleetSize ? activePct + '%' : '…', null, '% активных от парка',           '#f59e0b') +
     cell(fmt(totRev) + ' ₽',          null, `Выручка · ${periodLabel}`,             '#4ade80') +
     cell(fmt(totOrders),               null, 'Заказов',                              '#94a3b8') +
@@ -1311,7 +1311,7 @@ async function loadSummaryWithResp(revenueResp, resp) {
   // Row 1: fleet · activity · revenue  |  Row 2: per-day · per-KSH · tariff
   grid.innerHTML =
     cell(_fleetSize || '…',           null, 'Парк · КШ',                           '#6b7280') +
-    cell(Math.round(avgActive),        null, `Активных КШ · ср/сут · ${periodLabel}`,'#2dd4bf') +
+    cell(avgActive.toLocaleString('ru-RU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }), null, `Активных КШ · ср/сут · ${periodLabel}`,'#2dd4bf') +
     cell(_fleetSize ? activePct + '%' : '…', null, '% активных от парка',           '#f59e0b') +
     cell(fmt(totRev) + ' ₽',          null, `Выручка · ${periodLabel}`,             '#4ade80') +
     cell(fmt(totOrders),               null, 'Заказов',                              '#94a3b8') +
