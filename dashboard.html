@@ -1303,11 +1303,18 @@
               style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:8px 12px;font-size:14px;outline:none">
           </div>
           <div>
-            <div style="font-size:11px;color:#4b5563;margin-bottom:6px">КОМПАНИИ (ID через запятую или из списка ниже)</div>
-            <input id="mg-search" type="text" placeholder="Поиск компании…"
-              oninput="filterMgCompanies(this.value)"
-              style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:7px 12px;font-size:13px;outline:none;margin-bottom:8px">
-            <div id="mg-companies" style="display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow-y:auto"></div>
+            <div style="font-size:11px;color:#4b5563;margin-bottom:6px">КОМПАНИИ</div>
+            <!-- Выбранные теги -->
+            <div id="mg-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:4px"></div>
+            <!-- Поиск с дропдауном -->
+            <div style="position:relative">
+              <input id="mg-search" type="text" placeholder="Начните набирать название компании…"
+                oninput="onMgSearchInput(this.value)"
+                onblur="hideMgDropdown()"
+                autocomplete="off"
+                style="width:100%;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:7px 12px;font-size:13px;outline:none">
+              <div id="mg-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1a1a2e;border:1px solid #374151;border-radius:8px;max-height:200px;overflow-y:auto;z-index:100"></div>
+            </div>
           </div>
         </div>
         <div style="display:flex;gap:8px">
@@ -4503,11 +4510,31 @@
     let _paCompanies = [];
 
     let _paManagers = [];
+    let _mgSelected = new Set(); // IDs выбранных компаний в форме управляющего
+
+    async function ensureCompaniesLoaded() {
+      if (_paCompanies.length) return;
+      const cResp = await fetch(GRAFANA_PROXY, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
+        body: JSON.stringify({ sql: 'SELECT id, name FROM companies ORDER BY name ASC LIMIT 500' }),
+      }).then(r => r.json());
+      const frame = cResp?.results?.A?.frames?.[0];
+      if (frame) {
+        const fields = frame.schema.fields.map(f => f.name);
+        const cols = frame.data.values;
+        _paCompanies = [];
+        for (let i = 0; i < (cols[0]?.length || 0); i++) {
+          const row = {}; fields.forEach((f, j) => { row[f] = cols[j][i]; }); _paCompanies.push(row);
+        }
+      }
+    }
 
     // ── Управляющие ────────────────────────────────────────────────────
     async function loadManagers() {
       window._mgLoaded = true;
       document.getElementById('mg-status').textContent = 'Загрузка…';
+      await ensureCompaniesLoaded();
       const resp = await fetch(`${PA_WORKER}/admin/managers`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json());
       _paManagers = resp.managers || [];
       document.getElementById('mg-status').textContent = `${_paManagers.length} управляющих`;
@@ -4538,43 +4565,82 @@
       }).join('');
     }
 
-    function renderMgCompanyCheckboxes(selected = [], filter = '') {
-      const wrap = document.getElementById('mg-companies');
-      const q = filter.toLowerCase();
-      const visible = q ? _paCompanies.filter(c => c.name.toLowerCase().includes(q)) : _paCompanies;
-      if (!visible.length) { wrap.innerHTML = '<span style="color:#4b5563;font-size:12px">Ничего не найдено</span>'; return; }
-      wrap.innerHTML = visible.map(c => {
-        const checked = selected.includes(c.id) ? 'checked' : '';
-        return `<label style="display:flex;align-items:center;gap:6px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;color:#94a3b8">
-          <input type="checkbox" value="${c.id}" ${checked} style="accent-color:#0d9488">
-          ${locName(c.name)}
-        </label>`;
+    // Тег-пикер: рендер выбранных тегов
+    function renderMgTags() {
+      const wrap = document.getElementById('mg-tags');
+      if (!_mgSelected.size) { wrap.innerHTML = ''; return; }
+      wrap.innerHTML = [..._mgSelected].map(id => {
+        const c = _paCompanies.find(c => c.id === id);
+        const name = c ? locName(c.name) : '#' + id;
+        return `<span style="display:inline-flex;align-items:center;gap:5px;background:#0d948830;border:1px solid #0d9488;border-radius:5px;padding:3px 8px;font-size:12px;color:#2dd4bf">
+          ${name}
+          <button onmousedown="removeMgTag(${id})" style="background:none;border:none;color:#2dd4bf;cursor:pointer;padding:0;font-size:13px;line-height:1">×</button>
+        </span>`;
       }).join('');
     }
 
-    function filterMgCompanies(q) {
-      const selected = [...document.querySelectorAll('#mg-companies input:checked')].map(el => Number(el.value));
-      renderMgCompanyCheckboxes(selected, q);
+    function removeMgTag(id) {
+      _mgSelected.delete(id);
+      renderMgTags();
     }
 
-    function openAddManager() {
+    function onMgSearchInput(q) {
+      const dd = document.getElementById('mg-dropdown');
+      if (!q.trim()) { dd.style.display = 'none'; return; }
+      const matches = _paCompanies.filter(c =>
+        !_mgSelected.has(c.id) && c.name.toLowerCase().includes(q.toLowerCase())
+      ).slice(0, 12);
+      if (!matches.length) {
+        dd.innerHTML = '<div style="padding:10px 12px;color:#4b5563;font-size:12px">Ничего не найдено</div>';
+      } else {
+        dd.innerHTML = matches.map(c =>
+          `<div onmousedown="selectMgCompany(${c.id})"
+            style="padding:8px 12px;cursor:pointer;font-size:13px;color:#e2e8f0;border-bottom:1px solid #1e1e2a"
+            onmouseover="this.style.background='#1e1e2a'" onmouseout="this.style.background=''">
+            ${locName(c.name)}
+          </div>`
+        ).join('');
+      }
+      dd.style.display = 'block';
+    }
+
+    function selectMgCompany(id) {
+      _mgSelected.add(id);
+      renderMgTags();
+      const inp = document.getElementById('mg-search');
+      inp.value = '';
+      document.getElementById('mg-dropdown').style.display = 'none';
+      inp.focus();
+    }
+
+    function hideMgDropdown() {
+      setTimeout(() => { document.getElementById('mg-dropdown').style.display = 'none'; }, 120);
+    }
+
+    async function openAddManager() {
+      await ensureCompaniesLoaded();
       document.getElementById('mg-form-title').textContent = 'Новый управляющий';
       document.getElementById('mg-name').value = '';
       document.getElementById('mg-name').dataset.editId = '';
       document.getElementById('mg-search').value = '';
-      renderMgCompanyCheckboxes([]);
+      document.getElementById('mg-dropdown').style.display = 'none';
+      _mgSelected = new Set();
+      renderMgTags();
       document.getElementById('mg-form').style.display = 'block';
       document.getElementById('mg-name').focus();
     }
 
-    function openEditManager(id) {
+    async function openEditManager(id) {
+      await ensureCompaniesLoaded();
       const m = _paManagers.find(m => m.id === id);
       if (!m) return;
       document.getElementById('mg-form-title').textContent = 'Редактировать управляющего';
       document.getElementById('mg-name').value = m.name;
       document.getElementById('mg-name').dataset.editId = m.id;
       document.getElementById('mg-search').value = '';
-      renderMgCompanyCheckboxes(m.companies || []);
+      document.getElementById('mg-dropdown').style.display = 'none';
+      _mgSelected = new Set((m.companies || []).map(Number));
+      renderMgTags();
       document.getElementById('mg-form').style.display = 'block';
     }
 
@@ -4582,7 +4648,7 @@
       const nameEl = document.getElementById('mg-name');
       const name = nameEl.value.trim();
       const editId = nameEl.dataset.editId || '';
-      const companies = [...document.querySelectorAll('#mg-companies input:checked')].map(el => Number(el.value));
+      const companies = [..._mgSelected];
       if (!name) { alert('Введите название управляющего'); return; }
       if (!companies.length) { alert('Выберите хотя бы одну компанию'); return; }
       const resp = await fetch(`${PA_WORKER}/admin/managers`, {
