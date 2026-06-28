@@ -1265,6 +1265,23 @@
     </div>
   </div>
 
+  <!-- Разряженные кашалоты -->
+  <div class="chart-card" id="lowBattSection" style="margin-top:16px">
+    <div class="chart-header collapsible" onclick="toggleSection('lowBattBody','lowBattArrow'); initLowBattSection()">
+      <div>
+        <div class="chart-title">🔋 Разряженные кашалоты <span class="toggle-arrow" id="lowBattArrow">▶</span></div>
+        <div class="chart-sub" id="lowBattStatus">Нажмите чтобы загрузить · онлайн, заряд ниже 30%</div>
+      </div>
+      <div style="display:flex;gap:8px" onclick="event.stopPropagation()">
+        <button onclick="sendBatteryToChat(this)" style="padding:5px 12px;background:#3b82f6;border:none;border-radius:8px;color:#fff;font-size:12px;cursor:pointer">📨 В чат развития</button>
+        <button onclick="refreshLowBatt(true)" style="padding:5px 12px;background:#1e1e2a;border:1px solid #2d2d3d;border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer">↺</button>
+      </div>
+    </div>
+    <div class="section-body" id="lowBattBody">
+      <div id="lowBattResult"></div>
+    </div>
+  </div>
+
   <!-- Партнёрский доступ -->
   <div class="chart-card" style="margin-top:24px">
     <div class="chart-header collapsible" onclick="toggleSection('partnerAccessBody','partnerAccessArrow'); if(!window._paLoaded) loadPartnerAccess()">
@@ -3851,7 +3868,7 @@
         const [outLoc, idleRows, battRows, ozRows] = await Promise.all([
           computeOutLoc().catch(() => []),
           grafanaQuery(`SELECT COUNT(*) n FROM (SELECT o.car_id, MAX(o.start_time) last FROM orders o JOIN bills b ON b.order_id=o.id WHERE b.status='PAID' AND o.start_time >= DATE_SUB(NOW(), INTERVAL 30 DAY) GROUP BY o.car_id HAVING last < DATE_SUB(NOW(), INTERVAL 7 DAY)) t`).catch(() => [{ n: 0 }]),
-          grafanaQuery(`SELECT COUNT(*) n FROM cars WHERE online=1 AND fuel>0 AND fuel<20 AND (hidden IS NULL OR hidden=0)`).catch(() => [{ n: 0 }]),
+          grafanaQuery(`SELECT COUNT(*) n FROM cars WHERE online=1 AND fuel>0 AND fuel<30 AND (hidden IS NULL OR hidden=0)`).catch(() => [{ n: 0 }]),
           grafanaQuery(`SELECT COUNT(DISTINCT o.car_id) n FROM order_events e JOIN orders o ON o.id=e.order_id WHERE e.reason='GEO' AND e.geo_id=1 AND DATE(o.start_time)='${today}'`).catch(() => [{ n: 0 }]),
         ]);
         const _fx = olFixedSet();
@@ -3863,7 +3880,7 @@
           chip(outLocOnline, 'Не в локации · онлайн', '#f87171', "jumpToSection('outLocSection','outLocBody','outLocArrow',initOutLocSection)") +
           chip(oz, 'Выехали за зону · сегодня', '#fbbf24', "jumpToSection('ozCard','ozBody','ozArrow')") +
           chip(idle, 'В простое · 7 дней', '#f59e0b', "jumpToSection('devEffCard','devEffBody','devEffArrow')") +
-          chip(batt, 'Разряжены · онлайн', '#fb923c', "jumpToSection('mapSection','mapBody','mapArrow',initMapSection)");
+          chip(batt, 'Разряжены · онлайн', '#fb923c', "jumpToSection('lowBattSection','lowBattBody','lowBattArrow',initLowBattSection)");
       } catch (e) {
         el.innerHTML = head + '<div style="color:#6b7280;font-size:13px;padding:4px">Не удалось загрузить сводку</div>';
         console.error('attention panel:', e);
@@ -4283,6 +4300,72 @@
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>${footer}`;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // ─── Разряженные кашалоты ──────────────────────────────────────────────────
+    let _lowBattInited = false, _lowBattCache = null, _lowBattCacheTime = 0;
+
+    async function initLowBattSection() {
+      if (_lowBattInited) return;
+      _lowBattInited = true;
+      await refreshLowBatt();
+    }
+
+    async function refreshLowBatt(force) {
+      const statusEl = document.getElementById('lowBattStatus');
+      if (!force && _lowBattCache && Date.now() - _lowBattCacheTime < 5 * 60 * 1000) { renderLowBatt(_lowBattCache); return; }
+      if (statusEl) statusEl.textContent = 'Загрузка…';
+      try {
+        const rows = await grafanaQuery(`
+          SELECT c.id, c.gosnomer, c.fuel, co.name AS company
+          FROM cars c JOIN companies co ON co.id = c.company_id
+          WHERE c.fuel IS NOT NULL AND c.fuel > 0 AND c.fuel < 30 AND c.online = 1
+            AND (c.hidden IS NULL OR c.hidden = 0)
+          ORDER BY c.fuel ASC
+        `);
+        _lowBattCache = rows; _lowBattCacheTime = Date.now();
+        renderLowBatt(rows);
+        const t = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        if (statusEl) statusEl.textContent = `${rows.length} разряженных (онлайн, <30%) · обновлено ${t}`;
+      } catch (e) { if (statusEl) statusEl.textContent = 'Ошибка загрузки'; console.error('lowBatt:', e); }
+    }
+
+    function renderLowBatt(rows) {
+      const el = document.getElementById('lowBattResult');
+      if (!rows.length) { el.innerHTML = `<div style="color:#4ade80;font-size:14px;padding:12px 0">✓ Все онлайн-кашалоты заряжены выше 30%</div>`; return; }
+      const tr = rows.map(r => {
+        const f = +r.fuel || 0;
+        const color = f < 10 ? '#f87171' : f < 20 ? '#fb923c' : '#fbbf24';
+        const carUrl = `https://gw.bumerang.tech/admin/car/${r.id}`;
+        return `<tr style="border-top:1px solid #1e1e2a">
+          <td style="padding:8px 10px;font-weight:600"><a href="${carUrl}" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:none">КШ-${r.id}</a><div style="font-size:11px;color:#6b7280;font-weight:400">${r.gosnomer || '—'}</div></td>
+          <td style="padding:8px 10px;color:#94a3b8;font-size:13px">${r.company || '—'}</td>
+          <td style="padding:8px 10px;font-weight:700;color:${color}">${f}%</td>
+        </tr>`;
+      }).join('');
+      el.innerHTML = `
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead><tr style="text-align:left;color:#4b5563;font-size:11px;text-transform:uppercase;letter-spacing:.04em">
+            <th style="padding:6px 10px">Кашалот</th>
+            <th style="padding:6px 10px">Локация / компания</th>
+            <th style="padding:6px 10px">Заряд</th>
+          </tr></thead>
+          <tbody>${tr}</tbody>
+        </table>`;
+    }
+
+    // Кнопка: отправить отчёт о заряде в чат развития через воркер (токен на сервере)
+    async function sendBatteryToChat(btn) {
+      const orig = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Отправляю…';
+      try {
+        const base = GRAFANA_PROXY.replace('/grafana', '');
+        const res = await fetch(base + '/run-battery', { method: 'POST', headers: { 'X-Token': GRAFANA_TOKEN } });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        btn.textContent = '✓ Отправлено';
+      } catch (e) { btn.textContent = 'Ошибка'; console.error('sendBattery:', e); }
+      setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
     }
     // ─────────────────────────────────────────────────────────────────────────
 
