@@ -210,11 +210,18 @@
     /* Таблица "По компаниям": скрыть 4-ю колонку "В СУТКИ/КШ" */
     #company-breakdown-table th:nth-child(4),
     #company-breakdown-table td:nth-child(4) { display: none; }
-    /* Таблица устройств: скрыть "ЗАКАЗОВ" (5-я) и "КОМПАНИЯ" (6-я) */
-    #devices-table th:nth-child(5),
-    #devices-table td:nth-child(5),
+    /* Таблица устройств: оставить # / КШ / Статус / Локация / Выручка, скрыть Заказов (6) и Компанию (7) */
     #devices-table th:nth-child(6),
-    #devices-table td:nth-child(6) { display: none; }
+    #devices-table td:nth-child(6),
+    #devices-table th:nth-child(7),
+    #devices-table td:nth-child(7) { display: none; }
+    /* Локации: оставить Локация / Выручка / Выр-КШ-день / Доля, скрыть Заказов(4) Ср.чек(5) КШ(6) */
+    #locations-table th:nth-child(4),
+    #locations-table td:nth-child(4),
+    #locations-table th:nth-child(5),
+    #locations-table td:nth-child(5),
+    #locations-table th:nth-child(6),
+    #locations-table td:nth-child(6) { display: none; }
     /* Тарифы: скрыть min-max диапазон (3-я) на узких экранах */
     #tariff-table th:nth-child(3),
     #tariff-table td:nth-child(3) { display: none; }
@@ -319,10 +326,12 @@
       <canvas id="locations-chart" style="max-height:320px"></canvas>
     </div>
     <div class="table-wrap" id="locations-table-wrap" style="display:none;margin-top:-20px">
+      <div style="overflow-x:auto">
       <table id="locations-table">
         <thead><tr>
           <th>Локация</th>
           <th style="text-align:right">Выручка</th>
+          <th style="text-align:right">Выр/КШ/день</th>
           <th style="text-align:right">Заказов</th>
           <th style="text-align:right">Ср. чек</th>
           <th style="text-align:right">КШ</th>
@@ -330,6 +339,7 @@
         </tr></thead>
         <tbody></tbody>
       </table>
+      </div>
     </div>
 
     <!-- Tariff section -->
@@ -354,11 +364,18 @@
     <!-- Devices table -->
     <div class="section-title">Устройства</div>
     <div class="table-wrap">
-      <div class="table-header" id="devices-header">Все устройства</div>
+      <div class="table-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <span id="devices-header">Все устройства</span>
+        <select id="device-location-filter" onchange="renderDevices()" style="background:var(--navy3);border:1px solid var(--navy3);color:var(--text);padding:6px 10px;border-radius:6px;font-size:13px;cursor:pointer;max-width:220px">
+          <option value="">Все локации</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
       <table id="devices-table">
-        <thead><tr><th>#</th><th>КШ</th><th>Статус</th><th>Выручка</th><th>Заказов</th><th>Компания</th></tr></thead>
-        <tbody><tr><td colspan="6" class="loading">Загрузка…</td></tr></tbody>
+        <thead><tr><th>#</th><th>КШ</th><th>Статус</th><th>Локация</th><th>Выручка</th><th>Заказов</th><th>Компания</th></tr></thead>
+        <tbody><tr><td colspan="7" class="loading">Загрузка…</td></tr></tbody>
       </table>
+      </div>
     </div>
 
     <!-- Out-of-zone -->
@@ -892,14 +909,27 @@ async function loadLocations() {
   });
 
   // Table
+  const activeDays = _lastRevenueResp?.rows?.length || 1;
+  // per-КШ-day across the whole set, for relative coloring
+  const perCarDayVals = rows.map(r => {
+    const cars = Number(r.active_cars);
+    return cars ? Math.round(Number(r.revenue) / activeDays / cars) : 0;
+  });
+  const maxPerCarDay = Math.max(...perCarDayVals, 1);
+
   const tbody = document.querySelector('#locations-table tbody');
-  tbody.innerHTML = rows.map(r => {
+  tbody.innerHTML = rows.map((r, i) => {
     const rev  = Number(r.revenue);
     const pct  = totalRev ? Math.round(rev / totalRev * 100) : 0;
     const pctColor = pct >= 30 ? '#2dd4bf' : pct >= 10 ? '#94a3b8' : '#6b7280';
+    const perCarDay = perCarDayVals[i];
+    // efficiency color: relative to best location
+    const eff = perCarDay / maxPerCarDay;
+    const effColor = eff >= 0.8 ? '#4ade80' : eff >= 0.5 ? '#fbbf24' : '#f87171';
     return `<tr>
       <td>${dotLabel(r)}</td>
       <td style="text-align:right;font-weight:600;color:#4ade80">${fmt(rev)} ₽</td>
+      <td style="text-align:right;font-weight:700;color:${effColor}">${fmt(perCarDay)} ₽</td>
       <td style="text-align:right;color:#94a3b8">${fmt(r.orders)}</td>
       <td style="text-align:right;color:#94a3b8">${fmt(r.avg_check)} ₽</td>
       <td style="text-align:right;color:#6b7280">${r.active_cars}</td>
@@ -983,21 +1013,61 @@ function deviceStatus(rev, orders, med) {
   return                                { label: 'Лидер',        color: '#60a5fa' };
 }
 
+let _lastDevices = [];
+
 async function loadDevices() {
   const resp = await api('devices');
-  const tbody  = document.querySelector('#devices-table tbody');
-  const header = document.getElementById('devices-header');
   if (!resp || !resp.rows) {
-    tbody.innerHTML = '<tr><td colspan="6">Ошибка загрузки</td></tr>';
+    document.querySelector('#devices-table tbody').innerHTML = '<tr><td colspan="7">Ошибка загрузки</td></tr>';
     return;
   }
-  const rows = resp.rows;
-  const nonZero = rows.filter(r => Number(r.revenue) > 0);
-  const idle    = rows.filter(r => Number(r.revenue) === 0);
-  const med     = median(nonZero.map(r => Number(r.revenue)));
+  _lastDevices = resp.rows;
 
+  // Populate location filter (home dot, unique) preserving current selection
+  const sel = document.getElementById('device-location-filter');
+  const prev = sel.value;
+  const cityPrefixes = _lastDevices.map(r => (r.dot_name || '').split('|')[0].trim()).filter(Boolean);
+  const sameCity = new Set(cityPrefixes).size === 1;
+  const dotShort = name => sameCity ? (name || '').replace(/^[^|]+\|\s*/, '') : (name || '');
+  const dots = new Map();
+  _lastDevices.forEach(r => { if (r.dot_id != null) dots.set(String(r.dot_id), dotShort(r.dot_name) || `Точка ${r.dot_id}`); });
+  const noDot = _lastDevices.some(r => r.dot_id == null);
+  sel.innerHTML = '<option value="">Все локации</option>'
+    + [...dots.entries()].sort((a, b) => a[1].localeCompare(b[1], 'ru')).map(([id, name]) => `<option value="${id}">${name}</option>`).join('')
+    + (noDot ? '<option value="__none__">Без локации</option>' : '');
+  sel.value = [...sel.options].some(o => o.value === prev) ? prev : '';
+
+  renderDevices();
+}
+
+function renderDevices() {
+  const tbody  = document.querySelector('#devices-table tbody');
+  const header = document.getElementById('devices-header');
+  const sel    = document.getElementById('device-location-filter');
+  const filter = sel ? sel.value : '';
+
+  // Median computed across full set (non-zero only) — stable regardless of filter
+  const med = median(_lastDevices.filter(r => Number(r.revenue) > 0).map(r => Number(r.revenue)));
+
+  const rows = !filter
+    ? _lastDevices
+    : filter === '__none__'
+      ? _lastDevices.filter(r => r.dot_id == null)
+      : _lastDevices.filter(r => String(r.dot_id) === filter);
+
+  const cityPrefixes = _lastDevices.map(r => (r.dot_name || '').split('|')[0].trim()).filter(Boolean);
+  const sameCity = new Set(cityPrefixes).size === 1;
+  const dotShort = name => sameCity ? (name || '').replace(/^[^|]+\|\s*/, '') : (name || '');
+
+  const nonZero = rows.filter(r => Number(r.revenue) > 0).length;
+  const idle    = rows.filter(r => Number(r.revenue) === 0).length;
   if (header) header.textContent =
-    `Все устройства · ${rows.length} КШ · ${nonZero.length} с выручкой · ${idle.length} простой`;
+    `${filter ? 'Локация' : 'Все устройства'} · ${rows.length} КШ · ${nonZero} с выручкой · ${idle} простой`;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="loading">Нет устройств</td></tr>';
+    return;
+  }
 
   tbody.innerHTML = rows.map((r, i) => {
     const rev     = Number(r.revenue);
@@ -1006,10 +1076,12 @@ async function loadDevices() {
     const revCell = rev > 0
       ? `<span style="font-weight:600">${fmt(rev)} ₽</span>`
       : `<span style="color:#6b7280">—</span>`;
+    const loc = r.dot_name ? dotShort(r.dot_name) : '<span style="color:#6b7280">—</span>';
     return `<tr>
       <td style="color:var(--text2)">${i + 1}</td>
       <td style="font-weight:700">КШ-${r.car_id}</td>
       <td><span style="font-size:12px;font-weight:600;color:${st.color}">${st.label}</span></td>
+      <td style="color:var(--text2);font-size:13px">${loc}</td>
       <td>${revCell}</td>
       <td style="color:${orders ? 'inherit' : '#6b7280'}">${orders || '—'}</td>
       <td style="color:var(--text2);font-size:13px">${shortName(r.company_name)}</td>

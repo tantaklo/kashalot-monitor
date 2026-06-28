@@ -1003,11 +1003,14 @@ export default {
         } else if (type === 'devices') {
           rows = await grafanaSQL(`
             SELECT c.id AS car_id, co.name AS company_name,
+              c.dot_id AS dot_id,
+              dd.name AS dot_name,
               COALESCE(d.orders, 0) AS orders,
               COALESCE(d.revenue, 0) AS revenue,
               COALESCE(d.avg_check, 0) AS avg_check
             FROM cars c
             JOIN companies co ON c.company_id = co.id
+            LEFT JOIN dots dd ON dd.id = c.dot_id
             LEFT JOIN (
               SELECT o.car_id,
                 COUNT(*) AS orders,
