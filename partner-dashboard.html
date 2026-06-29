@@ -310,11 +310,16 @@
 
     <!-- Company breakdown -->
     <div class="table-wrap" id="company-breakdown-wrap" style="display:none;margin-bottom:24px">
-      <div class="table-header">По компаниям</div>
-      <table id="company-breakdown-table">
-        <thead><tr><th>Локация</th><th>Выручка</th><th>КШ</th><th>В сутки / КШ</th></tr></thead>
-        <tbody></tbody>
-      </table>
+      <div class="table-header" onclick="toggleCompanyBreakdown()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none">
+        <span>По компаниям</span>
+        <span id="company-breakdown-arrow" style="font-size:11px;color:var(--text2);transition:transform .2s">▲</span>
+      </div>
+      <div id="company-breakdown-body">
+        <table id="company-breakdown-table">
+          <thead><tr><th>Локация</th><th>Выручка</th><th>КШ</th><th>В сутки / КШ</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Revenue chart -->
@@ -649,6 +654,14 @@ async function api(type, extra = {}) {
 }
 
 function fmt(n) { return Number(n).toLocaleString('ru-RU'); }
+
+function toggleCompanyBreakdown() {
+  const body  = document.getElementById('company-breakdown-body');
+  const arrow = document.getElementById('company-breakdown-arrow');
+  const open  = body.style.display !== 'none';
+  body.style.display  = open ? 'none' : '';
+  arrow.style.transform = open ? 'rotate(180deg)' : '';
+}
 
 // --- Summary + KPI grid ---
 async function loadSummary(revenueResp) {
