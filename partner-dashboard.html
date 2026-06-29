@@ -398,6 +398,21 @@
       <div class="table-header">Онлайн-устройства</div>
       <div class="fleet-grid" id="fleet-grid"><div class="loading">Загрузка…</div></div>
     </div>
+
+    <!-- Map -->
+    <div class="section-title">Карта · КШ доступны к аренде</div>
+    <div class="table-wrap" style="padding-bottom:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 8px">
+        <span id="map-status" style="font-size:12px;color:var(--text2)">—</span>
+        <button onclick="refreshPartnerMap()" style="background:none;border:1px solid var(--navy3);color:var(--text2);padding:3px 10px;border-radius:6px;cursor:pointer;font-size:12px">⟳ Обновить</button>
+      </div>
+      <div id="partnerMap" style="height:360px;margin:0 12px 0"></div>
+      <div style="display:flex;gap:16px;padding:10px 16px 14px;font-size:12px;color:var(--text2)">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#4ade80;margin-right:4px;vertical-align:middle"></span>Заряд &gt;50%</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:4px;vertical-align:middle"></span>Заряд 20–50%</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f87171;margin-right:4px;vertical-align:middle"></span>Заряд &lt;20%</span>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -410,6 +425,8 @@ let currentPeriod = 30;
 let ozPeriod = 1;
 let revenueChart = null;
 let _fleetSize = 0;
+let _partnerMap = null, _partnerMapMarkers = [];
+let _partnerMapCacheTime = 0, _partnerMapCacheData = null, _partnerMapCacheCityKey = null;
 
 // --- Feedback ---
 function openFeedback() {
@@ -1301,6 +1318,86 @@ async function loadFleet() {
   else renderActivityChart();
 }
 
+// --- Partner Map ---
+async function _loadLeaflet() {
+  if (window.L) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+  document.head.appendChild(link);
+  await new Promise(res => {
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.onload = res; document.body.appendChild(s);
+  });
+}
+
+async function loadPartnerMap() {
+  const statusEl = document.getElementById('map-status');
+  const now = Date.now();
+  const cityKey = JSON.stringify(currentCityIds);
+  if (_partnerMapCacheData && now - _partnerMapCacheTime < 5 * 60 * 1000 && _partnerMapCacheCityKey === cityKey) {
+    await _loadLeaflet();
+    if (!_partnerMap) _initPartnerMapInstance();
+    renderPartnerMapMarkers(_partnerMapCacheData);
+    return;
+  }
+  if (statusEl) statusEl.textContent = 'Загрузка…';
+  try {
+    await _loadLeaflet();
+    if (!_partnerMap) _initPartnerMapInstance();
+    const resp = await api('fleet-map');
+    const rows = (resp && resp.rows) ? resp.rows : [];
+    _partnerMapCacheData = rows;
+    _partnerMapCacheTime = now;
+    _partnerMapCacheCityKey = cityKey;
+    renderPartnerMapMarkers(rows);
+  } catch(e) {
+    if (statusEl) statusEl.textContent = 'Ошибка загрузки';
+    console.error('Partner map error:', e);
+  }
+}
+
+function _initPartnerMapInstance() {
+  _partnerMap = L.map('partnerMap', { zoomControl: true }).setView([61, 55], 4);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap contributors © CARTO',
+    subdomains: 'abcd', maxZoom: 19
+  }).addTo(_partnerMap);
+}
+
+function renderPartnerMapMarkers(rows) {
+  const statusEl = document.getElementById('map-status');
+  _partnerMapMarkers.forEach(m => m.remove());
+  _partnerMapMarkers = [];
+  rows.forEach(r => {
+    const fuel = +r.fuel || 0;
+    const color = fuel > 50 ? '#4ade80' : fuel > 20 ? '#f59e0b' : '#f87171';
+    const m = L.circleMarker([+r.lat, +r.lon], {
+      radius: 7, fillColor: color,
+      color: '#0d0d14', weight: 1.5,
+      opacity: 1, fillOpacity: 0.85
+    }).addTo(_partnerMap);
+    m.bindPopup(
+      `<b style="color:#e2e8f0">КШ-${r.id}</b>` +
+      `<br><span style="color:#94a3b8">${r.gosnomer || '—'}</span>` +
+      `<br>⚡ Заряд: <b style="color:${color}">${fuel}%</b>`
+    );
+    _partnerMapMarkers.push(m);
+  });
+  if (rows.length > 1) {
+    const bounds = L.latLngBounds(rows.map(r => [+r.lat, +r.lon]));
+    _partnerMap.fitBounds(bounds, { padding: [30, 30] });
+  }
+  const t = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  if (statusEl) statusEl.textContent = `${rows.length} КШ доступны к аренде · обновлено ${t}`;
+}
+
+async function refreshPartnerMap() {
+  _partnerMapCacheTime = 0;
+  await loadPartnerMap();
+}
+
 // Re-render fleet-dependent KPI cells after fleet size is available
 let _lastRevenueResp = null;
 let _lastSummaryResp = null;
@@ -1349,6 +1446,7 @@ async function loadAll() {
     loadFleet(),
     loadTariffs(),
     loadOutOfZone(),
+    loadPartnerMap(),
   ]);
 }
 
