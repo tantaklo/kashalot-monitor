@@ -4936,7 +4936,7 @@
         fetch(`${PA_WORKER}/admin/visits`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json()).catch(() => ({ visits: [] })),
       ]);
 
-      _paPartners = pResp.partners || [];
+      _paPartners = (pResp.partners || []).sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
       _paVisits = {};
       (vResp.visits || []).forEach(v => { _paVisits[v.email] = v; });
 
@@ -4987,7 +4987,7 @@
         list.innerHTML = '<div style="color:#4b5563;font-size:13px">' + (_paPartners.length ? 'Нет совпадений' : 'Нет партнёров. Добавьте первого.') + '</div>';
         return;
       }
-      list.innerHTML = data.map(p => {
+      list.innerHTML = data.map((p, i) => {
         let accessTags = '';
         if (p.managers && p.managers.length) {
           accessTags = p.managers.map(mname => {
@@ -5015,7 +5015,7 @@
           : `<span style="font-size:11px;color:#374151">· не заходил</span>`;
         return `<div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
-            <div style="font-size:14px;font-weight:600;margin-bottom:2px">${p.name || p.email}${p.support ? ' <span style="background:#1e3a2a;border:1px solid #2f5d44;border-radius:4px;padding:1px 7px;font-size:10px;color:#4ade80;vertical-align:middle">поддержка</span>' : ''}</div>
+            <div style="font-size:14px;font-weight:600;margin-bottom:2px"><span style="color:#4b5563;font-size:12px;font-weight:400;margin-right:6px">${data.length - i}.</span>${p.name || p.email}${p.support ? ' <span style="background:#1e3a2a;border:1px solid #2f5d44;border-radius:4px;padding:1px 7px;font-size:10px;color:#4ade80;vertical-align:middle">поддержка</span>' : ''}</div>
             <div style="font-size:11px;color:#4b5563;margin-bottom:8px">${p.email} ${visitBadge}</div>
             <div style="display:flex;flex-wrap:wrap;gap:4px">${accessTags || '<span style="color:#4b5563;font-size:11px">Нет доступа</span>'}</div>
           </div>

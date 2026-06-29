@@ -587,7 +587,7 @@ async function sendOutOfZoneAlert(env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     // CORS preflight
@@ -1393,15 +1393,17 @@ export default {
             status: 400, headers: { 'Content-Type': 'application/json', ...CORS },
           });
         }
-        const isNew = !(await env.IGN_CACHE.get(`partner_access:${email}`));
-        const payload = { name: name || email, support: !!support };
+        const existingRaw = await env.IGN_CACHE.get(`partner_access:${email}`);
+        const isNew = !existingRaw;
+        const existing = existingRaw ? JSON.parse(existingRaw) : null;
+        const payload = { name: name || email, support: !!support, created_at: existing?.created_at || Date.now(), updated_at: Date.now() };
         if (Array.isArray(managers)) payload.managers = managers;
         else payload.companies = companies;
         if (manager_companies && Object.keys(manager_companies).length) payload.manager_companies = manager_companies;
         await env.IGN_CACHE.put(`partner_access:${email}`, JSON.stringify(payload));
         // Уведомление на почту — не блокирует сохранение
         if (env.RESEND_API_KEY && Array.isArray(managers)) {
-          sendPartnerEmail(env, { email, name: payload.name, managers, isNew }).catch(() => {});
+          ctx.waitUntil(sendPartnerEmail(env, { email, name: payload.name, managers, isNew }).catch(() => {}));
         }
         return new Response(JSON.stringify({ ok: true }), {
           headers: { 'Content-Type': 'application/json', ...CORS },
