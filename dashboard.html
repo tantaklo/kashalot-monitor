@@ -4806,7 +4806,7 @@
       wrap.style.display = 'block';
       document.getElementById('cit-orphans-count').textContent = orphans.length;
       document.getElementById('cit-orphans-list').innerHTML = orphans.map(c =>
-        `<span style="background:#2d1010;border:1px solid #7f1d1d;border-radius:4px;padding:2px 8px;font-size:11px;color:#fca5a5">${c.name}</span>`
+        `<span onclick="openAddCityWith(${c.id})" style="background:#2d1010;border:1px solid #7f1d1d;border-radius:4px;padding:2px 8px;font-size:11px;color:#fca5a5;cursor:pointer" title="Добавить в город">${c.name}</span>`
       ).join('');
     }
 
@@ -4906,6 +4906,13 @@
       renderCitTags();
       document.getElementById('cit-form').style.display = 'block';
       document.getElementById('cit-name').focus();
+    }
+
+    async function openAddCityWith(companyId) {
+      await openAddCity();
+      selectCitCompany(companyId);
+      const form = document.getElementById('cit-form');
+      setTimeout(() => form.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     }
 
     async function openEditCity(id) {
