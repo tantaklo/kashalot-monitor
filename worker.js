@@ -1198,9 +1198,8 @@ export default {
               arr.forEach(id => { if (Number(id) !== 1) zoneIdSet.add(Number(id)); });
             } catch {}
           });
-          // Возвращаем отладочную информацию если зон нет
           if (!polyCol || zoneIdSet.size === 0) {
-            rows = [{ _debug: 1, polyCol: polyCol || 'NOT_FOUND', colNames: colNames.join(','), zoneCount: zoneIdSet.size }];
+            rows = [];
           } else {
             const zoneIds = [...zoneIdSet].join(',');
             rows = await grafanaSQL(`

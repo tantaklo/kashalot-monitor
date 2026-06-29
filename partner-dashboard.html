@@ -1440,8 +1440,6 @@ function _initPartnerMapInstance() {
 }
 
 function renderPartnerMapZones(zones) {
-  if (zones[0] && zones[0]._debug) { console.warn('[geo-zones debug]', zones[0]); zones = []; }
-  console.log('[map] geo-zones received:', zones.length, zones.map(z => z.name));
   _partnerMapZoneLayers.forEach(l => l.destroy());
   _partnerMapZoneLayers = [];
   zones.forEach(gz => {
