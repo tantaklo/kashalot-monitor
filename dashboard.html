@@ -1343,6 +1343,10 @@
       <input id="cit-list-search" type="text" placeholder="Поиск по городам…" oninput="filterCitList(this.value)"
         style="width:100%;max-width:340px;background:#1e1e2a;border:1px solid #374151;border-radius:8px;color:#e2e8f0;padding:7px 12px;font-size:13px;outline:none;margin-bottom:12px;display:none">
       <div id="cit-list" style="display:grid;gap:10px"></div>
+      <div id="cit-orphans" style="display:none;margin-top:16px">
+        <div style="font-size:12px;color:#4b5563;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Бесхозные компании <span id="cit-orphans-count" style="color:#7f1d1d;font-weight:600"></span></div>
+        <div id="cit-orphans-list" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+      </div>
       <div id="cit-form" style="display:none;background:#12121c;border:1px solid #1e1e2a;border-radius:12px;padding:20px;margin-top:16px">
         <div style="font-size:15px;font-weight:700;margin-bottom:14px" id="cit-form-title">Новый город</div>
         <div style="display:grid;gap:10px;margin-bottom:14px">
@@ -4784,6 +4788,7 @@
       const searchEl = document.getElementById('cit-list-search');
       if (_paCities.length > 4) searchEl.style.display = 'block';
       renderCityList();
+      renderOrphans();
     }
 
     function filterCitList(q) {
@@ -4791,6 +4796,18 @@
         ? _paCities.filter(c => c.name.toLowerCase().includes(q.toLowerCase()))
         : _paCities;
       renderCityList(filtered);
+    }
+
+    function renderOrphans() {
+      const assigned = new Set(_paCities.flatMap(c => (c.companies || []).map(Number)));
+      const orphans = _paCompanies.filter(c => !assigned.has(Number(c.id)));
+      const wrap = document.getElementById('cit-orphans');
+      if (!orphans.length) { wrap.style.display = 'none'; return; }
+      wrap.style.display = 'block';
+      document.getElementById('cit-orphans-count').textContent = orphans.length;
+      document.getElementById('cit-orphans-list').innerHTML = orphans.map(c =>
+        `<span style="background:#2d1010;border:1px solid #7f1d1d;border-radius:4px;padding:2px 8px;font-size:11px;color:#fca5a5">${c.name}</span>`
+      ).join('');
     }
 
     function renderCityList(items) {
@@ -4853,9 +4870,21 @@
       dd.style.display = 'block';
     }
 
+    function guessCity(companyName) {
+      return companyName.replace(/\s*\[.*?\]/g, '').replace(/\s+\d+(\.\d+)?$/, '').trim();
+    }
+
     function selectCitCompany(id) {
+      const isFirst = _citSelected.size === 0;
       _citSelected.add(id);
       renderCitTags();
+      if (isFirst) {
+        const nameEl = document.getElementById('cit-name');
+        if (!nameEl.value.trim()) {
+          const co = _paCompanies.find(c => c.id === id);
+          if (co) nameEl.value = guessCity(co.name);
+        }
+      }
       const inp = document.getElementById('cit-search');
       inp.value = '';
       document.getElementById('cit-dropdown').style.display = 'none';
