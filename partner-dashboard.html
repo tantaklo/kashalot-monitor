@@ -1437,6 +1437,7 @@ function _initPartnerMapInstance() {
     center: [37.615, 55.752],
     zoom: 9,
   });
+  document.getElementById('partnerMap').addEventListener('wheel', e => e.preventDefault(), { passive: false });
 }
 
 function renderPartnerMapZones(zones) {
