@@ -261,14 +261,81 @@ async function getPartnerSession(env, token) {
   try { return JSON.parse(raw); } catch { return null; }
 }
 
+async function logPartnerVisit(env, email) {
+  const now = Date.now();
+  const msk = new Date(now + 3 * 3600 * 1000);
+  const date = msk.toISOString().slice(0, 10);
+  const hour = msk.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+  const hourKey = `visit_hour:${email}:${hour}`;
+  if (await env.IGN_CACHE.get(hourKey)) return; // уже залогировано в этот час
+  await env.IGN_CACHE.put(hourKey, '1', { expirationTtl: 3600 });
+  const logKey = `visits:${email}`;
+  const existing = await env.IGN_CACHE.get(logKey);
+  const entries = existing ? JSON.parse(existing) : [];
+  entries.push({ ts: now, date });
+  if (entries.length > 90) entries.splice(0, entries.length - 90);
+  await env.IGN_CACHE.put(logKey, JSON.stringify(entries));
+}
+
+async function sendPartnerEmail(env, { email, name, managers, isNew }) {
+  const DASH = 'https://tantaklo.github.io/kashalot-monitor/partner-dashboard.html';
+  const from = env.RESEND_FROM || 'Кашалот <noreply@kashalot.ru>';
+  const subject = isNew
+    ? 'Кашалот: вам открыт доступ к дашборду'
+    : 'Кашалот: ваш доступ к дашборду обновлён';
+
+  const greeting = name && name !== email ? `Здравствуйте, ${name}!` : 'Здравствуйте!';
+  const action = isNew
+    ? 'Вам открыт доступ к партнёрскому дашборду Кашалот.'
+    : 'Ваши права доступа к дашборду Кашалот обновлены.';
+
+  const mgrList = managers.map(m => `• ${m}`).join('\n');
+  const mgrListHtml = managers.map(m => `<li>${m}</li>`).join('');
+
+  const text = `${greeting}\n\n${action}\n\nУправляющий(е):\n${mgrList}\n\nДашборд:\n${DASH}\n\nДля входа используйте аккаунт: ${email}\n\nС уважением,\nКоманда Кашалот`;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 0">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)">
+  <tr><td style="background:#0f172a;padding:28px 32px">
+    <span style="font-size:22px;font-weight:700;color:#ffffff">🐋 Кашалот</span>
+    <span style="font-size:13px;color:#64748b;margin-left:10px">Партнёрский дашборд</span>
+  </td></tr>
+  <tr><td style="padding:32px">
+    <p style="margin:0 0 16px;font-size:16px;color:#1e293b">${greeting}</p>
+    <p style="margin:0 0 24px;font-size:15px;color:#334155">${action}</p>
+    <p style="margin:0 0 8px;font-size:13px;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Управляющий(е)</p>
+    <ul style="margin:0 0 28px;padding-left:20px;color:#1e293b;font-size:15px;line-height:1.8">${mgrListHtml}</ul>
+    <a href="${DASH}" style="display:inline-block;padding:12px 28px;background:#0d9488;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px">Открыть дашборд →</a>
+    <p style="margin:24px 0 0;font-size:12px;color:#94a3b8">Для входа используйте аккаунт: ${email}</p>
+  </td></tr>
+  <tr><td style="background:#f8fafc;padding:16px 32px;border-top:1px solid #e2e8f0">
+    <p style="margin:0;font-size:12px;color:#94a3b8">Кашалот · kashalot.ru · Это автоматическое уведомление, отвечать на него не нужно.</p>
+  </td></tr>
+</table>
+</td></tr></table></body></html>`;
+
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from, to: [email], subject, text, html }),
+  });
+}
+
 // Резолвит company IDs из partner_access (поддерживает managers-режим и старый companies-режим)
 async function resolveCompanyIds(env, access) {
   if (access.managers && access.managers.length && env.IGN_CACHE) {
     const ids = new Set();
     for (const mname of access.managers) {
-      const raw = await env.IGN_CACHE.get(`manager:${mname}`);
-      if (raw) {
-        try { (JSON.parse(raw).companies || []).forEach(id => ids.add(Number(id))); } catch {}
+      // Если есть ограничение по городам — берём только разрешённые IDs
+      if (access.manager_companies && access.manager_companies[mname]) {
+        access.manager_companies[mname].forEach(id => ids.add(Number(id)));
+      } else {
+        const raw = await env.IGN_CACHE.get(`manager:${mname}`);
+        if (raw) {
+          try { (JSON.parse(raw).companies || []).forEach(id => ids.add(Number(id))); } catch {}
+        }
       }
     }
     return [...ids];
@@ -974,6 +1041,7 @@ export default {
           status: 401, headers: { 'Content-Type': 'application/json', ...CORS },
         });
       }
+      logPartnerVisit(env, session.email).catch(() => {});
       let body;
       try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
 
@@ -1086,6 +1154,20 @@ export default {
             GROUP BY o.company_id, co.name, a.description
             ORDER BY orders DESC
             LIMIT 60
+          `, env);
+        } else if (type === 'fleet-map') {
+          rows = await grafanaSQL(`
+            SELECT c.id, c.gosnomer, c.fuel, c.lat, c.lon
+            FROM cars c
+            WHERE c.company_id IN (${idList})
+              AND c.online = 1
+              AND c.cur_order_id IS NULL
+              AND c.lat IS NOT NULL AND c.lat != 0
+              AND c.lon IS NOT NULL AND c.lon != 0
+              AND (c.hidden IS NULL OR c.hidden = 0)
+              AND c.fuel > 5
+            ORDER BY c.fuel DESC
+            LIMIT 300
           `, env);
         } else if (type === 'fleet-size') {
           rows = await grafanaSQL(`
@@ -1305,16 +1387,22 @@ export default {
       if (request.method === 'POST') {
         let body;
         try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
-        const { email, managers, companies, name, support } = body;
+        const { email, managers, companies, name, support, manager_companies } = body;
         if (!email || (!Array.isArray(managers) && !Array.isArray(companies))) {
           return new Response(JSON.stringify({ error: 'email and managers[] (or companies[]) required' }), {
             status: 400, headers: { 'Content-Type': 'application/json', ...CORS },
           });
         }
+        const isNew = !(await env.IGN_CACHE.get(`partner_access:${email}`));
         const payload = { name: name || email, support: !!support };
         if (Array.isArray(managers)) payload.managers = managers;
         else payload.companies = companies;
+        if (manager_companies && Object.keys(manager_companies).length) payload.manager_companies = manager_companies;
         await env.IGN_CACHE.put(`partner_access:${email}`, JSON.stringify(payload));
+        // Уведомление на почту — не блокирует сохранение
+        if (env.RESEND_API_KEY && Array.isArray(managers)) {
+          sendPartnerEmail(env, { email, name: payload.name, managers, isNew }).catch(() => {});
+        }
         return new Response(JSON.stringify({ ok: true }), {
           headers: { 'Content-Type': 'application/json', ...CORS },
         });
@@ -1390,6 +1478,64 @@ export default {
       }
 
       return new Response('Method Not Allowed', { status: 405, headers: CORS });
+    }
+
+    // --- Роут: Визиты партнёров (только Антон, X-Token) ---
+    if (url.pathname === '/admin/visits' && request.method === 'GET') {
+      const token = request.headers.get('X-Token');
+      if (!token || token !== env.PROXY_TOKEN) {
+        return new Response('Unauthorized', { status: 401, headers: CORS });
+      }
+      const [visitList, paList] = await Promise.all([
+        env.IGN_CACHE.list({ prefix: 'visits:' }),
+        env.IGN_CACHE.list({ prefix: 'partner_access:' }),
+      ]);
+      const [visitRaws, paRaws] = await Promise.all([
+        Promise.all(visitList.keys.map(k => env.IGN_CACHE.get(k.name).then(r => ({ email: k.name.replace('visits:', ''), raw: r })))),
+        Promise.all(paList.keys.map(k => env.IGN_CACHE.get(k.name).then(r => ({ email: k.name.replace('partner_access:', ''), raw: r })))),
+      ]);
+      const nameMap = {};
+      paRaws.forEach(x => { if (x.raw) try { nameMap[x.email] = JSON.parse(x.raw).name || x.email; } catch {} });
+      const now = Date.now();
+      const visits = visitRaws
+        .filter(x => x.raw)
+        .map(x => {
+          const entries = JSON.parse(x.raw);
+          const last = entries[entries.length - 1];
+          const d7  = entries.filter(e => now - e.ts < 7  * 86400000).length;
+          const d30 = entries.filter(e => now - e.ts < 30 * 86400000).length;
+          return { email: x.email, name: nameMap[x.email] || x.email, last_date: last?.date, last_ts: last?.ts, visits_7d: d7, visits_30d: d30 };
+        })
+        .sort((a, b) => (b.last_ts || 0) - (a.last_ts || 0));
+      return new Response(JSON.stringify({ ok: true, visits }), {
+        headers: { 'Content-Type': 'application/json', ...CORS },
+      });
+    }
+
+    // --- Роут: Комбинированный (managers + partners за один запрос) ---
+    if (url.pathname === '/admin/combined' && request.method === 'GET') {
+      const token = request.headers.get('X-Token');
+      if (!token || token !== env.PROXY_TOKEN) {
+        return new Response('Unauthorized', { status: 401, headers: CORS });
+      }
+      const [mgrList, paList] = await Promise.all([
+        env.IGN_CACHE.list({ prefix: 'manager:' }),
+        env.IGN_CACHE.list({ prefix: 'partner_access:' }),
+      ]);
+      const [mgrRaws, paRaws] = await Promise.all([
+        Promise.all(mgrList.keys.map(k => env.IGN_CACHE.get(k.name).then(r => ({ key: k.name, raw: r })))),
+        Promise.all(paList.keys.map(k => env.IGN_CACHE.get(k.name).then(r => ({ key: k.name, raw: r })))),
+      ]);
+      const managers = mgrRaws
+        .filter(x => x.raw)
+        .map(x => ({ id: x.key.replace('manager:', ''), ...JSON.parse(x.raw) }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+      const partners = paRaws
+        .filter(x => x.raw)
+        .map(x => ({ email: x.key.replace('partner_access:', ''), ...JSON.parse(x.raw) }));
+      return new Response(JSON.stringify({ ok: true, managers, partners }), {
+        headers: { 'Content-Type': 'application/json', ...CORS },
+      });
     }
 
     // --- Роут: Города (только Антон, X-Token) ---
