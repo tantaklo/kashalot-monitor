@@ -4937,6 +4937,7 @@
       if (resp.ok) {
         document.getElementById('cit-form').style.display = 'none';
         await loadCities();
+        document.querySelector('[onclick="openAddCity()"]').scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else { alert('Ошибка: ' + (resp.error || 'unknown')); }
     }
 
