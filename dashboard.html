@@ -4506,6 +4506,7 @@
         center: [37.615, 55.752],
         zoom: 5,
       });
+      document.getElementById('kashalotMap').addEventListener('wheel', e => e.stopPropagation(), { passive: false });
       await refreshMapData();
     }
 
