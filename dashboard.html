@@ -5119,7 +5119,9 @@
       document.getElementById('pa-name').value = p.name || '';
       renderManagerPickerInForm(p.managers || [], p.manager_companies || {});
       document.getElementById('pa-support').checked = !!p.support;
-      document.getElementById('pa-form').style.display = 'block';
+      const form = document.getElementById('pa-form');
+      form.style.display = 'block';
+      setTimeout(() => form.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     }
 
     async function savePartner() {
