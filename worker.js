@@ -1170,17 +1170,31 @@ export default {
             LIMIT 300
           `, env);
         } else if (type === 'geo-zones') {
-          rows = await grafanaSQL(`
-            SELECT DISTINCT g.id, g.name, g.polygon
-            FROM geozones g
-            WHERE g.id != 1
-              AND g.polygon IS NOT NULL AND g.polygon != '' AND g.polygon != '[]'
-              AND EXISTS (
-                SELECT 1 FROM cars c
-                WHERE c.company_id IN (${idList})
-                  AND JSON_CONTAINS(c.geozones, CAST(g.id AS CHAR))
-              )
+          // Шаг 1: узнать какие zone_id реально используют кашалоты партнёра
+          const carZones = await grafanaSQL(`
+            SELECT DISTINCT geozones FROM cars
+            WHERE company_id IN (${idList})
+              AND geozones IS NOT NULL AND geozones != '' AND geozones != '[]'
           `, env);
+          // Собираем уникальные ID зон из JSON-массивов
+          const zoneIdSet = new Set();
+          (carZones || []).forEach(r => {
+            try {
+              const arr = JSON.parse(r.geozones);
+              arr.forEach(id => { if (Number(id) !== 1) zoneIdSet.add(Number(id)); });
+            } catch {}
+          });
+          if (zoneIdSet.size > 0) {
+            const zoneIds = [...zoneIdSet].join(',');
+            rows = await grafanaSQL(`
+              SELECT id, name, polygon
+              FROM geozones
+              WHERE id IN (${zoneIds})
+                AND polygon IS NOT NULL AND polygon != '' AND polygon != '[]'
+            `, env);
+          } else {
+            rows = [];
+          }
         } else if (type === 'fleet-size') {
           rows = await grafanaSQL(`
             SELECT COUNT(DISTINCT o.car_id) AS fleet_size

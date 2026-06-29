@@ -1390,6 +1390,7 @@ function _initPartnerMapInstance() {
 }
 
 function renderPartnerMapZones(zones) {
+  console.log('[map] geo-zones received:', zones.length, zones.map(z => z.name));
   _partnerMapZoneLayers.forEach(l => l.remove());
   _partnerMapZoneLayers = [];
   zones.forEach(gz => {
