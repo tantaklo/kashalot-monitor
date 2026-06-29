@@ -4919,7 +4919,9 @@
       document.getElementById('cit-dropdown').style.display = 'none';
       _citSelected = new Set((c.companies || []).map(Number));
       renderCitTags();
-      document.getElementById('cit-form').style.display = 'block';
+      const form = document.getElementById('cit-form');
+      form.style.display = 'block';
+      setTimeout(() => form.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     }
 
     async function saveCity() {
