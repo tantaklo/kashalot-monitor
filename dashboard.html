@@ -4799,9 +4799,10 @@
     }
 
     function renderOrphans() {
+      const wrap = document.getElementById('cit-orphans');
+      if (!wrap) return;
       const assigned = new Set(_paCities.flatMap(c => (c.companies || []).map(Number)));
       const orphans = _paCompanies.filter(c => !assigned.has(Number(c.id)));
-      const wrap = document.getElementById('cit-orphans');
       if (!orphans.length) { wrap.style.display = 'none'; return; }
       wrap.style.display = 'block';
       document.getElementById('cit-orphans-count').textContent = orphans.length;
@@ -4945,8 +4946,8 @@
       }).then(r => r.json());
       if (resp.ok) {
         document.getElementById('cit-form').style.display = 'none';
-        await loadCities();
-        document.querySelector('[onclick="openAddCity()"]').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        try { await loadCities(); } catch(e) { console.error('loadCities after save:', e); }
+        try { document.querySelector('[onclick="openAddCity()"]').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
       } else { alert('Ошибка: ' + (resp.error || 'unknown')); }
     }
 
