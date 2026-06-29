@@ -224,8 +224,11 @@
     #locations-table td:nth-child(6) { display: none; }
     /* Тарифы: горизонтальный скролл (колонка компании сдвигает индексы — не прячем) */
   }
-  .gz-tooltip { background: #1e2a3a; color: #e2e8f0; border: 1px solid #2dd4bf44; font-size: 12px; padding: 3px 8px; border-radius: 4px; }
-  .gz-tooltip::before { display: none; }
+  .ksh-marker { position: relative; cursor: pointer; }
+  .ksh-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(0,0,0,.35); box-shadow: 0 0 4px rgba(0,0,0,.4); }
+  .ksh-popup { display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e2a3a; color: #e2e8f0; font-size: 12px; padding: 5px 9px; border-radius: 6px; border: 1px solid #2dd4bf55; white-space: nowrap; pointer-events: none; z-index: 999; }
+  .ksh-popup b { color: #2dd4bf; }
+  .ksh-marker:hover .ksh-popup { display: block; }
 </style>
 </head>
 <body>
@@ -1337,16 +1340,14 @@ async function loadFleet() {
   else renderActivityChart();
 }
 
-// --- Partner Map ---
-async function _loadLeaflet() {
-  if (window.L) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-  document.head.appendChild(link);
+// --- Partner Map (2GIS MapGL JS) ---
+const _2GIS_KEY = 'f31683b5-5c11-4df6-9ec8-e3155d0b05d7';
+
+async function _load2GIS() {
+  if (window.mapgl) return;
   await new Promise(res => {
     const s = document.createElement('script');
-    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.src = 'https://mapgl.2gis.com/api/js/v1';
     s.onload = res; document.body.appendChild(s);
   });
 }
@@ -1356,14 +1357,14 @@ async function loadPartnerMap() {
   const now = Date.now();
   const cityKey = JSON.stringify(currentCityIds);
   if (_partnerMapCacheData && now - _partnerMapCacheTime < 5 * 60 * 1000 && _partnerMapCacheCityKey === cityKey) {
-    await _loadLeaflet();
+    await _load2GIS();
     if (!_partnerMap) _initPartnerMapInstance();
     renderPartnerMapMarkers(_partnerMapCacheData);
     return;
   }
   if (statusEl) statusEl.textContent = 'Загрузка…';
   try {
-    await _loadLeaflet();
+    await _load2GIS();
     if (!_partnerMap) _initPartnerMapInstance();
     const [fleetResp, zonesResp] = await Promise.all([
       api('fleet-map'),
@@ -1382,63 +1383,61 @@ async function loadPartnerMap() {
 }
 
 function _initPartnerMapInstance() {
-  _partnerMap = L.map('partnerMap', { zoomControl: true, attributionControl: false }).setView([61, 55], 4);
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 16,
-  }).addTo(_partnerMap);
-  // Подложка деталей поверх Dark Gray Base
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 16,
-    opacity: 0.6,
-  }).addTo(_partnerMap);
+  _partnerMap = new mapgl.Map('partnerMap', {
+    key: _2GIS_KEY,
+    center: [37.615, 55.752],
+    zoom: 9,
+  });
 }
 
 function renderPartnerMapZones(zones) {
   console.log('[map] geo-zones received:', zones.length, zones.map(z => z.name));
-  _partnerMapZoneLayers.forEach(l => l.remove());
+  _partnerMapZoneLayers.forEach(l => l.destroy());
   _partnerMapZoneLayers = [];
   zones.forEach(gz => {
     try {
-      const coords = JSON.parse(gz.polygon).map(p => [+p.lat, +p.lng]);
-      if (coords.length < 3) return;
-      const poly = L.polygon(coords, {
-        color: '#2dd4bf',
-        fillColor: '#2dd4bf',
-        fillOpacity: 0.08,
-        weight: 1.5,
-        opacity: 0.5,
-        dashArray: '4 4',
-      }).addTo(_partnerMap);
-      poly.bindTooltip(gz.name, { sticky: true, className: 'gz-tooltip' });
+      // MapGL: координаты [lng, lat], кольцо должно быть замкнуто
+      const pts = JSON.parse(gz.polygon).map(p => [+p.lng, +p.lat]);
+      if (pts.length < 3) return;
+      const ring = [...pts];
+      if (ring[0][0] !== ring[ring.length-1][0] || ring[0][1] !== ring[ring.length-1][1]) ring.push(ring[0]);
+      const poly = new mapgl.Polygon(_partnerMap, {
+        coordinates: [ring],
+        color: 'rgba(0,150,136,0.15)',
+        strokeColor: 'rgba(0,150,136,0.7)',
+        strokeWidth: 2,
+      });
       _partnerMapZoneLayers.push(poly);
-    } catch(e) {}
+    } catch(e) { console.warn('zone parse error', e); }
   });
 }
 
 function renderPartnerMapMarkers(rows) {
   const statusEl = document.getElementById('map-status');
-  _partnerMapMarkers.forEach(m => m.remove());
+  _partnerMapMarkers.forEach(m => m.destroy());
   _partnerMapMarkers = [];
   _availableCount = rows.length;
   if (_fleetSize && _lastRevenueRows) renderActivityChart();
   rows.forEach(r => {
     const fuel = +r.fuel || 0;
-    const color = fuel > 50 ? '#4ade80' : fuel > 20 ? '#f59e0b' : '#f87171';
-    const m = L.circleMarker([+r.lat, +r.lon], {
-      radius: 7, fillColor: color,
-      color: '#0d0d14', weight: 1.5,
-      opacity: 1, fillOpacity: 0.85
-    }).addTo(_partnerMap);
-    m.bindPopup(
-      `<b style="color:#e2e8f0">КШ-${r.id}</b>` +
-      `<br><span style="color:#94a3b8">${r.gosnomer || '—'}</span>` +
-      `<br>⚡ Заряд: <b style="color:${color}">${fuel}%</b>`
-    );
+    const color = fuel > 50 ? '#22c55e' : fuel > 20 ? '#f59e0b' : '#ef4444';
+    const m = new mapgl.HtmlMarker(_partnerMap, {
+      coordinates: [+r.lon, +r.lat],
+      html: `<div class="ksh-marker"><div class="ksh-dot" style="background:${color}"></div><div class="ksh-popup"><b>КШ-${r.id}</b><br>${r.gosnomer || '—'}<br>⚡ ${fuel}%</div></div>`,
+      anchor: [7, 7],
+    });
     _partnerMapMarkers.push(m);
   });
   if (rows.length > 1) {
-    const bounds = L.latLngBounds(rows.map(r => [+r.lat, +r.lon]));
-    _partnerMap.fitBounds(bounds, { padding: [30, 30] });
+    const lngs = rows.map(r => +r.lon), lats = rows.map(r => +r.lat);
+    try {
+      _partnerMap.fitBounds(
+        [Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)],
+        { padding: 50 }
+      );
+    } catch(e) {
+      _partnerMap.setCenter([(Math.min(...lngs)+Math.max(...lngs))/2, (Math.min(...lats)+Math.max(...lats))/2]);
+    }
   }
   const t = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   if (statusEl) statusEl.textContent = `${rows.length} КШ доступны к аренде · обновлено ${t}`;
