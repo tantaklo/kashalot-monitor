@@ -224,6 +224,8 @@
     #locations-table td:nth-child(6) { display: none; }
     /* Тарифы: горизонтальный скролл (колонка компании сдвигает индексы — не прячем) */
   }
+  .gz-tooltip { background: #1e2a3a; color: #e2e8f0; border: 1px solid #2dd4bf44; font-size: 12px; padding: 3px 8px; border-radius: 4px; }
+  .gz-tooltip::before { display: none; }
 </style>
 </head>
 <body>
@@ -425,7 +427,7 @@ let currentPeriod = 30;
 let ozPeriod = 1;
 let revenueChart = null;
 let _fleetSize = 0;
-let _partnerMap = null, _partnerMapMarkers = [];
+let _partnerMap = null, _partnerMapMarkers = [], _partnerMapZoneLayers = [];
 let _partnerMapCacheTime = 0, _partnerMapCacheData = null, _partnerMapCacheCityKey = null;
 let _availableCount = null; // кол-во доступных к аренде прямо сейчас (из fleet-map)
 
@@ -1363,11 +1365,15 @@ async function loadPartnerMap() {
   try {
     await _loadLeaflet();
     if (!_partnerMap) _initPartnerMapInstance();
-    const resp = await api('fleet-map');
-    const rows = (resp && resp.rows) ? resp.rows : [];
+    const [fleetResp, zonesResp] = await Promise.all([
+      api('fleet-map'),
+      api('geo-zones'),
+    ]);
+    const rows = (fleetResp && fleetResp.rows) ? fleetResp.rows : [];
     _partnerMapCacheData = rows;
     _partnerMapCacheTime = now;
     _partnerMapCacheCityKey = cityKey;
+    renderPartnerMapZones((zonesResp && zonesResp.rows) ? zonesResp.rows : []);
     renderPartnerMapMarkers(rows);
   } catch(e) {
     if (statusEl) statusEl.textContent = 'Ошибка загрузки';
@@ -1381,6 +1387,27 @@ function _initPartnerMapInstance() {
     attribution: '© OpenStreetMap contributors © CARTO',
     subdomains: 'abcd', maxZoom: 19
   }).addTo(_partnerMap);
+}
+
+function renderPartnerMapZones(zones) {
+  _partnerMapZoneLayers.forEach(l => l.remove());
+  _partnerMapZoneLayers = [];
+  zones.forEach(gz => {
+    try {
+      const coords = JSON.parse(gz.polygon).map(p => [+p.lat, +p.lng]);
+      if (coords.length < 3) return;
+      const poly = L.polygon(coords, {
+        color: '#2dd4bf',
+        fillColor: '#2dd4bf',
+        fillOpacity: 0.08,
+        weight: 1.5,
+        opacity: 0.5,
+        dashArray: '4 4',
+      }).addTo(_partnerMap);
+      poly.bindTooltip(gz.name, { sticky: true, className: 'gz-tooltip' });
+      _partnerMapZoneLayers.push(poly);
+    } catch(e) {}
+  });
 }
 
 function renderPartnerMapMarkers(rows) {

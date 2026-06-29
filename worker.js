@@ -1169,6 +1169,18 @@ export default {
             ORDER BY c.fuel DESC
             LIMIT 300
           `, env);
+        } else if (type === 'geo-zones') {
+          rows = await grafanaSQL(`
+            SELECT DISTINCT g.id, g.name, g.polygon
+            FROM geozones g
+            WHERE g.id != 1
+              AND g.polygon IS NOT NULL AND g.polygon != '' AND g.polygon != '[]'
+              AND EXISTS (
+                SELECT 1 FROM cars c
+                WHERE c.company_id IN (${idList})
+                  AND JSON_CONTAINS(c.geozones, CAST(g.id AS CHAR))
+              )
+          `, env);
         } else if (type === 'fleet-size') {
           rows = await grafanaSQL(`
             SELECT COUNT(DISTINCT o.car_id) AS fleet_size
