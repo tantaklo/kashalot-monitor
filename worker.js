@@ -1045,7 +1045,15 @@ export default {
       let body;
       try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
 
-      const { type, period = 30, company_id, city_ids } = body;
+      const { type, period = 30, company_id, city_ids, dateFrom, dateTo, allTime } = body;
+      // Валидация дат (защита от SQL-инъекций)
+      const safeFrom = (dateFrom && /^\d{4}-\d{2}-\d{2}$/.test(dateFrom)) ? dateFrom : null;
+      const safeTo   = (dateTo   && /^\d{4}-\d{2}-\d{2}$/.test(dateTo))   ? dateTo   : null;
+      const dateFilter = allTime
+        ? `o.start_time >= '2020-01-01'`
+        : (safeFrom && safeTo)
+          ? `o.start_time >= '${safeFrom}' AND o.start_time < DATE_ADD('${safeTo}', INTERVAL 1 DAY)`
+          : `o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)`;
       // Always re-read partner_access to pick up any changes since login (в т.ч. изменения у управляющего)
       let sessionIds = session.company_ids;
       if (session.email && env.IGN_CACHE) {
@@ -1081,7 +1089,7 @@ export default {
               COUNT(DISTINCT o.car_id) AS active_devices
             FROM orders o JOIN bills b ON b.order_id = o.id
             WHERE b.status = 'PAID' AND o.company_id IN (${idList})
-              AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
+              AND ${dateFilter}
             GROUP BY DATE(o.start_time) ORDER BY date ASC
           `, env);
         } else if (type === 'summary') {
@@ -1093,7 +1101,7 @@ export default {
             FROM orders o JOIN bills b ON b.order_id = o.id
             JOIN companies co ON o.company_id = co.id
             WHERE b.status = 'PAID' AND o.company_id IN (${idList})
-              AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
+              AND ${dateFilter}
             GROUP BY o.company_id, co.name ORDER BY revenue DESC
           `, env);
         } else if (type === 'devices') {
@@ -1115,7 +1123,7 @@ export default {
               FROM orders o JOIN bills b ON b.order_id = o.id
               WHERE b.status = 'PAID'
                 AND o.company_id IN (${idList})
-                AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
+                AND ${dateFilter}
               GROUP BY o.car_id
             ) d ON d.car_id = c.id
             WHERE c.company_id IN (${idList})
@@ -1150,7 +1158,7 @@ export default {
             JOIN bills b ON b.order_id = o.id
             JOIN companies co ON o.company_id = co.id
             WHERE b.status = 'PAID' AND o.company_id IN (${idList})
-              AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
+              AND ${dateFilter}
             GROUP BY o.company_id, co.name, a.description
             ORDER BY orders DESC
             LIMIT 60
@@ -1222,7 +1230,7 @@ export default {
             JOIN dots d ON d.id=o.dot_id
             WHERE b.status='PAID'
               AND o.company_id IN (${idList})
-              AND o.start_time >= DATE_SUB(NOW(), INTERVAL ${Number(period)} DAY)
+              AND ${dateFilter}
             GROUP BY o.dot_id, d.name
             ORDER BY revenue DESC
           `, env);

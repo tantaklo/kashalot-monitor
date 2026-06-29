@@ -80,12 +80,19 @@
   .company-btn.active, .company-btn:hover { background: var(--teal); border-color: var(--teal); color: #fff; }
 
   /* PERIOD SELECTOR */
-  .period-bar { display: flex; gap: 6px; margin-bottom: 24px; }
+  .period-bar { display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
   .period-btn {
     background: var(--navy2); border: 1px solid var(--navy3); color: var(--text2);
     padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px;
   }
   .period-btn.active { background: var(--navy3); color: var(--text); border-color: var(--teal); }
+  .period-sep { width: 1px; height: 20px; background: var(--navy3); margin: 0 4px; }
+  .period-date-input {
+    background: var(--navy2); border: 1px solid var(--navy3); color: var(--text);
+    padding: 5px 10px; border-radius: 6px; font-size: 13px; cursor: pointer;
+    color-scheme: dark;
+  }
+  .period-date-input:focus { outline: none; border-color: var(--teal); }
 
   /* TOP KPI GRID */
   .tkpi-grid {
@@ -279,6 +286,12 @@
       <button class="period-btn active" data-p="30">30 дн</button>
       <button class="period-btn" data-p="90">90 дн</button>
       <button class="period-btn" data-p="365">1 год</button>
+      <button class="period-btn" id="btn-alltime">Все время</button>
+      <div class="period-sep"></div>
+      <input type="date" id="date-from" class="period-date-input" title="Начало периода">
+      <span style="color:var(--text2);font-size:13px">—</span>
+      <input type="date" id="date-to" class="period-date-input" title="Конец периода">
+      <button class="period-btn" id="btn-apply-dates" style="padding:6px 10px">→</button>
     </div>
 
     <!-- Top KPI grid: row 1 = fleet/activity/revenue, row 2 = per-KSH/tariff -->
@@ -427,6 +440,7 @@ let partnerToken = null;
 let session = null;
 let currentCityIds = null; // null = все, array = компании выбранного города
 let currentPeriod = 30;
+let currentDateFrom = null, currentDateTo = null, currentAllTime = false;
 let ozPeriod = 1;
 let revenueChart = null;
 let _fleetSize = 0;
@@ -567,14 +581,44 @@ function switchCity(ids, btn) {
 }
 
 function buildPeriodBar() {
-  document.querySelectorAll('.period-btn').forEach(btn => {
+  // Preset buttons (7/30/90/365)
+  document.querySelectorAll('.period-btn[data-p]').forEach(btn => {
     btn.onclick = () => {
       currentPeriod = Number(btn.dataset.p);
+      currentDateFrom = null; currentDateTo = null; currentAllTime = false;
       document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       loadAll();
     };
   });
+  // Все время
+  document.getElementById('btn-alltime').onclick = () => {
+    currentAllTime = true; currentDateFrom = null; currentDateTo = null;
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-alltime').classList.add('active');
+    loadAll();
+  };
+  // Произвольный диапазон
+  const dfrom = document.getElementById('date-from');
+  const dto   = document.getElementById('date-to');
+  // По умолчанию: от 30 дней назад до сегодня
+  const today = new Date(), ago30 = new Date(today);
+  ago30.setDate(today.getDate() - 30);
+  dfrom.value = ago30.toISOString().slice(0, 10);
+  dto.value   = today.toISOString().slice(0, 10);
+
+  document.getElementById('btn-apply-dates').onclick = () => {
+    if (!dfrom.value || !dto.value) return;
+    currentDateFrom = dfrom.value; currentDateTo = dto.value;
+    currentAllTime = false;
+    currentPeriod  = Math.round((new Date(dto.value) - new Date(dfrom.value)) / 86400000) + 1;
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    loadAll();
+  };
+  // Применять при изменении любой даты через Enter
+  [dfrom, dto].forEach(el => el.addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btn-apply-dates').click();
+  }));
 }
 
 async function loadAll() {
@@ -592,6 +636,8 @@ async function loadAll() {
 async function api(type, extra = {}) {
   const body = { type, period: currentPeriod, ...extra };
   if (currentCityIds) body.city_ids = currentCityIds;
+  if (currentAllTime) body.allTime = true;
+  else if (currentDateFrom && currentDateTo) { body.dateFrom = currentDateFrom; body.dateTo = currentDateTo; }
   try {
     const r = await fetch(`${WORKER}/partner-data`, {
       method: 'POST',
@@ -636,7 +682,10 @@ async function loadSummary(revenueResp) {
     </div>`;
   }
 
-  const periodLabel = currentPeriod === 7 ? '7 дн.' : currentPeriod === 30 ? '30 дн.' : currentPeriod === 90 ? '90 дн.' : '1 год';
+  const fmtD = d => d ? d.slice(5).replace('-', '.') : '';
+  const periodLabel = currentAllTime ? 'всё время'
+    : (currentDateFrom && currentDateTo) ? `${fmtD(currentDateFrom)}–${fmtD(currentDateTo)}`
+    : currentPeriod === 7 ? '7 дн.' : currentPeriod === 30 ? '30 дн.' : currentPeriod === 90 ? '90 дн.' : '1 год';
 
   // Row 1: fleet · activity · revenue  |  Row 2: per-day · per-KSH · tariff
   grid.innerHTML =
@@ -1528,7 +1577,10 @@ async function loadSummaryWithResp(revenueResp, resp) {
     </div>`;
   }
 
-  const periodLabel = currentPeriod === 7 ? '7 дн.' : currentPeriod === 30 ? '30 дн.' : currentPeriod === 90 ? '90 дн.' : '1 год';
+  const fmtD = d => d ? d.slice(5).replace('-', '.') : '';
+  const periodLabel = currentAllTime ? 'всё время'
+    : (currentDateFrom && currentDateTo) ? `${fmtD(currentDateFrom)}–${fmtD(currentDateTo)}`
+    : currentPeriod === 7 ? '7 дн.' : currentPeriod === 30 ? '30 дн.' : currentPeriod === 90 ? '90 дн.' : '1 год';
 
   // Row 1: fleet · activity · revenue  |  Row 2: per-day · per-KSH · tariff
   grid.innerHTML =
