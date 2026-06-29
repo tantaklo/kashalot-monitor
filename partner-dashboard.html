@@ -427,6 +427,7 @@ let revenueChart = null;
 let _fleetSize = 0;
 let _partnerMap = null, _partnerMapMarkers = [];
 let _partnerMapCacheTime = 0, _partnerMapCacheData = null, _partnerMapCacheCityKey = null;
+let _availableCount = null; // кол-во доступных к аренде прямо сейчас (из fleet-map)
 
 // --- Feedback ---
 function openFeedback() {
@@ -802,8 +803,11 @@ function renderActivityChart() {
   });
 
   const pcts    = _lastRevenueRows.map(r => Math.round(Number(r.active_devices) / _fleetSize * 100));
-  const actAbs  = _lastRevenueRows.map(r => Number(r.active_devices));
+  const actAbsVals = _lastRevenueRows.map(r => Number(r.active_devices));
+  const avgAct  = actAbsVals.length ? Math.round(actAbsVals.reduce((s, v) => s + v, 0) / actAbsVals.length) : 0;
   const avgPct  = pcts.length ? Math.round(pcts.reduce((s, v) => s + v, 0) / pcts.length) : 0;
+  const avgActLine = _lastRevenueRows.map(() => avgAct);
+  const availLine  = _availableCount !== null ? _lastRevenueRows.map(() => _availableCount) : null;
 
   const avgEl = document.getElementById('activity-chart-avg');
   if (avgEl) avgEl.textContent = `· % активных ср.: ${avgPct}%`;
@@ -823,18 +827,31 @@ function renderActivityChart() {
       yAxisID: 'y',
     },
     {
-      label: `Активных КШ · шт (парк ${_fleetSize})`,
-      data: actAbs,
+      label: `Активных КШ · ср. ${avgAct} шт`,
+      data: avgActLine,
       borderColor: '#6b7280',
       backgroundColor: 'transparent',
       borderWidth: 1.5,
       borderDash: [4, 3],
-      pointRadius: 2,
-      pointBackgroundColor: '#6b7280',
-      tension: 0.3,
+      pointRadius: 0,
+      tension: 0,
       yAxisID: 'y2',
     },
   ];
+
+  if (availLine) {
+    datasets.push({
+      label: `Доступных к аренде · ${_availableCount} шт`,
+      data: availLine,
+      borderColor: '#f59e0b',
+      backgroundColor: 'transparent',
+      borderWidth: 1.5,
+      borderDash: [2, 4],
+      pointRadius: 0,
+      tension: 0,
+      yAxisID: 'y2',
+    });
+  }
 
   if (activityChart) activityChart.destroy();
   const ctx = document.getElementById('activity-chart').getContext('2d');
@@ -862,7 +879,7 @@ function renderActivityChart() {
         y2: {
           ticks: { color: '#6b7280', maxTicksLimit: 5 },
           grid: { display: false },
-          min: 0, suggestedMax: _fleetSize,
+          min: 0, suggestedMax: Math.max(_fleetSize, _availableCount || 0),
           position: 'right',
         },
       },
@@ -1370,6 +1387,8 @@ function renderPartnerMapMarkers(rows) {
   const statusEl = document.getElementById('map-status');
   _partnerMapMarkers.forEach(m => m.remove());
   _partnerMapMarkers = [];
+  _availableCount = rows.length;
+  if (_fleetSize && _lastRevenueRows) renderActivityChart();
   rows.forEach(r => {
     const fuel = +r.fuel || 0;
     const color = fuel > 50 ? '#4ade80' : fuel > 20 ? '#f59e0b' : '#f87171';
