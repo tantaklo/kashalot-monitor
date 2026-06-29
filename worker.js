@@ -1170,13 +1170,19 @@ export default {
             LIMIT 300
           `, env);
         } else if (type === 'geo-zones') {
-          // Шаг 1: узнать какие zone_id реально используют кашалоты партнёра
+          // Находим реальное имя колонки с полигоном через INFORMATION_SCHEMA
+          const colRows = await grafanaSQL(`
+            SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'geozones'
+          `, env);
+          const colNames = (colRows || []).map(r => r.COLUMN_NAME || r.column_name || '');
+          const polyCol = colNames.find(n => /polygon|area|coords|points|geom|shape|boundary/i.test(n));
+          // Шаг 2: zone_id из кашалотов партнёра
           const carZones = await grafanaSQL(`
             SELECT DISTINCT geozones FROM cars
             WHERE company_id IN (${idList})
               AND geozones IS NOT NULL AND geozones != '' AND geozones != '[]'
           `, env);
-          // Собираем уникальные ID зон из JSON-массивов
           const zoneIdSet = new Set();
           (carZones || []).forEach(r => {
             try {
@@ -1184,16 +1190,17 @@ export default {
               arr.forEach(id => { if (Number(id) !== 1) zoneIdSet.add(Number(id)); });
             } catch {}
           });
-          if (zoneIdSet.size > 0) {
+          // Возвращаем отладочную информацию если зон нет
+          if (!polyCol || zoneIdSet.size === 0) {
+            rows = [{ _debug: 1, polyCol: polyCol || 'NOT_FOUND', colNames: colNames.join(','), zoneCount: zoneIdSet.size }];
+          } else {
             const zoneIds = [...zoneIdSet].join(',');
             rows = await grafanaSQL(`
-              SELECT id, name, polygon
+              SELECT id, name, \`${polyCol}\` AS polygon
               FROM geozones
               WHERE id IN (${zoneIds})
-                AND polygon IS NOT NULL AND polygon != '' AND polygon != '[]'
+                AND \`${polyCol}\` IS NOT NULL AND \`${polyCol}\` != '' AND \`${polyCol}\` != '[]'
             `, env);
-          } else {
-            rows = [];
           }
         } else if (type === 'fleet-size') {
           rows = await grafanaSQL(`
