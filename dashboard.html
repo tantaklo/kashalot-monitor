@@ -1380,6 +1380,8 @@
         <button onclick="openAddPartner()" style="padding:7px 16px;background:#3b82f6;border:none;border-radius:8px;color:#fff;font-size:13px;cursor:pointer">+ Добавить партнёра</button>
         <span id="pa-status" style="font-size:12px;color:#4b5563"></span>
       </div>
+      <input id="pa-list-search" type="text" placeholder="Поиск по партнёрам…" oninput="filterPaList(this.value)"
+        style="width:100%;box-sizing:border-box;padding:8px 12px;background:#12121a;border:1px solid #1e1e2a;border-radius:8px;color:#e2e8f0;font-size:13px;outline:none;margin-bottom:12px;display:none">
 
       <!-- Список партнёров -->
       <div id="pa-list" style="display:grid;gap:10px"></div>
@@ -4614,7 +4616,7 @@
       _paPartners = combined.partners || [];
       document.getElementById('mg-status').textContent = `${_paManagers.length} управляющих`;
       const searchEl = document.getElementById('mg-list-search');
-      if (_paManagers.length > 4) searchEl.style.display = 'block';
+      if (_paManagers.length > 0) { searchEl.style.display = 'block'; searchEl.value = ''; }
       renderManagerList();
     }
 
@@ -4953,20 +4955,35 @@
       }
 
       document.getElementById('pa-status').textContent = `${_paPartners.length} партнёр(ов)`;
+      const paSearch = document.getElementById('pa-list-search');
+      if (paSearch && _paPartners.length > 0) { paSearch.style.display = ''; paSearch.value = ''; }
       renderPartnerList();
+    }
+
+    function filterPaList(q) {
+      const term = q.trim().toLowerCase();
+      const filtered = term
+        ? _paPartners.filter(p =>
+            (p.name || '').toLowerCase().includes(term) ||
+            (p.email || '').toLowerCase().includes(term) ||
+            (p.managers || []).some(m => m.toLowerCase().includes(term))
+          )
+        : _paPartners;
+      renderPartnerList(filtered);
     }
 
     function locName(fullName) {
       return (fullName || '').replace(/\s*\[.*?\]/, '').trim();
     }
 
-    function renderPartnerList() {
+    function renderPartnerList(items) {
       const list = document.getElementById('pa-list');
-      if (!_paPartners.length) {
-        list.innerHTML = '<div style="color:#4b5563;font-size:13px">Нет партнёров. Добавьте первого.</div>';
+      const data = items ?? _paPartners;
+      if (!data.length) {
+        list.innerHTML = '<div style="color:#4b5563;font-size:13px">' + (_paPartners.length ? 'Нет совпадений' : 'Нет партнёров. Добавьте первого.') + '</div>';
         return;
       }
-      list.innerHTML = _paPartners.map(p => {
+      list.innerHTML = data.map(p => {
         let accessTags = '';
         if (p.managers && p.managers.length) {
           accessTags = p.managers.map(mname => {
