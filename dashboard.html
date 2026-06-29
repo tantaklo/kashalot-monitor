@@ -5012,7 +5012,7 @@
         const visit = _paVisits[p.email];
         const visitBadge = visit
           ? `<span title="${visit.visits_7d} визитов за 7 дн · ${visit.visits_30d} за 30 дн" style="font-size:11px;color:#4b5563">· был ${visit.last_date}</span>`
-          : `<span style="font-size:11px;color:#374151">· не заходил</span>`;
+          : `<span style="font-size:11px;color:#7f1d1d">· не заходил</span>`;
         return `<div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
             <div style="font-size:14px;font-weight:600;margin-bottom:2px"><span style="color:#4b5563;font-size:12px;font-weight:400;margin-right:6px">${data.length - i}.</span>${p.name || p.email}${p.support ? ' <span style="background:#1e3a2a;border:1px solid #2f5d44;border-radius:4px;padding:1px 7px;font-size:10px;color:#4ade80;vertical-align:middle">поддержка</span>' : ''}</div>
