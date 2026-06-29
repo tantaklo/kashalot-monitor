@@ -4608,10 +4608,7 @@
     async function loadManagers() {
       window._mgLoaded = true;
       document.getElementById('mg-status').textContent = 'Загрузка…';
-      const [, combined] = await Promise.all([
-        ensureCompaniesLoaded(),
-        fetch(`${PA_WORKER}/admin/combined`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json()),
-      ]);
+      const combined = await fetch(`${PA_WORKER}/admin/combined`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json());
       _paManagers = combined.managers || [];
       _paPartners = combined.partners || [];
       document.getElementById('mg-status').textContent = `${_paManagers.length} управляющих`;
