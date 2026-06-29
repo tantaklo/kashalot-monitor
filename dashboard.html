@@ -4130,6 +4130,7 @@
     const PA_WORKER = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev';
     const PA_TOKEN  = GRAFANA_TOKEN;
     let _paPartners  = [];
+    let _paVisits    = {}; // email → { last_date, visits_7d, visits_30d }
     // ─── Прошивки трекеров ────────────────────────────────────────────────────
     let _fwInited = false, _fwTrendChart = null, _fwDistChart = null;
     let fwCurrent = null, fwHistory = [], fwTrendPeriod = 7;
@@ -4919,16 +4920,19 @@
       window._paLoaded = true;
       document.getElementById('pa-status').textContent = 'Загрузка…';
 
-      const [pResp, cResp] = await Promise.all([
+      const [pResp, cResp, vResp] = await Promise.all([
         fetch(`${PA_WORKER}/admin/partner-access`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json()),
         fetch(GRAFANA_PROXY, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
           body: JSON.stringify({ sql: "SELECT id, name FROM companies ORDER BY name ASC LIMIT 500" }),
         }).then(r => r.json()),
+        fetch(`${PA_WORKER}/admin/visits`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json()).catch(() => ({ visits: [] })),
       ]);
 
       _paPartners = pResp.partners || [];
+      _paVisits = {};
+      (vResp.visits || []).forEach(v => { _paVisits[v.email] = v; });
 
       const frame = cResp?.results?.A?.frames?.[0];
       if (frame) {
@@ -4984,10 +4988,14 @@
             return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${c ? c.name : '#' + id}</span>`;
           }).join(' ');
         }
+        const visit = _paVisits[p.email];
+        const visitBadge = visit
+          ? `<span title="${visit.visits_7d} визитов за 7 дн · ${visit.visits_30d} за 30 дн" style="font-size:11px;color:#4b5563">· был ${visit.last_date}</span>`
+          : `<span style="font-size:11px;color:#374151">· не заходил</span>`;
         return `<div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <div>
             <div style="font-size:14px;font-weight:600;margin-bottom:2px">${p.name || p.email}${p.support ? ' <span style="background:#1e3a2a;border:1px solid #2f5d44;border-radius:4px;padding:1px 7px;font-size:10px;color:#4ade80;vertical-align:middle">поддержка</span>' : ''}</div>
-            <div style="font-size:11px;color:#4b5563;margin-bottom:8px">${p.email}</div>
+            <div style="font-size:11px;color:#4b5563;margin-bottom:8px">${p.email} ${visitBadge}</div>
             <div style="display:flex;flex-wrap:wrap;gap:4px">${accessTags || '<span style="color:#4b5563;font-size:11px">Нет доступа</span>'}</div>
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0">
