@@ -2044,7 +2044,7 @@
       reader.readAsText(file, 'utf-8');
     }
 
-    async function loadManagers() {
+    async function loadRevenueManagers() {
       const cached = localStorage.getItem('kashalot_managers');
       if (cached) {
         try { renderManagers(JSON.parse(cached)); return; } catch {}
@@ -2156,7 +2156,7 @@
     restoreScan();
     loadHistory();
     loadRevenue();
-    loadManagers();
+    loadRevenueManagers();
     loadRevenueDaily();
 
     // --- Аналитика выручки (Chart.js) ---
@@ -4607,14 +4607,21 @@
     // ── Управляющие ────────────────────────────────────────────────────
     async function loadManagers() {
       window._mgLoaded = true;
-      document.getElementById('mg-status').textContent = 'Загрузка…';
-      const combined = await fetch(`${PA_WORKER}/admin/combined`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json());
-      _paManagers = combined.managers || [];
-      _paPartners = combined.partners || [];
-      document.getElementById('mg-status').textContent = `${_paManagers.length} управляющих`;
-      const searchEl = document.getElementById('mg-list-search');
-      if (_paManagers.length > 0) { searchEl.style.display = 'block'; searchEl.value = ''; }
-      renderManagerList();
+      const statusEl = document.getElementById('mg-status');
+      statusEl.textContent = 'Загрузка…';
+      try {
+        const combined = await fetch(`${PA_WORKER}/admin/combined`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json());
+        _paManagers = combined.managers || [];
+        _paPartners = combined.partners || [];
+        statusEl.textContent = `${_paManagers.length} управляющих`;
+        const searchEl = document.getElementById('mg-list-search');
+        if (_paManagers.length > 0) { searchEl.style.display = 'block'; searchEl.value = ''; }
+        renderManagerList();
+      } catch (e) {
+        window._mgLoaded = false; // разрешить повтор при следующем открытии
+        statusEl.textContent = '⚠️ Ошибка загрузки — нажми на заголовок снова';
+        console.error('loadManagers:', e);
+      }
     }
 
     function filterMgList(q) {
