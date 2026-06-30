@@ -550,9 +550,54 @@ function init() {
   const saved = localStorage.getItem('ks_partner_token');
   if (saved) { partnerToken = saved; showDashboard(); return; }
 
-  // Показываем экран входа — с виджетом известного аккаунта или обычной кнопкой
+  // Показываем экран входа и запускаем Yandex Suggest виджет
   renderLoginScreen();
   document.getElementById('login-screen').style.display = 'flex';
+  initYandexSuggest();
+}
+
+async function initYandexSuggest() {
+  try {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js';
+      s.onload = res; s.onerror = rej;
+      document.body.appendChild(s);
+    });
+    const { handler } = await YaAuthSuggest.init(
+      {
+        client_id: '92b3bf7379cf4babacb3023446f5035d',
+        response_type: 'token',
+        redirect_uri: 'https://tantaklo.github.io/kashalot-monitor/suggest-token.html',
+      },
+      'https://tantaklo.github.io'
+    );
+    const data = await handler();
+    if (!data || !data.access_token) return;
+
+    showError('');
+    const resp = await fetch(`${WORKER}/auth/yandex-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_token: data.access_token }),
+    });
+    const result = await resp.json();
+    if (result.token) {
+      partnerToken = result.token;
+      localStorage.setItem('ks_partner_token', result.token);
+      showDashboard();
+    } else {
+      const msgs = {
+        no_access: 'Ваш аккаунт не имеет доступа к дашборду. Обратитесь к Антону.',
+        userinfo_failed: 'Не удалось получить данные аккаунта. Попробуйте ещё раз.',
+        server_error: 'Ошибка сервера. Попробуйте ещё раз.',
+      };
+      showError(msgs[result.error] || 'Ошибка авторизации.');
+    }
+  } catch (e) {
+    // Suggest недоступен (отключены iframe или сторонние куки) — кнопка остаётся
+    console.log('YaAuthSuggest unavailable:', e);
+  }
 }
 
 function showError(msg) {
