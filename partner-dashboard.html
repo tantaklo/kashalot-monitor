@@ -53,6 +53,33 @@
   }
   .error-msg { color: var(--red); font-size: 14px; text-align: center; }
 
+  /* KNOWN ACCOUNT WIDGET */
+  .known-account {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    background: var(--navy2); border: 1px solid var(--navy3);
+    border-radius: 14px; padding: 20px 28px; min-width: 280px;
+  }
+  .known-account-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: #fc3f1d; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; flex-shrink: 0;
+  }
+  .known-account-name { font-size: 16px; font-weight: 600; }
+  .known-account-email { font-size: 13px; color: var(--text2); }
+  .btn-login-known {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    background: #fc3f1d; color: #fff; border: none; border-radius: 8px;
+    padding: 11px 28px; font-size: 15px; font-weight: 600; cursor: pointer;
+    text-decoration: none; width: 100%; margin-top: 4px;
+  }
+  .btn-login-known:hover { background: #e63312; }
+  .btn-switch-account {
+    background: none; border: none; color: var(--text2); font-size: 13px;
+    cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .btn-switch-account:hover { color: var(--text); }
+
   /* DASHBOARD */
   #dashboard { display: none; }
   header {
@@ -245,10 +272,25 @@
   <div class="login-logo">🐳</div>
   <div class="login-title">Кашалот — Партнёрский дашборд</div>
   <div class="login-sub">Войдите через аккаунт, к которому привязан доступ</div>
-  <a id="btn-login-ya" class="btn-yandex" href="https://kashalot-proxy.vegano-argentino-ru.workers.dev/auth/yandex">
+
+  <!-- Известный аккаунт (заполняется из localStorage) -->
+  <div id="known-account-block" class="known-account" style="display:none">
+    <div class="known-account-avatar" id="known-avatar">?</div>
+    <div class="known-account-name" id="known-name"></div>
+    <div class="known-account-email" id="known-email"></div>
+    <a class="btn-login-known" href="https://kashalot-proxy.vegano-argentino-ru.workers.dev/auth/yandex">
+      <span style="background:#fff;color:#fc3f1d;width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">Я</span>
+      Войти как этот аккаунт
+    </a>
+    <button class="btn-switch-account" onclick="switchAccount()">Войти с другим аккаунтом</button>
+  </div>
+
+  <!-- Обычная кнопка (показывается если нет кэша) -->
+  <a id="btn-login-ya" class="btn-yandex" href="https://kashalot-proxy.vegano-argentino-ru.workers.dev/auth/yandex" style="display:none">
     <span class="ya-badge">Я</span>
     Войти через Яндекс ID
   </a>
+
   <div id="error-msg" class="error-msg" style="display:none"></div>
 </div>
 
@@ -499,15 +541,17 @@ function init() {
 
   if (token) {
     partnerToken = token;
-    sessionStorage.setItem('ks_partner_token', token);
+    localStorage.setItem('ks_partner_token', token);
     history.replaceState({}, '', location.pathname);
     showDashboard();
     return;
   }
 
-  const saved = sessionStorage.getItem('ks_partner_token');
+  const saved = localStorage.getItem('ks_partner_token');
   if (saved) { partnerToken = saved; showDashboard(); return; }
 
+  // Показываем экран входа — с виджетом известного аккаунта или обычной кнопкой
+  renderLoginScreen();
   document.getElementById('login-screen').style.display = 'flex';
 }
 
@@ -516,8 +560,30 @@ function showError(msg) {
   el.textContent = msg; el.style.display = 'block';
 }
 
+function renderLoginScreen() {
+  const user = (() => { try { return JSON.parse(localStorage.getItem('ks_partner_user') || 'null'); } catch { return null; } })();
+  if (user && user.name) {
+    const initial = (user.name || '?')[0].toUpperCase();
+    document.getElementById('known-avatar').textContent = initial;
+    document.getElementById('known-name').textContent = user.name;
+    document.getElementById('known-email').textContent = user.email || '';
+    document.getElementById('known-account-block').style.display = 'flex';
+    document.getElementById('btn-login-ya').style.display = 'none';
+  } else {
+    document.getElementById('known-account-block').style.display = 'none';
+    document.getElementById('btn-login-ya').style.display = 'flex';
+  }
+}
+
+function switchAccount() {
+  localStorage.removeItem('ks_partner_user');
+  localStorage.removeItem('ks_partner_token');
+  document.getElementById('known-account-block').style.display = 'none';
+  document.getElementById('btn-login-ya').style.display = 'flex';
+}
+
 function logout() {
-  sessionStorage.removeItem('ks_partner_token');
+  localStorage.removeItem('ks_partner_token');
   location.href = location.pathname;
 }
 
@@ -532,12 +598,16 @@ async function showDashboard() {
   ]);
 
   if (!summaryResp || summaryResp.error === 'Unauthorized') {
-    sessionStorage.removeItem('ks_partner_token');
+    localStorage.removeItem('ks_partner_token');
     location.reload();
     return;
   }
 
   session = summaryResp.session;
+  // Кэшируем профиль для виджета аккаунта на экране входа
+  if (session && session.name) {
+    localStorage.setItem('ks_partner_user', JSON.stringify({ name: session.name, email: session.email || '' }));
+  }
   document.getElementById('user-badge').textContent = session.name || session.email;
   document.getElementById('feedback-btn').style.display = 'block';
 
