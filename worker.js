@@ -504,6 +504,93 @@ async function fetchIgnOff(session, orderId) {
 
 const DS_UID = 'bb52db42-4304-442c-91e1-09a5e558c574';
 
+// Уведомление: припаркованная машина вне зоны компании дольше 5 минут
+async function checkParkedOutOfZone(env) {
+  if (!env.IGN_CACHE) return;
+
+  const now = Date.now();
+  const ALERT_AFTER_MS = 5 * 60 * 1000;
+
+  // 1. Маппинг company_id → Set<geozone_id> (без глобальной зоны RU, id=1)
+  const geoRows = await grafanaSQL(`
+    SELECT company_id, geozone_id
+    FROM geozones_to_companies
+    WHERE geozone_id != 1
+  `, env);
+
+  const companyZones = {};
+  for (const r of geoRows) {
+    if (!companyZones[r.company_id]) companyZones[r.company_id] = new Set();
+    companyZones[r.company_id].add(Number(r.geozone_id));
+  }
+
+  // 2. Все онлайн-машины без активного заказа, с известными координатами
+  const cars = await grafanaSQL(`
+    SELECT c.id, c.gosnomer, c.company_id, c.geozones, co.name AS company_name
+    FROM cars c
+    JOIN companies co ON c.company_id = co.id
+    WHERE c.online = 1
+      AND c.cur_order_id IS NULL
+      AND (c.hidden IS NULL OR c.hidden = 0)
+      AND c.geozones IS NOT NULL
+      AND c.lat IS NOT NULL AND c.lat != 0
+  `, env);
+
+  for (const car of cars) {
+    const id = car.id;
+    const compZones = companyZones[car.company_id];
+
+    // Компания без настроенных зон — пропускаем
+    if (!compZones || compZones.size === 0) continue;
+
+    // Текущие геозоны машины (исключаем глобальную зону 1)
+    let carZones = [];
+    try { carZones = JSON.parse(car.geozones || '[]'); } catch {}
+
+    const inZone = carZones.some(gz => gz !== 1 && compZones.has(Number(gz)));
+
+    const kvKey = `ooz_park:${id}`;
+    const kvAlerted = `ooz_park_alerted:${id}`;
+
+    if (inZone) {
+      // Вернулась в зону — сбрасываем трекер
+      const existing = await env.IGN_CACHE.get(kvKey);
+      if (existing !== null) {
+        await Promise.all([
+          env.IGN_CACHE.delete(kvKey),
+          env.IGN_CACHE.delete(kvAlerted),
+        ]);
+      }
+      continue;
+    }
+
+    // Машина вне зоны
+    const sinceRaw = await env.IGN_CACHE.get(kvKey);
+    if (!sinceRaw) {
+      await env.IGN_CACHE.put(kvKey, String(now), { expirationTtl: 86400 });
+      continue;
+    }
+
+    const since = Number(sinceRaw);
+    if (now - since < ALERT_AFTER_MS) continue;
+
+    // Уже отправляли — не повторяем
+    const alerted = await env.IGN_CACHE.get(kvAlerted);
+    if (alerted) continue;
+
+    const mins = Math.round((now - since) / 60000);
+    const carUrl = `https://gw.bumerang.tech/admin/car/${id}`;
+    const text =
+      `🚨 <b>Кашалот вне зоны · ${mins} мин</b>\n\n` +
+      `<a href="${carUrl}">КШ-${id} ${car.gosnomer ?? ''}</a>\n` +
+      `🏢 ${car.company_name}\n` +
+      `⏱ Вне зоны: <b>${mins} мин</b>`;
+
+    await tg(text, env);
+    await env.IGN_CACHE.put(kvAlerted, '1', { expirationTtl: 86400 });
+  }
+}
+
 // Уведомление в TG для выездов за зону с зажиганием выключено > IGN_THRESHOLD%
 const IGN_THRESHOLD = 20;
 
@@ -1030,6 +1117,54 @@ export default {
         return Response.redirect(`${DASH}?token=${sessionToken}`, 302);
       } catch (e) {
         return Response.redirect(`${DASH}?error=server_error&msg=${encodeURIComponent(e.message)}`, 302);
+      }
+    }
+
+    // --- Роут: Yandex Suggest — обмен access_token на сессию ---
+    if (url.pathname === '/auth/yandex-token' && request.method === 'POST') {
+      try {
+        const { access_token } = await request.json();
+        if (!access_token) return new Response(JSON.stringify({ error: 'no_token' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
+
+        const userResp = await fetch('https://login.yandex.ru/info?format=json', {
+          headers: { 'Authorization': `OAuth ${access_token}` },
+        });
+        if (!userResp.ok) return new Response(JSON.stringify({ error: 'userinfo_failed' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
+        const userData = await userResp.json();
+        const yname = userData.real_name || userData.display_name || userData.login;
+
+        const candidates = [];
+        if (userData.default_email) candidates.push(userData.default_email);
+        if (Array.isArray(userData.emails)) candidates.push(...userData.emails);
+
+        const seen = new Set();
+        let email = null, accessRaw = null;
+        for (const c of candidates) {
+          const addr = (c || '').toLowerCase().trim();
+          if (!addr || seen.has(addr)) continue;
+          seen.add(addr);
+          const raw = await env.IGN_CACHE.get(`partner_access:${addr}`);
+          if (raw) { email = addr; accessRaw = raw; break; }
+        }
+        if (!email) return new Response(JSON.stringify({ error: 'no_access' }), { status: 403, headers: { 'Content-Type': 'application/json', ...CORS } });
+
+        const access = JSON.parse(accessRaw);
+        const sessionToken = randomHex(32);
+        const resolvedIds = await resolveCompanyIds(env, access);
+        await env.IGN_CACHE.put(`session:${sessionToken}`, JSON.stringify({
+          email,
+          name: access.name || yname || email,
+          company_ids: resolvedIds,
+        }), { expirationTtl: 86400 });
+        await logPartnerVisit(env, email);
+
+        return new Response(JSON.stringify({ token: sessionToken }), {
+          status: 200, headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: 'server_error', msg: e.message }), {
+          status: 500, headers: { 'Content-Type': 'application/json', ...CORS },
+        });
       }
     }
 
@@ -1672,6 +1807,9 @@ export default {
     } else if (cron === '0 */4 * * *') {
       // каждые 4 часа — устройства ниже 30% более 24 ч
       ctx.waitUntil(checkLowBatteryDuration(env));
+    } else if (cron === '*/5 * * * *') {
+      // каждые 5 минут — припаркованные машины вне зоны компании
+      ctx.waitUntil(checkParkedOutOfZone(env));
     }
   },
 };
