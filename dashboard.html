@@ -4815,11 +4815,16 @@
     async function loadCities() {
       window._citLoaded = true;
       document.getElementById('cit-status').textContent = 'Загрузка…';
-      const [, resp] = await Promise.all([
+      const requests = [
         ensureCompaniesLoaded(),
         fetch(`${PA_WORKER}/admin/cities`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json()),
-      ]);
-      _paCities = resp.cities || [];
+      ];
+      if (!_paManagers.length || !_paPartners.length) {
+        requests.push(fetch(`${PA_WORKER}/admin/combined`, { headers: { 'X-Token': PA_TOKEN } }).then(r => r.json()));
+      }
+      const results = await Promise.all(requests);
+      _paCities = results[1].cities || [];
+      if (results[2]) { _paManagers = results[2].managers || _paManagers; _paPartners = results[2].partners || _paPartners; }
       document.getElementById('cit-status').textContent = `${_paCities.length} город(ов)`;
       const searchEl = document.getElementById('cit-list-search');
       if (_paCities.length > 4) searchEl.style.display = 'block';
@@ -4855,14 +4860,30 @@
         return;
       }
       list.innerHTML = data.map(c => {
+        const cityIds = new Set((c.companies || []).map(Number));
         const tags = (c.companies || []).map(id => {
           const co = _paCompanies.find(co => co.id === id);
           return `<span style="background:#1e1e2a;border:1px solid #374151;border-radius:4px;padding:2px 7px;font-size:11px">${co ? co.name : '#' + id}</span>`;
         }).join(' ');
+        const mgrForCity = _paManagers.filter(m => (m.companies || []).some(id => cityIds.has(Number(id))));
+        const mgrBadges = mgrForCity.map(m =>
+          `<span style="background:#1e1e2a;border:1px solid #6366f1;border-radius:4px;padding:2px 8px;font-size:11px;color:#a5b4fc">${m.name}</span>`
+        ).join(' ');
+        const mgrIds = new Set(mgrForCity.map(m => m.id));
+        const partForCity = _paPartners.filter(p => (p.managers || []).some(m => mgrIds.has(m)));
+        const partBadges = partForCity.map(p =>
+          `<span style="background:#1e1e2a;border:1px solid #0d9488;border-radius:4px;padding:2px 8px;font-size:11px;color:#2dd4bf">${p.name || p.email}</span>`
+        ).join(' ');
+        const metaRow = (mgrBadges || partBadges) ? `
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center">
+            ${mgrBadges ? `<span style="font-size:10px;color:#4b5563;margin-right:2px">Управляющий:</span>${mgrBadges}` : ''}
+            ${partBadges ? `<span style="font-size:10px;color:#4b5563;margin-left:${mgrBadges ? '8px' : '0'};margin-right:2px">Партнёр:</span>${partBadges}` : ''}
+          </div>` : '';
         return `<div style="background:#12121c;border:1px solid #1e1e2a;border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div>
+          <div style="flex:1;min-width:0">
             <div style="font-size:14px;font-weight:600;margin-bottom:6px">${c.name}</div>
             <div style="display:flex;flex-wrap:wrap;gap:4px">${tags || '<span style="color:#4b5563;font-size:11px">Нет компаний</span>'}</div>
+            ${metaRow}
           </div>
           <div style="display:flex;gap:6px;flex-shrink:0">
             <button onclick="openEditCity('${c.id}')" style="padding:5px 12px;background:#1e1e2a;border:1px solid #374151;border-radius:6px;color:#94a3b8;font-size:12px;cursor:pointer">✏️ Изменить</button>
