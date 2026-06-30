@@ -4870,7 +4870,14 @@
           `<span style="background:#1e1e2a;border:1px solid #6366f1;border-radius:4px;padding:2px 8px;font-size:11px;color:#a5b4fc">${m.name}</span>`
         ).join(' ');
         const mgrIds = new Set(mgrForCity.map(m => m.id));
-        const partForCity = _paPartners.filter(p => (p.managers || []).some(m => mgrIds.has(m)));
+        const partForCity = _paPartners.filter(p =>
+          (p.managers || []).some(mId => {
+            if (!mgrIds.has(mId)) return false;
+            const restriction = p.manager_companies && p.manager_companies[mId];
+            if (!restriction) return true; // полный доступ к управляющему
+            return restriction.some(id => cityIds.has(Number(id))); // хоть одна компания города разрешена
+          })
+        );
         const partBadges = partForCity.map(p =>
           `<span style="background:#1e1e2a;border:1px solid #0d9488;border-radius:4px;padding:2px 8px;font-size:11px;color:#2dd4bf">${p.name || p.email}</span>`
         ).join(' ');
