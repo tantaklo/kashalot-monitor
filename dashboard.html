@@ -1429,6 +1429,44 @@
     </div>
   </div>
 
+  <!-- Настройки алертов «вне зоны» -->
+  <div class="chart-card" style="margin-top:16px">
+    <div class="chart-header collapsible" onclick="toggleSection('oozSettingsBody','oozSettingsArrow'); if(!window._oozLoaded) loadOozSettings()">
+      <div class="chart-title">🚨 Алерты «вне зоны» <span class="toggle-arrow" id="oozSettingsArrow">▶</span></div>
+    </div>
+    <div class="section-body" id="oozSettingsBody">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="ooz-enabled" onchange="saveOozEnabled(this.checked)"
+            style="width:16px;height:16px;accent-color:#3b82f6;cursor:pointer">
+          <span style="font-size:14px;color:#e2e8f0">Включить уведомления в TG</span>
+        </label>
+        <span id="ooz-status" style="font-size:12px;color:#4b5563"></span>
+      </div>
+
+      <div id="ooz-mode-section" style="display:none">
+        <div style="font-size:12px;color:#4b5563;margin-bottom:8px">Уведомлять по:</div>
+        <div style="display:flex;gap:8px;margin-bottom:16px">
+          <button id="ooz-mode-all" onclick="setOozMode('all')"
+            style="padding:6px 14px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid #3b82f6;background:#3b82f620;color:#93c5fd">
+            Всем компаниям
+          </button>
+          <button id="ooz-mode-selected" onclick="setOozMode('selected')"
+            style="padding:6px 14px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid #374151;background:none;color:#6b7280">
+            Выбранным компаниям
+          </button>
+        </div>
+
+        <div id="ooz-companies-section" style="display:none">
+          <div style="font-size:12px;color:#4b5563;margin-bottom:8px">Выберите компании для алертов:</div>
+          <input id="ooz-search" type="text" placeholder="Поиск компании…" oninput="filterOozCompanies(this.value)"
+            style="width:100%;box-sizing:border-box;padding:7px 11px;background:#12121a;border:1px solid #1e1e2a;border-radius:8px;color:#e2e8f0;font-size:13px;outline:none;margin-bottom:10px">
+          <div id="ooz-companies-list" style="display:grid;gap:4px;max-height:360px;overflow-y:auto"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   </div>
 
   <script>
@@ -5271,6 +5309,114 @@
       });
       await loadPartnerAccess();
     }
+
+    // ─── OOZ Alert Settings ────────────────────────────────────────────────
+    let _oozSettings = { enabled: false, mode: 'all', company_ids: [] };
+    let _oozAllCompanies = []; // полный список компаний с зонами
+
+    async function loadOozSettings() {
+      window._oozLoaded = true;
+      document.getElementById('ooz-status').textContent = 'Загрузка…';
+      try {
+        const data = await fetch(`${PA_WORKER}/admin/ooz-settings`, {
+          headers: { 'X-Token': PA_TOKEN },
+        }).then(r => r.json());
+        _oozSettings = { enabled: false, mode: 'all', company_ids: [], ...data };
+        renderOozSettings();
+        document.getElementById('ooz-status').textContent = '';
+      } catch {
+        document.getElementById('ooz-status').textContent = 'Ошибка загрузки';
+      }
+    }
+
+    function renderOozSettings() {
+      const { enabled, mode } = _oozSettings;
+      document.getElementById('ooz-enabled').checked = enabled;
+      document.getElementById('ooz-mode-section').style.display = enabled ? 'block' : 'none';
+      const isAll = mode !== 'selected';
+      document.getElementById('ooz-mode-all').style.cssText =
+        `padding:6px 14px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid ${isAll ? '#3b82f6' : '#374151'};background:${isAll ? '#3b82f620' : 'none'};color:${isAll ? '#93c5fd' : '#6b7280'}`;
+      document.getElementById('ooz-mode-selected').style.cssText =
+        `padding:6px 14px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid ${!isAll ? '#3b82f6' : '#374151'};background:${!isAll ? '#3b82f620' : 'none'};color:${!isAll ? '#93c5fd' : '#6b7280'}`;
+      const showCompanies = enabled && !isAll;
+      document.getElementById('ooz-companies-section').style.display = showCompanies ? 'block' : 'none';
+      if (showCompanies) renderOozCompanies();
+    }
+
+    async function ensureOozCompanies() {
+      if (_oozAllCompanies.length) return;
+      const rows = await grafanaQuery(`
+        SELECT DISTINCT gc.company_id AS id, co.name
+        FROM geozones_to_companies gc
+        JOIN companies co ON co.id = gc.company_id
+        WHERE gc.geozone_id != 1 AND co.hidden = 0
+        ORDER BY co.name
+      `);
+      _oozAllCompanies = rows;
+    }
+
+    async function renderOozCompanies(filter = '') {
+      await ensureOozCompanies();
+      const selected = new Set(_oozSettings.company_ids.map(Number));
+      const q = filter.toLowerCase();
+      const visible = q ? _oozAllCompanies.filter(r => r.name.toLowerCase().includes(q)) : _oozAllCompanies;
+      const total = _oozAllCompanies.length;
+      const sel = selected.size;
+      document.getElementById('ooz-companies-list').innerHTML =
+        `<div style="font-size:11px;color:#4b5563;margin-bottom:6px">Выбрано: <b style="color:#93c5fd">${sel}</b> из ${total}</div>` +
+        visible.map(r => {
+          const checked = selected.has(Number(r.id)) ? 'checked' : '';
+          return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:3px 0">
+            <input type="checkbox" ${checked} onchange="toggleOozCompany(${r.id}, this.checked)"
+              style="accent-color:#3b82f6;cursor:pointer;width:14px;height:14px">
+            <span style="font-size:13px;color:#e2e8f0">${r.name}</span>
+          </label>`;
+        }).join('');
+    }
+
+    function filterOozCompanies(val) {
+      renderOozCompanies(val);
+    }
+
+    async function saveOozEnabled(checked) {
+      _oozSettings.enabled = checked;
+      renderOozSettings();
+      await saveOozSettings();
+    }
+
+    async function setOozMode(mode) {
+      _oozSettings.mode = mode;
+      renderOozSettings();
+      await saveOozSettings();
+    }
+
+    async function toggleOozCompany(id, checked) {
+      const ids = new Set(_oozSettings.company_ids.map(Number));
+      if (checked) ids.add(Number(id)); else ids.delete(Number(id));
+      _oozSettings.company_ids = [...ids];
+      const selected = new Set(_oozSettings.company_ids);
+      // Обновляем счётчик без перерендера всего списка
+      const counter = document.querySelector('#ooz-companies-list div');
+      if (counter) counter.innerHTML = `Выбрано: <b style="color:#93c5fd">${selected.size}</b> из ${_oozAllCompanies.length}`;
+      await saveOozSettings();
+    }
+
+    async function saveOozSettings() {
+      const statusEl = document.getElementById('ooz-status');
+      statusEl.textContent = 'Сохранение…';
+      try {
+        await fetch(`${PA_WORKER}/admin/ooz-settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Token': PA_TOKEN },
+          body: JSON.stringify(_oozSettings),
+        });
+        statusEl.textContent = 'Сохранено ✓';
+        setTimeout(() => { statusEl.textContent = ''; }, 2000);
+      } catch {
+        statusEl.textContent = 'Ошибка сохранения';
+      }
+    }
+    // ──────────────────────────────────────────────────────────────────────
 
   </script>
 </body>
