@@ -209,10 +209,10 @@
     "date": "2026-07-01",
     "active_objects": 6,
     "max_available": 203,
-    "min_available": 203,
-    "peak_rented": 0,
-    "offline": 1792,
-    "total": 1995,
-    "scans": 1
+    "min_available": 202,
+    "peak_rented": 1,
+    "offline": 1787,
+    "total": 1989,
+    "scans": 2
   }
 ]
