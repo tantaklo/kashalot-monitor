@@ -208,11 +208,11 @@
   {
     "date": "2026-07-01",
     "active_objects": 6,
-    "max_available": 203,
+    "max_available": 209,
     "min_available": 202,
-    "peak_rented": 1,
-    "offline": 1787,
-    "total": 1989,
-    "scans": 2
+    "peak_rented": 7,
+    "offline": 1784,
+    "total": 1993,
+    "scans": 3
   }
 ]
