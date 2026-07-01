@@ -251,9 +251,10 @@ const API = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev';
 const TOKEN = '8c76e677dcdedad18ee2a79eab8bfeff';
 
 const NOTIF_TYPES = [
-  { key: 'daily',  label: 'Ежедневный отчёт', desc: 'Выручка, поездки, активные кашалоты за день', hasTime: true,  defaultTime: '21:00' },
-  { key: 'weekly', label: 'Еженедельный отчёт', desc: 'Итоги недели, топ устройств, расчётный доход', hasTime: true,  defaultTime: '10:00' },
-  { key: 'alerts', label: 'Алерты по устройствам', desc: 'Устройство без поездок 2+ суток или в топе жалоб', hasTime: false, defaultTime: null },
+  { key: 'daily',   label: 'Ежедневный отчёт',       desc: 'Выручка, поездки, активные кашалоты за день',    hasTime: true,  defaultTime: '21:00' },
+  { key: 'weekly',  label: 'Еженедельный отчёт',      desc: 'Итоги недели, топ устройств, расчётный доход',   hasTime: true,  defaultTime: '10:00' },
+  { key: 'alerts',  label: 'Алерты по устройствам',   desc: 'Устройство без поездок 2+ суток или в топе жалоб', hasTime: false, defaultTime: null },
+  { key: 'battery', label: 'Разряженные устройства',  desc: 'Кашалоты с зарядом <30% из парка партнёра',     hasTime: false, defaultTime: null, hasCheck: true },
 ];
 
 let config = { chats: [] };
@@ -281,9 +282,10 @@ async function loadConfig() {
         company_ids: [24, 60, 63, 120, 123, 124, 125, 126, 142, 213],
         enabled: true,
         notifications: {
-          daily:  { enabled: true,  time: '21:00' },
-          weekly: { enabled: false, time: '10:00' },
-          alerts: { enabled: false },
+          daily:   { enabled: true,  time: '21:00' },
+          weekly:  { enabled: false, time: '10:00' },
+          alerts:  { enabled: false },
+          battery: { enabled: false },
         },
       }];
       await saveConfig(true);
@@ -350,6 +352,10 @@ function render() {
                 <label>Время:</label>
                 <input type="time" value="${time}" onchange="setNotif(${ci},'${t.key}','time',this.value)">
               </div>` : ''}
+              ${t.hasCheck ? `
+              <div style="margin-top:10px">
+                <button class="btn btn-ghost btn-sm" onclick="checkBattery(${ci},this)">Проверить сейчас</button>
+              </div>` : ''}
             </div>`;
           }).join('')}
         </div>
@@ -391,6 +397,27 @@ function removeChat(ci) {
   config.chats.splice(ci, 1);
   setDirty(true);
   render();
+}
+
+async function checkBattery(ci, btn) {
+  const chat = config.chats[ci];
+  const orig = btn.textContent;
+  btn.textContent = 'Запрос...';
+  btn.disabled = true;
+  try {
+    const d = await api('/admin/battery-alert', 'POST', { chat_id: chat.chat_id });
+    if (d.ok) {
+      btn.textContent = '✓ Отправлено';
+      btn.style.color = '#22c55e';
+    } else {
+      btn.textContent = d.description || 'Ошибка';
+      btn.style.color = '#f87171';
+    }
+  } catch {
+    btn.textContent = 'Ошибка сети';
+    btn.style.color = '#f87171';
+  }
+  setTimeout(() => { btn.textContent = orig; btn.disabled = false; btn.style.color = ''; }, 4000);
 }
 
 async function sendTest(ci) {

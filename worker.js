@@ -1888,6 +1888,56 @@ export default {
       });
     }
 
+    // Алерт по разряженным устройствам партнёра
+    if (url.pathname === '/admin/battery-alert' && request.method === 'POST') {
+      const token = request.headers.get('X-Token');
+      if (!token || token !== env.PROXY_TOKEN) {
+        return new Response('Unauthorized', { status: 401, headers: CORS });
+      }
+      let body;
+      try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+      const { chat_id } = body;
+      if (!chat_id) return new Response('Missing chat_id', { status: 400, headers: CORS });
+
+      const raw = await env.IGN_CACHE.get('partner_notifications_config');
+      const cfg = raw ? JSON.parse(raw) : { chats: [] };
+      const chat = cfg.chats.find(c => c.chat_id === String(chat_id));
+      if (!chat) return new Response('Chat not found', { status: 404, headers: CORS });
+      if (!chat.bot_token) return new Response('Bot token not configured', { status: 400, headers: CORS });
+
+      const ids = (chat.company_ids || []).join(',');
+      if (!ids) return new Response('No company IDs configured', { status: 400, headers: CORS });
+
+      const rows = await grafanaSQL(`
+        SELECT c.id, c.gosnomer, c.fuel
+        FROM cars c
+        WHERE c.fuel IS NOT NULL AND c.fuel > 0 AND c.fuel < 30 AND c.online = 1
+          AND c.company_id IN (${ids})
+        ORDER BY c.fuel ASC
+      `, env);
+
+      let text;
+      if (!rows.length) {
+        text = '🔋 Все устройства заряжены выше 30% ✅';
+      } else {
+        const lines = rows.map(r => {
+          const emoji = r.fuel < 10 ? '🔴' : r.fuel < 20 ? '🟠' : '🟡';
+          return `${emoji} КШ-${r.id} — <b>${r.fuel}%</b>`;
+        });
+        text = `🔋 <b>Разряженные кашалоты</b>\n\nЗаряд ниже 30% — ${rows.length} шт.:\n\n` + lines.join('\n');
+      }
+
+      const tgResp = await fetch(`https://api.telegram.org/bot${chat.bot_token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: String(chat_id), text, parse_mode: 'HTML' }),
+      });
+      const result = await tgResp.json();
+      return new Response(JSON.stringify(result), {
+        headers: { 'Content-Type': 'application/json', ...CORS },
+      });
+    }
+
     return new Response('Not found', { status: 404 });
   },
 
