@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Уведомления партнёрам — Кашалот</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f13;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 64px;
+    }
+    .site-nav { position: sticky; top: 0; z-index: 100; width: 100%; background: #0a0a10; border-bottom: 1px solid #1e1e2a; padding: 0 24px; align-self: stretch; }
+    .nav-inner { max-width: 960px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 50px; }
+    .nav-brand { font-size: 15px; font-weight: 700; color: #e2e8f0; text-decoration: none; }
+    .nav-brand em { color: #3b82f6; font-style: normal; }
+    .nav-links { display: flex; gap: 2px; }
+    .nav-link { font-size: 13px; color: #4b5563; text-decoration: none; padding: 6px 14px; border-radius: 8px; transition: color .15s, background .15s; }
+    .nav-link:hover { color: #94a3b8; background: #1a1a24; }
+    .nav-link.active { color: #e2e8f0; }
+
+    .page { max-width: 960px; width: 100%; padding: 32px 24px 0; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { font-size: 14px; color: #6b7280; margin-bottom: 32px; }
+
+    /* --- Section --- */
+    .section { margin-bottom: 40px; }
+    .section-title { font-size: 12px; font-weight: 600; color: #4b5563; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 16px; }
+
+    /* --- Chat card --- */
+    .chat-card {
+      background: #1a1a24;
+      border: 1px solid #2d2d3d;
+      border-radius: 14px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .chat-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 20px; cursor: pointer; user-select: none;
+    }
+    .chat-header:hover { background: #20202c; }
+    .chat-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .chat-status.on { background: #22c55e; box-shadow: 0 0 6px #22c55e66; }
+    .chat-status.off { background: #4b5563; }
+    .chat-name { font-size: 15px; font-weight: 600; flex: 1; }
+    .chat-meta { font-size: 12px; color: #6b7280; }
+    .chat-toggle { font-size: 12px; padding: 4px 12px; border-radius: 8px; border: 1px solid #3d3d50; background: transparent; color: #94a3b8; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .chat-toggle:hover { border-color: #6b7280; color: #e2e8f0; }
+    .chat-toggle.active { border-color: #22c55e; color: #22c55e; }
+    .chevron { font-size: 11px; color: #4b5563; transition: transform .2s; }
+    .chevron.open { transform: rotate(180deg); }
+
+    .chat-body { border-top: 1px solid #2d2d3d; padding: 20px; display: none; }
+    .chat-body.open { display: block; }
+
+    /* --- Notification types --- */
+    .notif-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    @media (max-width: 640px) { .notif-grid { grid-template-columns: 1fr; } }
+    .notif-type {
+      background: #12121a;
+      border: 1px solid #2d2d3d;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .notif-type-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .notif-type-name { font-size: 13px; font-weight: 600; }
+    .notif-type-desc { font-size: 12px; color: #6b7280; line-height: 1.5; }
+    .notif-time { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+    .notif-time label { font-size: 12px; color: #6b7280; }
+    .notif-time input[type=time] {
+      background: #1a1a24; border: 1px solid #2d2d3d; border-radius: 6px;
+      color: #e2e8f0; font-size: 13px; padding: 4px 8px; font-family: inherit;
+    }
+
+    /* --- Toggle switch --- */
+    .toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute; cursor: pointer; inset: 0;
+      background: #2d2d3d; border-radius: 20px; transition: .2s;
+    }
+    .toggle-slider:before {
+      content: ''; position: absolute; height: 14px; width: 14px;
+      left: 3px; bottom: 3px; background: #6b7280;
+      border-radius: 50%; transition: .2s;
+    }
+    input:checked + .toggle-slider { background: #3b82f6; }
+    input:checked + .toggle-slider:before { transform: translateX(16px); background: #fff; }
+
+    /* --- Manual send --- */
+    .send-row { display: flex; gap: 10px; align-items: flex-start; }
+    .send-select {
+      background: #12121a; border: 1px solid #2d2d3d; border-radius: 8px;
+      color: #e2e8f0; font-size: 13px; padding: 8px 12px; font-family: inherit;
+      min-width: 200px;
+    }
+    .send-textarea {
+      flex: 1; background: #12121a; border: 1px solid #2d2d3d; border-radius: 8px;
+      color: #e2e8f0; font-size: 13px; padding: 10px 12px; font-family: inherit;
+      resize: vertical; min-height: 80px; line-height: 1.5;
+    }
+    .send-textarea:focus, .send-select:focus { outline: none; border-color: #3b82f6; }
+    .btn {
+      padding: 9px 20px; border-radius: 8px; border: none; font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-primary:disabled { background: #2d2d3d; color: #6b7280; cursor: default; }
+    .btn-sm { padding: 6px 14px; font-size: 12px; }
+    .btn-ghost { background: transparent; border: 1px solid #2d2d3d; color: #94a3b8; }
+    .btn-ghost:hover { border-color: #6b7280; color: #e2e8f0; }
+    .btn-danger { background: transparent; border: 1px solid #7f1d1d; color: #f87171; }
+    .btn-danger:hover { background: #7f1d1d22; }
+
+    /* --- Add chat form --- */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    @media (max-width: 580px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-field { display: flex; flex-direction: column; gap: 6px; }
+    .form-field label { font-size: 12px; color: #6b7280; }
+    .form-input {
+      background: #12121a; border: 1px solid #2d2d3d; border-radius: 8px;
+      color: #e2e8f0; font-size: 13px; padding: 8px 12px; font-family: inherit;
+    }
+    .form-input:focus { outline: none; border-color: #3b82f6; }
+
+    /* --- Toast --- */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #1a1a24; border: 1px solid #2d2d3d;
+      border-radius: 10px; padding: 12px 18px; font-size: 13px;
+      opacity: 0; pointer-events: none; transition: opacity .25s;
+      max-width: 300px; z-index: 200;
+    }
+    #toast.show { opacity: 1; }
+    #toast.ok { border-color: #22c55e44; color: #22c55e; }
+    #toast.err { border-color: #f8717144; color: #f87171; }
+
+    /* --- Save bar --- */
+    .save-bar {
+      position: sticky; bottom: 0; background: #0f0f13;
+      border-top: 1px solid #2d2d3d; padding: 12px 24px;
+      display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+      width: 100%;
+    }
+    .save-label { font-size: 13px; color: #6b7280; }
+  </style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a class="nav-brand" href="index.html">Кашалот <em>Шеринг</em></a>
+    <div class="nav-links">
+      <a class="nav-link" href="index.html">Мониторинг</a>
+      <a class="nav-link" href="dashboard.html">Аналитика</a>
+      <a class="nav-link active" href="notifications.html">Уведомления</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+  <h1>Уведомления партнёрам</h1>
+  <p class="subtitle">Управление чатами, типами рассылок и ручная отправка через бот «Кашалот УК»</p>
+
+  <!-- Список чатов -->
+  <div class="section">
+    <div class="section-title">Чаты партнёров</div>
+    <div id="chats-list">
+      <div style="color:#6b7280;font-size:14px">Загрузка...</div>
+    </div>
+  </div>
+
+  <!-- Ручная отправка -->
+  <div class="section">
+    <div class="section-title">Ручная отправка</div>
+    <div style="background:#1a1a24;border:1px solid #2d2d3d;border-radius:14px;padding:20px">
+      <div class="send-row" style="margin-bottom:12px">
+        <select id="manual-chat" class="send-select">
+          <option value="">— Выбрать чат —</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px">
+        <textarea id="manual-text" class="send-textarea" placeholder="Текст сообщения (поддерживает HTML: <b>жирный</b>, <i>курсив</i>)"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-primary" onclick="sendManual()">Отправить</button>
+        <span id="send-status" style="font-size:13px;color:#6b7280"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Добавить чат -->
+  <div class="section">
+    <div class="section-title">Добавить чат</div>
+    <div style="background:#1a1a24;border:1px solid #2d2d3d;border-radius:14px;padding:20px">
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Название партнёра</label>
+          <input class="form-input" id="new-name" type="text" placeholder="Глушкова — Сургут" />
+        </div>
+        <div class="form-field">
+          <label>Chat ID</label>
+          <input class="form-input" id="new-chatid" type="text" placeholder="-4634582712" />
+        </div>
+        <div class="form-field">
+          <label>Часовой пояс</label>
+          <select class="form-input" id="new-tz">
+            <option value="UTC+3">UTC+3 — Москва</option>
+            <option value="UTC+4">UTC+4 — Самара</option>
+            <option value="UTC+5" selected>UTC+5 — Екатеринбург / Сургут</option>
+            <option value="UTC+6">UTC+6 — Омск</option>
+            <option value="UTC+7">UTC+7 — Красноярск</option>
+            <option value="UTC+8">UTC+8 — Иркутск</option>
+            <option value="UTC+9">UTC+9 — Якутск</option>
+            <option value="UTC+10">UTC+10 — Владивосток</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Токен бота</label>
+          <input class="form-input" id="new-token" type="text" placeholder="1234567890:AAH..." />
+        </div>
+      </div>
+      <div class="form-field" style="margin-bottom:16px">
+        <label>Company IDs (через запятую)</label>
+        <input class="form-input" id="new-companies" type="text" placeholder="24, 60, 123, 125" />
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="addChat()">Добавить чат</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save bar -->
+<div class="save-bar" id="save-bar" style="display:none">
+  <span class="save-label">Есть несохранённые изменения</span>
+  <button class="btn btn-ghost btn-sm" onclick="loadConfig()">Сбросить</button>
+  <button class="btn btn-primary btn-sm" onclick="saveConfig()">Сохранить</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = 'https://kashalot-proxy.vegano-argentino-ru.workers.dev';
+const TOKEN = '8c76e677dcdedad18ee2a79eab8bfeff';
+
+const NOTIF_TYPES = [
+  { key: 'daily',  label: 'Ежедневный отчёт', desc: 'Выручка, поездки, активные кашалоты за день', hasTime: true,  defaultTime: '21:00' },
+  { key: 'weekly', label: 'Еженедельный отчёт', desc: 'Итоги недели, топ устройств, расчётный доход', hasTime: true,  defaultTime: '10:00' },
+  { key: 'alerts', label: 'Алерты по устройствам', desc: 'Устройство без поездок 2+ суток или в топе жалоб', hasTime: false, defaultTime: null },
+];
+
+let config = { chats: [] };
+let dirty = false;
+
+async function api(path, method = 'GET', body = null) {
+  const opts = { method, headers: { 'X-Token': TOKEN, 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  return r.json();
+}
+
+async function loadConfig() {
+  const d = await api('/admin/partner-notifications');
+  if (d.ok) {
+    config = d.config;
+    // Seed Surgut if empty
+    if (!config.chats.length) {
+      config.chats = [{
+        id: 'surgut',
+        name: 'Глушкова — Сургут / Лянтор / Нефтеюганск / Тюмень',
+        chat_id: '-4634582712',
+        timezone: 'UTC+5',
+        bot_token: '8967513456:AAH-yoPsK7auf0t8K4HFM1tX4T_FqH0B664',
+        company_ids: [24, 60, 63, 120, 123, 124, 125, 126, 142, 213],
+        enabled: true,
+        notifications: {
+          daily:  { enabled: true,  time: '21:00' },
+          weekly: { enabled: false, time: '10:00' },
+          alerts: { enabled: false },
+        },
+      }];
+      await saveConfig(true);
+    }
+  }
+  render();
+  setDirty(false);
+}
+
+async function saveConfig(silent = false) {
+  const d = await api('/admin/partner-notifications', 'POST', config);
+  if (d.ok) {
+    if (!silent) toast('Сохранено', 'ok');
+    setDirty(false);
+  } else {
+    toast('Ошибка сохранения', 'err');
+  }
+}
+
+function setDirty(val) {
+  dirty = val;
+  document.getElementById('save-bar').style.display = val ? 'flex' : 'none';
+}
+
+function render() {
+  const list = document.getElementById('chats-list');
+  const sel = document.getElementById('manual-chat');
+
+  if (!config.chats.length) {
+    list.innerHTML = '<div style="color:#6b7280;font-size:14px;padding:12px 0">Нет чатов. Добавь первый ниже.</div>';
+    sel.innerHTML = '<option value="">— Нет чатов —</option>';
+    return;
+  }
+
+  list.innerHTML = config.chats.map((chat, ci) => `
+    <div class="chat-card" id="card-${ci}">
+      <div class="chat-header" onclick="toggleCard(${ci})">
+        <div class="chat-status ${chat.enabled ? 'on' : 'off'}"></div>
+        <div class="chat-name">${esc(chat.name)}</div>
+        <div class="chat-meta">${esc(chat.chat_id)} · ${esc(chat.timezone || 'UTC+3')}</div>
+        <button class="chat-toggle ${chat.enabled ? 'active' : ''}" onclick="event.stopPropagation();toggleEnabled(${ci})">
+          ${chat.enabled ? 'Вкл' : 'Выкл'}
+        </button>
+        <span class="chevron" id="chev-${ci}">▼</span>
+      </div>
+      <div class="chat-body" id="body-${ci}">
+        <div class="notif-grid">
+          ${NOTIF_TYPES.map(t => {
+            const n = chat.notifications?.[t.key] || {};
+            const on = !!n.enabled;
+            const time = n.time || t.defaultTime || '';
+            return `
+            <div class="notif-type">
+              <div class="notif-type-header">
+                <div class="notif-type-name">${t.label}</div>
+                <label class="toggle">
+                  <input type="checkbox" ${on ? 'checked' : ''} onchange="setNotif(${ci},'${t.key}','enabled',this.checked)">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="notif-type-desc">${t.desc}</div>
+              ${t.hasTime ? `
+              <div class="notif-time">
+                <label>Время:</label>
+                <input type="time" value="${time}" onchange="setNotif(${ci},'${t.key}','time',this.value)">
+              </div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-primary btn-sm" onclick="sendTest(${ci})">Тест</button>
+          <button class="btn btn-danger btn-sm" onclick="removeChat(${ci})">Удалить чат</button>
+          <span id="test-status-${ci}" style="font-size:12px;color:#6b7280"></span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  sel.innerHTML = '<option value="">— Выбрать чат —</option>' +
+    config.chats.map((c, i) => `<option value="${i}">${esc(c.name)}</option>`).join('');
+}
+
+function toggleCard(ci) {
+  const body = document.getElementById(`body-${ci}`);
+  const chev = document.getElementById(`chev-${ci}`);
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+function toggleEnabled(ci) {
+  config.chats[ci].enabled = !config.chats[ci].enabled;
+  setDirty(true);
+  render();
+}
+
+function setNotif(ci, type, field, value) {
+  if (!config.chats[ci].notifications) config.chats[ci].notifications = {};
+  if (!config.chats[ci].notifications[type]) config.chats[ci].notifications[type] = {};
+  config.chats[ci].notifications[type][field] = value;
+  setDirty(true);
+}
+
+function removeChat(ci) {
+  if (!confirm(`Удалить чат "${config.chats[ci].name}"?`)) return;
+  config.chats.splice(ci, 1);
+  setDirty(true);
+  render();
+}
+
+async function sendTest(ci) {
+  const chat = config.chats[ci];
+  const st = document.getElementById(`test-status-${ci}`);
+  st.style.color = '#6b7280';
+  st.textContent = 'Отправляю...';
+  try {
+    const d = await api('/admin/send-notification', 'POST', {
+      chat_id: chat.chat_id,
+      text: `✅ <b>Тест</b> — бот «Кашалот УК» подключён к чату.\n📋 Чат: ${chat.name}`,
+    });
+    if (d.ok) {
+      st.style.color = '#22c55e';
+      st.textContent = '✓ Доставлено';
+    } else {
+      st.style.color = '#f87171';
+      st.textContent = d.description || 'Ошибка';
+    }
+  } catch (e) {
+    st.style.color = '#f87171';
+    st.textContent = 'Ошибка сети';
+  }
+}
+
+async function sendManual() {
+  const ci = document.getElementById('manual-chat').value;
+  const text = document.getElementById('manual-text').value.trim();
+  const st = document.getElementById('send-status');
+  if (ci === '') { st.textContent = 'Выбери чат'; return; }
+  if (!text) { st.textContent = 'Введи текст'; return; }
+  const chat = config.chats[parseInt(ci)];
+  st.style.color = '#6b7280';
+  st.textContent = 'Отправляю...';
+  try {
+    const d = await api('/admin/send-notification', 'POST', { chat_id: chat.chat_id, text });
+    if (d.ok) {
+      st.style.color = '#22c55e';
+      st.textContent = '✓ Доставлено';
+      document.getElementById('manual-text').value = '';
+    } else {
+      st.style.color = '#f87171';
+      st.textContent = d.description || 'Ошибка';
+    }
+  } catch {
+    st.style.color = '#f87171';
+    st.textContent = 'Ошибка сети';
+  }
+}
+
+function addChat() {
+  const name = document.getElementById('new-name').value.trim();
+  const chat_id = document.getElementById('new-chatid').value.trim();
+  const timezone = document.getElementById('new-tz').value;
+  const bot_token = document.getElementById('new-token').value.trim();
+  const company_ids = document.getElementById('new-companies').value
+    .split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+
+  if (!name || !chat_id || !bot_token) {
+    toast('Заполни название, Chat ID и токен бота', 'err');
+    return;
+  }
+
+  const id = name.toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '_').slice(0, 32);
+  config.chats.push({
+    id, name, chat_id, timezone, bot_token, company_ids,
+    enabled: true,
+    notifications: {
+      daily:  { enabled: true,  time: '21:00' },
+      weekly: { enabled: false, time: '10:00' },
+      alerts: { enabled: false },
+    },
+  });
+
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-chatid').value = '';
+  document.getElementById('new-token').value = '';
+  document.getElementById('new-companies').value = '';
+
+  setDirty(true);
+  render();
+  toast('Чат добавлен — не забудь сохранить', 'ok');
+}
+
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = ''; }, 3000);
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+loadConfig();
+</script>
+</body>
+</html>

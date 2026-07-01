@@ -508,6 +508,15 @@ const DS_UID = 'bb52db42-4304-442c-91e1-09a5e558c574';
 async function checkParkedOutOfZone(env) {
   if (!env.IGN_CACHE) return;
 
+  // Читаем настройки алертов
+  const settingsRaw = await env.IGN_CACHE.get('ooz_settings');
+  const settings = settingsRaw ? JSON.parse(settingsRaw) : { enabled: false };
+  if (!settings.enabled) return;
+
+  const enabledIds = settings.mode === 'selected' && settings.company_ids?.length
+    ? new Set(settings.company_ids.map(Number))
+    : null; // null = все компании
+
   const now = Date.now();
   const ALERT_AFTER_MS = 5 * 60 * 1000;
 
@@ -538,6 +547,10 @@ async function checkParkedOutOfZone(env) {
 
   for (const car of cars) {
     const id = car.id;
+
+    // Фильтр по выбранным компаниям
+    if (enabledIds && !enabledIds.has(Number(car.company_id))) continue;
+
     const compZones = companyZones[car.company_id];
 
     // Компания без настроенных зон — пропускаем
@@ -1762,6 +1775,38 @@ export default {
       return new Response('Method Not Allowed', { status: 405, headers: CORS });
     }
 
+    // --- Роут: Настройки алертов «вне зоны» ---
+    if (url.pathname === '/admin/ooz-settings') {
+      const token = request.headers.get('X-Token');
+      if (!token || token !== env.PROXY_TOKEN) {
+        return new Response('Unauthorized', { status: 401, headers: CORS });
+      }
+
+      if (request.method === 'GET') {
+        const raw = await env.IGN_CACHE.get('ooz_settings');
+        const settings = raw ? JSON.parse(raw) : { enabled: false, mode: 'all', company_ids: [] };
+        return new Response(JSON.stringify(settings), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      if (request.method === 'POST') {
+        let body;
+        try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+        const settings = {
+          enabled: !!body.enabled,
+          mode: body.mode === 'selected' ? 'selected' : 'all',
+          company_ids: Array.isArray(body.company_ids) ? body.company_ids.map(Number) : [],
+        };
+        await env.IGN_CACHE.put('ooz_settings', JSON.stringify(settings));
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+
+      return new Response('Method Not Allowed', { status: 405, headers: CORS });
+    }
+
     // --- Роут: Обратная связь от партнёров ---
     if (url.pathname === '/partner-feedback' && request.method === 'POST') {
       const session = await getPartnerSession(env, request.headers.get('X-Partner-Token'));
@@ -1786,6 +1831,59 @@ export default {
         `📝 ${message.trim()}`;
       await tg(text, env);
       return new Response(JSON.stringify({ ok: true }), {
+        headers: { 'Content-Type': 'application/json', ...CORS },
+      });
+    }
+
+    // --- Управление партнёрскими уведомлениями ---
+    if (url.pathname === '/admin/partner-notifications') {
+      const token = request.headers.get('X-Token');
+      if (!token || token !== env.PROXY_TOKEN) {
+        return new Response('Unauthorized', { status: 401, headers: CORS });
+      }
+      if (request.method === 'GET') {
+        const raw = await env.IGN_CACHE.get('partner_notifications_config');
+        const config = raw ? JSON.parse(raw) : { chats: [] };
+        return new Response(JSON.stringify({ ok: true, config }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+      if (request.method === 'POST') {
+        let body;
+        try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+        await env.IGN_CACHE.put('partner_notifications_config', JSON.stringify(body));
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { 'Content-Type': 'application/json', ...CORS },
+        });
+      }
+      return new Response('Method Not Allowed', { status: 405, headers: CORS });
+    }
+
+    // Ручная отправка уведомления в чат партнёра
+    if (url.pathname === '/admin/send-notification' && request.method === 'POST') {
+      const token = request.headers.get('X-Token');
+      if (!token || token !== env.PROXY_TOKEN) {
+        return new Response('Unauthorized', { status: 401, headers: CORS });
+      }
+      let body;
+      try { body = await request.json(); } catch { return new Response('Bad JSON', { status: 400, headers: CORS }); }
+      const { chat_id, text } = body;
+      if (!chat_id || !text) return new Response('Missing chat_id or text', { status: 400, headers: CORS });
+
+      // bot_token берём из KV-конфига чата
+      const raw = await env.IGN_CACHE.get('partner_notifications_config');
+      const config = raw ? JSON.parse(raw) : { chats: [] };
+      const chat = config.chats.find(c => c.chat_id === String(chat_id));
+      const botToken = chat?.bot_token;
+      if (!botToken) return new Response('Bot token not configured for this chat', { status: 400, headers: CORS });
+
+      const tgResp = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: String(chat_id), text, parse_mode: 'HTML' }),
+      });
+      const result = await tgResp.json();
+      return new Response(JSON.stringify(result), {
         headers: { 'Content-Type': 'application/json', ...CORS },
       });
     }
