@@ -526,6 +526,16 @@ function init() {
   const error = params.get('error');
   const token = params.get('token');
 
+  // Мобильный Suggest-редирект: токен возвращается в hash (#access_token=...)
+  const hash = new URLSearchParams(location.hash.replace(/^#/, ''));
+  const hashAccessToken = hash.get('access_token');
+  if (hashAccessToken) {
+    history.replaceState({}, '', location.pathname);
+    document.getElementById('login-screen').style.display = 'flex';
+    exchangeYandexAccessToken(hashAccessToken);
+    return;
+  }
+
   if (error) {
     const msgs = {
       access_denied: 'Доступ отклонён.',
@@ -556,6 +566,31 @@ function init() {
   initYandexSuggest();
 }
 
+async function exchangeYandexAccessToken(access_token) {
+  try {
+    const resp = await fetch(`${WORKER}/auth/yandex-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_token }),
+    });
+    const result = await resp.json();
+    if (result.token) {
+      partnerToken = result.token;
+      localStorage.setItem('ks_partner_token', result.token);
+      showDashboard();
+    } else {
+      const msgs = {
+        no_access: 'Ваш аккаунт не имеет доступа к дашборду. Обратитесь к Антону.',
+        userinfo_failed: 'Не удалось получить данные аккаунта. Попробуйте ещё раз.',
+        server_error: 'Ошибка сервера. Попробуйте ещё раз.',
+      };
+      showError(msgs[result.error] || 'Ошибка авторизации.');
+    }
+  } catch (e) {
+    showError('Ошибка авторизации. Попробуйте ещё раз.');
+  }
+}
+
 async function initYandexSuggest() {
   try {
     await new Promise((res, rej) => {
@@ -573,27 +608,7 @@ async function initYandexSuggest() {
       'https://tantaklo.github.io'
     );
     const data = await handler();
-    if (!data || !data.access_token) return;
-
-    showError('');
-    const resp = await fetch(`${WORKER}/auth/yandex-token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ access_token: data.access_token }),
-    });
-    const result = await resp.json();
-    if (result.token) {
-      partnerToken = result.token;
-      localStorage.setItem('ks_partner_token', result.token);
-      showDashboard();
-    } else {
-      const msgs = {
-        no_access: 'Ваш аккаунт не имеет доступа к дашборду. Обратитесь к Антону.',
-        userinfo_failed: 'Не удалось получить данные аккаунта. Попробуйте ещё раз.',
-        server_error: 'Ошибка сервера. Попробуйте ещё раз.',
-      };
-      showError(msgs[result.error] || 'Ошибка авторизации.');
-    }
+    if (data && data.access_token) await exchangeYandexAccessToken(data.access_token);
   } catch (e) {
     // Suggest недоступен (отключены iframe или сторонние куки) — кнопка остаётся
     console.log('YaAuthSuggest unavailable:', e);
